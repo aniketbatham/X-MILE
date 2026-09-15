@@ -158,11 +158,6 @@ export default function BuyerPage() {
     setLoading(true);
 
     try {
-      /*
-        STEP 1
-        Load farmer inventory.
-      */
-
       const inventory =
         await getInventory();
 
@@ -177,11 +172,6 @@ export default function BuyerPage() {
         );
         return;
       }
-
-      /*
-        STEP 2
-        Aggregate inventory.
-      */
 
       const aggregation =
         aggregateSupply(
@@ -202,12 +192,6 @@ export default function BuyerPage() {
 
       setResult(aggregation);
 
-      /*
-        STEP 3
-        Convert selected farmers into
-        logistics pickup points.
-      */
-
       if (
         aggregation.selectedFarmers
           .length > 0
@@ -221,11 +205,6 @@ export default function BuyerPage() {
               quantity: farmer.quantity,
             })
           );
-
-        /*
-          STEP 4
-          Optimize route.
-        */
 
         const logisticsPlan =
           await optimizeRoute(
@@ -284,10 +263,6 @@ export default function BuyerPage() {
       setLoading(true);
       setError("");
 
-      /*
-        Build inventory reservation payload.
-      */
-
       const selectedInventory =
         result.selectedFarmers.map(
           (farmer) => ({
@@ -296,20 +271,11 @@ export default function BuyerPage() {
           })
         );
 
-      /*
-        Convert "Any" into a valid
-        database grade.
-      */
-
       const orderGrade: Grade =
         grade === "Any"
           ? result.selectedFarmers[0]
               ?.grade ?? "C"
           : grade;
-
-      /*
-        Safety check.
-      */
 
       if (
         orderGrade !== "A" &&
@@ -380,10 +346,6 @@ export default function BuyerPage() {
             "Failed to create HARVEX order."
         );
       }
-
-      /*
-        Save created order.
-      */
 
       setOrder({
         id: data.order.id,
@@ -532,11 +494,14 @@ export default function BuyerPage() {
 
   /*
     REFRESH SHIPMENT
+
+    Returns the latest shipment so the
+    polling engine never uses stale React state.
   */
 
   async function refreshShipment(
     orderId: string
-  ) {
+  ): Promise<BuyerShipment | null> {
     try {
       const response =
         await fetch(
@@ -550,7 +515,7 @@ export default function BuyerPage() {
         console.error(
           "Failed to refresh shipment."
         );
-        return;
+        return null;
       }
 
       const data =
@@ -560,7 +525,7 @@ export default function BuyerPage() {
         data.shipments?.[0];
 
       if (!latestShipment) {
-        return;
+        return null;
       }
 
       console.log(
@@ -571,39 +536,68 @@ export default function BuyerPage() {
       setShipment(
         latestShipment
       );
+
+      return latestShipment;
     } catch (err) {
       console.error(
         "Live shipment refresh failed:",
         err
       );
+
+      return null;
     }
   }
 
   /*
     ADVANCE SHIPMENT
 
-    This is the automatic movement engine.
-
     Every polling cycle, an In Transit
     shipment moves forward by 10%.
+
+    IMPORTANT:
+    This uses PATCH, not POST.
   */
 
   async function advanceShipment(
-    orderId: string
+    currentShipment: BuyerShipment
   ) {
     try {
+      const currentProgress =
+        Number(
+          currentShipment.progress_percentage ??
+            0
+        );
+
+      const nextProgress =
+        Math.min(
+          100,
+          currentProgress + 10
+        );
+
+      const nextStatus =
+        nextProgress >= 100
+          ? "Delivered"
+          : "In Transit";
+
       const response =
         await fetch(
           "/api/shipments",
           {
-            method: "POST",
+            method: "PATCH",
             headers: {
               "Content-Type":
                 "application/json",
             },
             body: JSON.stringify({
-              action: "advance",
-              orderId,
+              id: currentShipment.id,
+              status: nextStatus,
+              currentLocation:
+                nextProgress >= 100
+                  ? currentShipment.destination
+                  : currentShipment.current_location ??
+                    currentShipment.origin,
+              progressPercentage:
+                nextProgress,
             }),
           }
         );
@@ -643,8 +637,10 @@ export default function BuyerPage() {
     Refresh immediately and then every
     10 seconds.
 
-    If the shipment is In Transit,
-    HARVEX automatically advances it.
+    We deliberately do NOT put shipment.status
+    in the dependency array because that would
+    recreate the interval whenever the shipment
+    changes.
   */
 
   useEffect(() => {
@@ -654,35 +650,29 @@ export default function BuyerPage() {
 
     const orderId = order.id;
 
+    let active = true;
+
     async function updateLiveTracking() {
       await refreshOrderStatus(
         orderId
       );
 
-      await refreshShipment(
-        orderId
-      );
+      const latestShipment =
+        await refreshShipment(
+          orderId
+        );
 
-      /*
-        Only advance shipments that
-        are already In Transit.
-
-        We intentionally do not advance
-        Preparing shipments.
-      */
       if (
-        shipment?.status ===
-        "In Transit"
+        active &&
+        latestShipment?.status ===
+          "In Transit"
       ) {
         await advanceShipment(
-          orderId
+          latestShipment
         );
       }
     }
 
-    /*
-      Initial refresh.
-    */
     updateLiveTracking();
 
     const interval =
@@ -691,12 +681,10 @@ export default function BuyerPage() {
       }, 10000);
 
     return () => {
+      active = false;
       clearInterval(interval);
     };
-  }, [
-    order?.id,
-    shipment?.status,
-  ]);
+  }, [order?.id]);
 
   /*
     ORDER PROGRESS
@@ -752,10 +740,6 @@ export default function BuyerPage() {
             ? 3
             : -1;
 
-  /*
-    Use the actual shipment movement
-    percentage from the database.
-  */
   const shipmentProgress =
     shipment
       ? Math.max(
@@ -771,58 +755,286 @@ export default function BuyerPage() {
       : 0;
 
   return (
-    <main className="min-h-screen bg-slate-50">
+    <main className="min-h-screen bg-[#f7f4ec] text-[#173b2a]">
+      <style jsx>{`
+        @keyframes fadeUp {
+          from {
+            opacity: 0;
+            transform: translateY(22px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+
+        @keyframes float {
+          0%,
+          100% {
+            transform: translateY(0);
+          }
+          50% {
+            transform: translateY(-8px);
+          }
+        }
+
+        @keyframes pulseSoft {
+          0%,
+          100% {
+            transform: scale(1);
+            opacity: 0.7;
+          }
+          50% {
+            transform: scale(1.15);
+            opacity: 1;
+          }
+        }
+
+        @keyframes scan {
+          0% {
+            transform: translateY(-20px);
+            opacity: 0;
+          }
+          20% {
+            opacity: 1;
+          }
+          80% {
+            opacity: 1;
+          }
+          100% {
+            transform: translateY(100px);
+            opacity: 0;
+          }
+        }
+
+        @keyframes progressShine {
+          from {
+            transform: translateX(-100%);
+          }
+          to {
+            transform: translateX(250%);
+          }
+        }
+
+        @keyframes routeFlow {
+          from {
+            stroke-dashoffset: 1000;
+          }
+          to {
+            stroke-dashoffset: 0;
+          }
+        }
+
+        @keyframes truckMove {
+          0% {
+            transform: translateX(0);
+          }
+          50% {
+            transform: translateX(5px);
+          }
+          100% {
+            transform: translateX(0);
+          }
+        }
+
+        @keyframes reveal {
+          from {
+            opacity: 0;
+            transform: scale(0.96);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+
+        .fade-up {
+          animation: fadeUp 0.7s ease-out both;
+        }
+
+        .fade-in {
+          animation: fadeIn 0.8s ease-out both;
+        }
+
+        .float {
+          animation: float 4s ease-in-out infinite;
+        }
+
+        .pulse-soft {
+          animation: pulseSoft 2s ease-in-out infinite;
+        }
+
+        .scan-line {
+          animation: scan 2.4s ease-in-out infinite;
+        }
+
+        .route-line {
+          stroke-dasharray: 14 10;
+          animation: routeFlow 7s linear infinite;
+        }
+
+        .truck {
+          animation: truckMove 1.6s ease-in-out infinite;
+        }
+
+        .reveal {
+          animation: reveal 0.6s ease-out both;
+        }
+
+        .card-hover {
+          transition:
+            transform 0.25s ease,
+            box-shadow 0.25s ease,
+            border-color 0.25s ease;
+        }
+
+        .card-hover:hover {
+          transform: translateY(-4px);
+          box-shadow:
+            0 18px 45px rgba(23, 59, 42, 0.1);
+          border-color: rgba(16, 185, 129, 0.3);
+        }
+
+        .button-hover {
+          transition:
+            transform 0.2s ease,
+            box-shadow 0.2s ease,
+            background-color 0.2s ease;
+        }
+
+        .button-hover:hover {
+          transform: translateY(-2px);
+          box-shadow:
+            0 12px 24px rgba(5, 150, 105, 0.22);
+        }
+
+        .input-focus {
+          transition:
+            border-color 0.2s ease,
+            box-shadow 0.2s ease;
+        }
+
+        .input-focus:focus {
+          border-color: #10b981;
+          box-shadow:
+            0 0 0 4px rgba(16, 185, 129, 0.1);
+          outline: none;
+        }
+      `}</style>
+
       {/* NAVBAR */}
 
-      <nav className="border-b bg-white">
+      <nav className="sticky top-0 z-50 border-b border-[#dce6dc] bg-[#f7f4ec]/90 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <div>
-            <h1 className="text-2xl font-black text-slate-900">
+            <h1 className="text-2xl font-black tracking-tight text-[#173b2a]">
               HARVEX
             </h1>
 
-            <p className="text-xs font-medium text-slate-500">
+            <p className="text-xs font-medium text-[#708477]">
               Smart Agricultural Supply Network
             </p>
           </div>
 
-          <div className="rounded-full bg-emerald-100 px-4 py-2 text-sm font-bold text-emerald-700">
-            Buyer Portal
+          <div className="flex items-center gap-3">
+            <div className="hidden rounded-full border border-[#dce6dc] bg-white px-4 py-2 text-xs font-bold text-[#547060] sm:block">
+              PROCUREMENT INTELLIGENCE
+            </div>
+
+            <div className="rounded-full bg-[#dff4e8] px-4 py-2 text-sm font-bold text-[#087443]">
+              Buyer Portal
+            </div>
           </div>
         </div>
       </nav>
 
       <div className="mx-auto max-w-7xl space-y-8 px-6 py-8">
-        {/* HEADER */}
 
-        <section>
-          <p className="text-sm font-bold uppercase tracking-wider text-emerald-600">
-            Procurement Intelligence
-          </p>
+        {/* HERO */}
 
-          <h2 className="mt-2 text-4xl font-black text-slate-900">
-            Buyer Demand & Supply
-          </h2>
+        <section className="relative overflow-hidden rounded-[2rem] bg-[#173b2a] px-7 py-10 text-white shadow-xl md:px-10">
+          <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-emerald-400/10 blur-3xl" />
 
-          <p className="mt-2 max-w-3xl text-slate-600">
-            HARVEX forecasts demand,
-            aggregates fragmented
-            farmer inventory, and
-            plans efficient pickup
-            logistics.
-          </p>
+          <div className="absolute bottom-0 right-20 h-40 w-40 rounded-full bg-emerald-300/10 blur-3xl" />
+
+          <div className="relative grid gap-10 lg:grid-cols-[1.4fr_0.6fr] lg:items-center">
+            <div className="fade-up">
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-bold tracking-wider text-emerald-200">
+                <span className="h-2 w-2 rounded-full bg-emerald-300 pulse-soft" />
+                HARVEX BUYER INTELLIGENCE
+              </div>
+
+              <h2 className="max-w-3xl text-4xl font-black tracking-tight md:text-6xl">
+                Turn demand into
+                <span className="text-emerald-300">
+                  {" "}smart supply.
+                </span>
+              </h2>
+
+              <p className="mt-5 max-w-2xl text-base leading-7 text-emerald-50/75 md:text-lg">
+                Forecast demand, discover fragmented farmer inventory,
+                aggregate the right supply, and move it through an
+                optimized logistics network.
+              </p>
+            </div>
+
+            <div className="float hidden lg:block">
+              <div className="relative mx-auto h-52 w-52 rounded-full border border-white/10 bg-white/5">
+                <div className="absolute inset-5 rounded-full border border-emerald-300/20" />
+
+                <div className="absolute inset-12 rounded-full border border-emerald-300/30" />
+
+                <div className="absolute left-1/2 top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-300 shadow-[0_0_35px_rgba(110,231,183,0.7)]" />
+
+                <div className="absolute left-8 top-10 h-3 w-3 rounded-full bg-emerald-300" />
+
+                <div className="absolute right-9 top-16 h-3 w-3 rounded-full bg-blue-300" />
+
+                <div className="absolute bottom-10 left-12 h-3 w-3 rounded-full bg-emerald-200" />
+
+                <div className="absolute bottom-12 right-9 h-3 w-3 rounded-full bg-blue-200" />
+
+                <div className="absolute inset-0 animate-spin rounded-full border-t border-emerald-300/50 [animation-duration:8s]" />
+              </div>
+            </div>
+          </div>
         </section>
 
         {/* BUYER REQUIREMENT */}
 
-        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h3 className="text-xl font-black text-slate-900">
-            Buyer Requirement
-          </h3>
+        <section className="fade-up card-hover rounded-[2rem] border border-[#dce6dc] bg-white p-6 shadow-sm md:p-7">
+          <div className="flex flex-col justify-between gap-3 md:flex-row md:items-end">
+            <div>
+              <p className="text-sm font-black uppercase tracking-wider text-emerald-600">
+                Step 01 · Buyer Demand
+              </p>
+
+              <h3 className="mt-1 text-2xl font-black text-[#173b2a]">
+                Buyer Requirement
+              </h3>
+
+              <p className="mt-1 text-sm text-[#718276]">
+                Define exactly what the market needs.
+              </p>
+            </div>
+
+            <div className="rounded-full bg-[#f0f6f1] px-4 py-2 text-xs font-bold text-[#547060]">
+              Live procurement input
+            </div>
+          </div>
 
           <div className="mt-6 grid gap-5 md:grid-cols-4">
             <div>
-              <label className="text-sm font-bold text-slate-700">
+              <label className="text-sm font-bold text-[#385443]">
                 Produce
               </label>
 
@@ -833,24 +1045,16 @@ export default function BuyerPage() {
                     e.target.value
                   )
                 }
-                className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3"
+                className="input-focus mt-2 w-full rounded-2xl border border-[#d7e1d8] bg-[#fbfcfa] px-4 py-3 text-[#173b2a]"
               >
-                <option>
-                  Tomato
-                </option>
-
-                <option>
-                  Potato
-                </option>
-
-                <option>
-                  Onion
-                </option>
+                <option>Tomato</option>
+                <option>Potato</option>
+                <option>Onion</option>
               </select>
             </div>
 
             <div>
-              <label className="text-sm font-bold text-slate-700">
+              <label className="text-sm font-bold text-[#385443]">
                 Quantity (kg)
               </label>
 
@@ -862,12 +1066,12 @@ export default function BuyerPage() {
                     e.target.value
                   )
                 }
-                className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3"
+                className="input-focus mt-2 w-full rounded-2xl border border-[#d7e1d8] bg-[#fbfcfa] px-4 py-3 text-[#173b2a]"
               />
             </div>
 
             <div>
-              <label className="text-sm font-bold text-slate-700">
+              <label className="text-sm font-bold text-[#385443]">
                 Required Grade
               </label>
 
@@ -880,20 +1084,17 @@ export default function BuyerPage() {
                       | "Any"
                   )
                 }
-                className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3"
+                className="input-focus mt-2 w-full rounded-2xl border border-[#d7e1d8] bg-[#fbfcfa] px-4 py-3 text-[#173b2a]"
               >
                 <option value="A">
                   Grade A
                 </option>
-
                 <option value="B">
                   Grade B
                 </option>
-
                 <option value="C">
                   Grade C
                 </option>
-
                 <option value="Any">
                   Any Grade
                 </option>
@@ -901,7 +1102,7 @@ export default function BuyerPage() {
             </div>
 
             <div>
-              <label className="text-sm font-bold text-slate-700">
+              <label className="text-sm font-bold text-[#385443]">
                 Destination
               </label>
 
@@ -912,27 +1113,13 @@ export default function BuyerPage() {
                     e.target.value
                   )
                 }
-                className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3"
+                className="input-focus mt-2 w-full rounded-2xl border border-[#d7e1d8] bg-[#fbfcfa] px-4 py-3 text-[#173b2a]"
               >
-                <option>
-                  Bengaluru
-                </option>
-
-                <option>
-                  Tumakuru
-                </option>
-
-                <option>
-                  Mysuru
-                </option>
-
-                <option>
-                  Mandya
-                </option>
-
-                <option>
-                  Hassan
-                </option>
+                <option>Bengaluru</option>
+                <option>Tumakuru</option>
+                <option>Mysuru</option>
+                <option>Mandya</option>
+                <option>Hassan</option>
               </select>
             </div>
           </div>
@@ -940,42 +1127,65 @@ export default function BuyerPage() {
           <button
             onClick={findSupply}
             disabled={loading}
-            className="mt-6 rounded-xl bg-emerald-600 px-6 py-3 font-bold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="button-hover mt-6 rounded-2xl bg-[#087443] px-7 py-3.5 font-black text-white disabled:cursor-not-allowed disabled:opacity-50"
           >
             {loading
               ? "Finding Supply..."
-              : "Find Supply"}
+              : "Find Supply →"}
           </button>
         </section>
 
         {/* DEMAND FORECAST */}
 
-        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
-            <div>
-              <p className="text-sm font-bold uppercase tracking-wider text-blue-600">
-                Demand Forecast
+        <section className="card-hover overflow-hidden rounded-[2rem] border border-blue-100 bg-white shadow-sm">
+          <div className="grid md:grid-cols-[1fr_auto]">
+            <div className="p-6 md:p-7">
+              <p className="text-sm font-black uppercase tracking-wider text-blue-600">
+                Step 02 · Demand Intelligence
               </p>
 
-              <h3 className="mt-1 text-2xl font-black text-slate-900">
+              <h3 className="mt-1 text-2xl font-black text-[#173b2a]">
                 Predicted Demand
               </h3>
 
-              <p className="mt-1 text-sm text-slate-500">
-                Based on recent sample
-                demand history.
+              <p className="mt-1 max-w-2xl text-sm text-[#718276]">
+                HARVEX estimates upcoming demand using recent
+                sample demand history.
               </p>
+
+              <div className="mt-6 flex h-20 items-end gap-2">
+                {demandHistory.map(
+                  (value, index) => (
+                    <div
+                      key={index}
+                      className="flex-1 rounded-t-lg bg-blue-100 transition-all duration-500 hover:bg-blue-300"
+                      style={{
+                        height: `${Math.max(
+                          20,
+                          (value / 6000) *
+                            100
+                        )}%`,
+                      }}
+                    />
+                  )
+                )}
+              </div>
             </div>
 
-            <div className="rounded-2xl bg-blue-50 px-6 py-4 text-center">
-              <p className="text-sm font-semibold text-blue-600">
-                Forecast
-              </p>
+            <div className="flex min-w-[220px] items-center justify-center bg-[#eef6ff] p-7">
+              <div className="text-center">
+                <p className="text-sm font-bold text-blue-600">
+                  Forecast
+                </p>
 
-              <p className="text-3xl font-black text-blue-900">
-                {forecastDemand.toLocaleString()}{" "}
-                kg
-              </p>
+                <p className="mt-1 text-4xl font-black text-blue-950">
+                  {forecastDemand.toLocaleString()}
+                </p>
+
+                <p className="text-sm font-bold text-blue-700">
+                  kg
+                </p>
+              </div>
             </div>
           </div>
         </section>
@@ -983,7 +1193,7 @@ export default function BuyerPage() {
         {/* ERROR */}
 
         {error && (
-          <div className="rounded-2xl border border-red-200 bg-red-50 p-4 font-semibold text-red-700">
+          <div className="reveal rounded-2xl border border-red-200 bg-red-50 p-4 font-semibold text-red-700">
             {error}
           </div>
         )}
@@ -992,133 +1202,98 @@ export default function BuyerPage() {
 
         {result && (
           <>
-            {/* SUPPLY AGGREGATION */}
-
-            <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <section className="fade-up card-hover rounded-[2rem] border border-[#dce6dc] bg-white p-6 shadow-sm md:p-7">
               <div className="flex flex-col justify-between gap-5 md:flex-row md:items-start">
                 <div>
-                  <p className="text-sm font-bold uppercase tracking-wider text-emerald-600">
-                    Supply Aggregation
+                  <p className="text-sm font-black uppercase tracking-wider text-emerald-600">
+                    Step 03 · Supply Intelligence
                   </p>
 
-                  <h3 className="mt-1 text-2xl font-black text-slate-900">
-                    {result.totalQuantity.toLocaleString()}{" "}
-                    kg Fulfilled
+                  <h3 className="mt-1 text-3xl font-black text-[#173b2a]">
+                    {result.totalQuantity.toLocaleString()} kg
+                    {" "}Fulfilled
                   </h3>
 
-                  <p className="mt-2 max-w-3xl text-slate-600">
-                    {
-                      result.aggregationSummary
-                    }
+                  <p className="mt-2 max-w-3xl leading-7 text-[#63766a]">
+                    {result.aggregationSummary}
                   </p>
                 </div>
 
-                <div className="rounded-2xl bg-emerald-50 px-6 py-4 text-center">
-                  <p className="text-sm font-semibold text-emerald-600">
+                <div className="rounded-3xl bg-[#e8f7ee] px-7 py-5 text-center">
+                  <p className="text-sm font-bold text-emerald-600">
                     Fulfillment
                   </p>
 
-                  <p className="text-3xl font-black text-emerald-900">
-                    {
-                      result.fulfillmentPercentage
-                    }
-                    %
+                  <p className="text-4xl font-black text-[#087443]">
+                    {result.fulfillmentPercentage}%
                   </p>
                 </div>
               </div>
 
               <div className="mt-6 grid gap-4 md:grid-cols-3">
-                <div className="rounded-2xl bg-slate-50 p-4">
-                  <p className="text-sm text-slate-500">
+                <div className="card-hover rounded-2xl bg-[#f5f7f3] p-5">
+                  <p className="text-sm text-[#718276]">
                     Eligible Farmers
                   </p>
 
-                  <p className="mt-1 text-2xl font-black">
-                    {
-                      result.eligibleFarmerCount
-                    }
+                  <p className="mt-1 text-3xl font-black text-[#173b2a]">
+                    {result.eligibleFarmerCount}
                   </p>
                 </div>
 
-                <div className="rounded-2xl bg-slate-50 p-4">
-                  <p className="text-sm text-slate-500">
+                <div className="card-hover rounded-2xl bg-[#f5f7f3] p-5">
+                  <p className="text-sm text-[#718276]">
                     Selected Farmers
                   </p>
 
-                  <p className="mt-1 text-2xl font-black">
-                    {
-                      result
-                        .selectedFarmers
-                        .length
-                    }
+                  <p className="mt-1 text-3xl font-black text-[#173b2a]">
+                    {result.selectedFarmers.length}
                   </p>
                 </div>
 
-                <div className="rounded-2xl bg-slate-50 p-4">
-                  <p className="text-sm text-slate-500">
+                <div className="card-hover rounded-2xl bg-[#f5f7f3] p-5">
+                  <p className="text-sm text-[#718276]">
                     Remaining
                   </p>
 
-                  <p className="mt-1 text-2xl font-black">
-                    {
-                      result.remainingQuantity
-                    }{" "}
-                    kg
+                  <p className="mt-1 text-3xl font-black text-[#173b2a]">
+                    {result.remainingQuantity} kg
                   </p>
                 </div>
               </div>
 
-              <div className="mt-6 rounded-2xl bg-slate-50 p-4">
-                <p className="font-bold text-slate-800">
+              <div className="mt-6 rounded-2xl border border-emerald-100 bg-emerald-50 p-5">
+                <p className="font-black text-emerald-900">
                   Quality Priority
                 </p>
 
-                <p className="mt-1 text-sm text-slate-600">
-                  {
-                    result.qualityPriority
-                  }
+                <p className="mt-1 text-sm text-emerald-800">
+                  {result.qualityPriority}
                 </p>
               </div>
             </section>
 
             {/* FARMER SELECTION */}
 
-            <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-              <p className="text-sm font-bold uppercase tracking-wider text-emerald-600">
-                Farmer Selection
+            <section className="fade-up card-hover rounded-[2rem] border border-[#dce6dc] bg-white p-6 shadow-sm md:p-7">
+              <p className="text-sm font-black uppercase tracking-wider text-emerald-600">
+                Step 04 · Smart Matching
               </p>
 
-              <h3 className="mt-1 text-2xl font-black text-slate-900">
+              <h3 className="mt-1 text-2xl font-black text-[#173b2a]">
                 Selected Inventory
               </h3>
 
               <div className="mt-6 overflow-x-auto">
                 <table className="w-full min-w-[700px] text-left">
                   <thead>
-                    <tr className="border-b text-sm text-slate-500">
-                      <th className="pb-3">
-                        Farmer
-                      </th>
-
-                      <th className="pb-3">
-                        Produce
-                      </th>
-
-                      <th className="pb-3">
-                        Allocated
-                      </th>
-
-                      <th className="pb-3">
-                        Grade
-                      </th>
-
-                      <th className="pb-3">
-                        AI Score
-                      </th>
-
-                      <th className="pb-3">
-                        Location
-                      </th>
+                    <tr className="border-b border-[#e4e9e3] text-sm text-[#718276]">
+                      <th className="pb-3">Farmer</th>
+                      <th className="pb-3">Produce</th>
+                      <th className="pb-3">Allocated</th>
+                      <th className="pb-3">Grade</th>
+                      <th className="pb-3">AI Score</th>
+                      <th className="pb-3">Location</th>
                     </tr>
                   </thead>
 
@@ -1127,9 +1302,9 @@ export default function BuyerPage() {
                       (farmer) => (
                         <tr
                           key={farmer.id}
-                          className="border-b last:border-0"
+                          className="border-b border-[#edf0eb] transition hover:bg-[#f8faf7]"
                         >
-                          <td className="py-4 font-bold">
+                          <td className="py-4 font-black text-[#173b2a]">
                             {farmer.name}
                           </td>
 
@@ -1137,33 +1312,22 @@ export default function BuyerPage() {
                             {farmer.produce}
                           </td>
 
-                          <td className="py-4 font-bold">
-                            {
-                              farmer.quantity
-                            }{" "}
-                            kg
+                          <td className="py-4 font-black">
+                            {farmer.quantity} kg
                           </td>
 
                           <td className="py-4">
-                            <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-700">
-                              Grade{" "}
-                              {
-                                farmer.grade
-                              }
+                            <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-black text-emerald-700">
+                              Grade {farmer.grade}
                             </span>
                           </td>
 
-                          <td className="py-4">
-                            {
-                              farmer.qualityScore ??
-                              "—"
-                            }
+                          <td className="py-4 font-bold">
+                            {farmer.qualityScore ?? "—"}
                           </td>
 
                           <td className="py-4">
-                            {
-                              farmer.location
-                            }
+                            {farmer.location}
                           </td>
                         </tr>
                       )
@@ -1176,73 +1340,58 @@ export default function BuyerPage() {
             {/* LOGISTICS */}
 
             {route && (
-              <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                <div>
-                  <p className="text-sm font-bold uppercase tracking-wider text-blue-600">
-                    Logistics Intelligence
-                  </p>
+              <section className="fade-up card-hover rounded-[2rem] border border-blue-100 bg-white p-6 shadow-sm md:p-7">
+                <p className="text-sm font-black uppercase tracking-wider text-blue-600">
+                  Step 05 · Logistics Intelligence
+                </p>
 
-                  <h3 className="mt-1 text-2xl font-black text-slate-900">
-                    Optimized Pickup Route
-                  </h3>
-                </div>
+                <h3 className="mt-1 text-2xl font-black text-[#173b2a]">
+                  Optimized Pickup Route
+                </h3>
 
                 <div className="mt-6 grid gap-4 md:grid-cols-4">
-                  <div className="rounded-2xl bg-slate-50 p-4">
-                    <p className="text-sm text-slate-500">
+                  <div className="rounded-2xl bg-[#f5f7f3] p-4">
+                    <p className="text-sm text-[#718276]">
                       Pickup Points
                     </p>
 
                     <p className="mt-1 text-2xl font-black">
-                      {
-                        route
-                          .pickupPoints
-                          .length
-                      }
+                      {route.pickupPoints.length}
                     </p>
                   </div>
 
-                  <div className="rounded-2xl bg-slate-50 p-4">
-                    <p className="text-sm text-slate-500">
+                  <div className="rounded-2xl bg-[#f5f7f3] p-4">
+                    <p className="text-sm text-[#718276]">
                       Total Quantity
                     </p>
 
                     <p className="mt-1 text-2xl font-black">
-                      {
-                        route.totalQuantity
-                      }{" "}
-                      kg
+                      {route.totalQuantity} kg
                     </p>
                   </div>
 
-                  <div className="rounded-2xl bg-slate-50 p-4">
-                    <p className="text-sm text-slate-500">
+                  <div className="rounded-2xl bg-[#f5f7f3] p-4">
+                    <p className="text-sm text-[#718276]">
                       Distance
                     </p>
 
                     <p className="mt-1 text-2xl font-black">
-                      {
-                        route.estimatedDistanceKm
-                      }{" "}
-                      km
+                      {route.estimatedDistanceKm} km
                     </p>
                   </div>
 
-                  <div className="rounded-2xl bg-slate-50 p-4">
-                    <p className="text-sm text-slate-500">
+                  <div className="rounded-2xl bg-[#f5f7f3] p-4">
+                    <p className="text-sm text-[#718276]">
                       Route Time
                     </p>
 
                     <p className="mt-1 text-2xl font-black">
-                      {
-                        route.estimatedRouteTimeMinutes
-                      }{" "}
-                      min
+                      {route.estimatedRouteTimeMinutes} min
                     </p>
                   </div>
                 </div>
 
-                <div className="mt-6">
+                <div className="mt-6 overflow-hidden rounded-3xl border border-blue-100">
                   <LogisticsMap
                     pickupPoints={
                       route.pickupPoints
@@ -1256,32 +1405,38 @@ export default function BuyerPage() {
                   />
                 </div>
 
-                <div className="mt-6 rounded-2xl bg-blue-50 p-4 text-sm text-blue-800">
-                  {route.optimized
-                    ? "OSRM road-network routing optimized the pickup sequence."
-                    : "Route optimization was unavailable, so HARVEX used the fallback logistics plan."}
+                <div className="mt-6 flex items-center gap-3 rounded-2xl bg-blue-50 p-4 text-sm text-blue-800">
+                  <span className="text-xl truck">
+                    🚚
+                  </span>
+
+                  <span>
+                    {route.optimized
+                      ? "OSRM road-network routing optimized the pickup sequence."
+                      : "Route optimization was unavailable, so HARVEX used the fallback logistics plan."}
+                  </span>
                 </div>
               </section>
             )}
 
             {/* CREATE ORDER */}
 
-            <section className="rounded-3xl border border-emerald-200 bg-emerald-50 p-6">
-              <div className="flex flex-col justify-between gap-5 md:flex-row md:items-center">
+            <section className="fade-up relative overflow-hidden rounded-[2rem] border border-emerald-200 bg-[#e9f7ee] p-6 shadow-sm md:p-7">
+              <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-emerald-300/20 blur-3xl" />
+
+              <div className="relative flex flex-col justify-between gap-5 md:flex-row md:items-center">
                 <div>
-                  <p className="text-sm font-bold uppercase tracking-wider text-emerald-700">
-                    Procurement
+                  <p className="text-sm font-black uppercase tracking-wider text-emerald-700">
+                    Step 06 · Procurement
                   </p>
 
-                  <h3 className="mt-1 text-2xl font-black text-emerald-950">
+                  <h3 className="mt-1 text-2xl font-black text-[#173b2a]">
                     Create HARVEX Order
                   </h3>
 
-                  <p className="mt-1 text-sm text-emerald-800">
-                    The selected inventory
-                    quantities will be
-                    attached to this
-                    order for reservation.
+                  <p className="mt-1 max-w-2xl text-sm text-emerald-800">
+                    Selected inventory quantities will be
+                    attached to this order for reservation.
                   </p>
                 </div>
 
@@ -1290,13 +1445,13 @@ export default function BuyerPage() {
                   disabled={
                     loading || !!order
                   }
-                  className="rounded-xl bg-emerald-600 px-6 py-3 font-bold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="button-hover shrink-0 rounded-2xl bg-[#087443] px-7 py-3.5 font-black text-white disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {order
-                    ? "Order Created"
+                    ? "✓ Order Created"
                     : loading
                       ? "Processing..."
-                      : "Create HARVEX Order"}
+                      : "Create HARVEX Order →"}
                 </button>
               </div>
             </section>
@@ -1305,20 +1460,19 @@ export default function BuyerPage() {
 
             {order && (
               <>
-                <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                <section className="fade-up card-hover rounded-[2rem] border border-[#dce6dc] bg-white p-6 shadow-sm md:p-7">
                   <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
                     <div>
-                      <p className="text-sm font-bold uppercase tracking-wider text-blue-600">
-                        Order Tracking
+                      <p className="text-sm font-black uppercase tracking-wider text-blue-600">
+                        Step 07 · Order Tracking
                       </p>
 
-                      <h3 className="mt-1 text-2xl font-black text-slate-900">
+                      <h3 className="mt-1 text-2xl font-black text-[#173b2a]">
                         HARVEX Order Progress
                       </h3>
 
-                      <p className="mt-1 break-all text-sm text-slate-500">
-                        Order ID:{" "}
-                        {order.id}
+                      <p className="mt-1 break-all text-sm text-[#718276]">
+                        Order ID: {order.id}
                       </p>
                     </div>
 
@@ -1326,7 +1480,7 @@ export default function BuyerPage() {
                       <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-emerald-500" />
 
                       <span
-                        className={`rounded-full px-4 py-2 text-sm font-bold ${
+                        className={`rounded-full px-4 py-2 text-sm font-black ${
                           order.status ===
                           "Delivered"
                             ? "bg-emerald-100 text-emerald-700"
@@ -1339,9 +1493,7 @@ export default function BuyerPage() {
                                 : "bg-amber-100 text-amber-700"
                         }`}
                       >
-                        {
-                          order.status
-                        }
+                        {order.status}
                       </span>
                     </div>
                   </div>
@@ -1349,80 +1501,64 @@ export default function BuyerPage() {
                   {/* ORDER DETAILS */}
 
                   <div className="mt-8">
-                    <p className="text-sm font-bold uppercase tracking-wider text-slate-500">
+                    <p className="text-sm font-black uppercase tracking-wider text-[#718276]">
                       Order Details
                     </p>
 
                     <div className="mt-4 grid gap-4 md:grid-cols-3">
-                      <div className="rounded-2xl bg-slate-50 p-4">
-                        <p className="text-sm text-slate-500">
+                      <div className="card-hover rounded-2xl bg-[#f5f7f3] p-4">
+                        <p className="text-sm text-[#718276]">
                           Buyer
                         </p>
-
-                        <p className="mt-1 font-black text-slate-900">
-                          {
-                            order.buyer_name
-                          }
+                        <p className="mt-1 font-black text-[#173b2a]">
+                          {order.buyer_name}
                         </p>
                       </div>
 
-                      <div className="rounded-2xl bg-slate-50 p-4">
-                        <p className="text-sm text-slate-500">
+                      <div className="card-hover rounded-2xl bg-[#f5f7f3] p-4">
+                        <p className="text-sm text-[#718276]">
                           Produce
                         </p>
-
-                        <p className="mt-1 font-black text-slate-900">
-                          {
-                            order.produce
-                          }
+                        <p className="mt-1 font-black text-[#173b2a]">
+                          {order.produce}
                         </p>
                       </div>
 
-                      <div className="rounded-2xl bg-slate-50 p-4">
-                        <p className="text-sm text-slate-500">
+                      <div className="card-hover rounded-2xl bg-[#f5f7f3] p-4">
+                        <p className="text-sm text-[#718276]">
                           Required Grade
                         </p>
-
-                        <p className="mt-1 font-black text-slate-900">
-                          Grade{" "}
-                          {
-                            order.required_grade
-                          }
+                        <p className="mt-1 font-black text-[#173b2a]">
+                          Grade {order.required_grade}
                         </p>
                       </div>
 
-                      <div className="rounded-2xl bg-slate-50 p-4">
-                        <p className="text-sm text-slate-500">
+                      <div className="card-hover rounded-2xl bg-[#f5f7f3] p-4">
+                        <p className="text-sm text-[#718276]">
                           Destination
                         </p>
-
-                        <p className="mt-1 font-black text-slate-900">
-                          {
-                            order.destination
-                          }
+                        <p className="mt-1 font-black text-[#173b2a]">
+                          {order.destination}
                         </p>
                       </div>
 
-                      <div className="rounded-2xl bg-slate-50 p-4">
-                        <p className="text-sm text-slate-500">
+                      <div className="card-hover rounded-2xl bg-[#f5f7f3] p-4">
+                        <p className="text-sm text-[#718276]">
                           Created
                         </p>
-
-                        <p className="mt-1 font-black text-slate-900">
+                        <p className="mt-1 font-black text-[#173b2a]">
                           {new Date(
                             order.created_at
                           ).toLocaleString()}
                         </p>
                       </div>
 
-                      <div className="rounded-2xl bg-slate-50 p-4">
-                        <p className="text-sm text-slate-500">
+                      <div className="card-hover rounded-2xl bg-[#f5f7f3] p-4">
+                        <p className="text-sm text-[#718276]">
                           Requested
                         </p>
-
-                        <p className="mt-1 font-black text-slate-900">
-                          {order.requested_quantity_kg.toLocaleString()}{" "}
-                          kg
+                        <p className="mt-1 font-black text-[#173b2a]">
+                          {order.requested_quantity_kg.toLocaleString()} kg
                         </p>
                       </div>
                     </div>
@@ -1431,48 +1567,40 @@ export default function BuyerPage() {
                   {/* ORDER SUMMARY */}
 
                   <div className="mt-8 grid gap-4 md:grid-cols-3">
-                    <div className="rounded-2xl bg-slate-50 p-4">
-                      <p className="text-sm text-slate-500">
+                    <div className="rounded-2xl border border-[#e5ebe4] bg-white p-5">
+                      <p className="text-sm text-[#718276]">
                         Requested
                       </p>
-
-                      <p className="mt-1 text-2xl font-black text-slate-900">
-                        {order.requested_quantity_kg.toLocaleString()}{" "}
-                        kg
+                      <p className="mt-1 text-2xl font-black">
+                        {order.requested_quantity_kg.toLocaleString()} kg
                       </p>
                     </div>
 
-                    <div className="rounded-2xl bg-slate-50 p-4">
-                      <p className="text-sm text-slate-500">
+                    <div className="rounded-2xl border border-[#e5ebe4] bg-white p-5">
+                      <p className="text-sm text-[#718276]">
                         Fulfilled
                       </p>
-
-                      <p className="mt-1 text-2xl font-black text-slate-900">
-                        {order.fulfilled_quantity_kg.toLocaleString()}{" "}
-                        kg
+                      <p className="mt-1 text-2xl font-black">
+                        {order.fulfilled_quantity_kg.toLocaleString()} kg
                       </p>
                     </div>
 
-                    <div className="rounded-2xl bg-slate-50 p-4">
-                      <p className="text-sm text-slate-500">
+                    <div className="rounded-2xl border border-[#e5ebe4] bg-white p-5">
+                      <p className="text-sm text-[#718276]">
                         Fulfillment
                       </p>
-
-                      <p className="mt-1 text-2xl font-black text-slate-900">
-                        {
-                          order.fulfillment_percentage
-                        }
-                        %
+                      <p className="mt-1 text-2xl font-black">
+                        {order.fulfillment_percentage}%
                       </p>
                     </div>
                   </div>
 
-                  {/* PROGRESS BAR */}
+                  {/* ORDER PROGRESS BAR */}
 
                   {order.status !==
                     "Disputed" && (
                     <div className="mt-8">
-                      <div className="mb-3 flex justify-between text-sm font-bold text-slate-600">
+                      <div className="mb-3 flex justify-between text-sm font-black text-[#607468]">
                         <span>
                           Order Progress
                         </span>
@@ -1480,18 +1608,19 @@ export default function BuyerPage() {
                         <span>
                           {Math.round(
                             progressPercentage
-                          )}
-                          %
+                          )}%
                         </span>
                       </div>
 
-                      <div className="h-3 overflow-hidden rounded-full bg-slate-200">
+                      <div className="h-3 overflow-hidden rounded-full bg-[#e5ebe4]">
                         <div
-                          className="h-full rounded-full bg-emerald-500 transition-all duration-700"
+                          className="relative h-full rounded-full bg-emerald-500 transition-all duration-700"
                           style={{
                             width: `${progressPercentage}%`,
                           }}
-                        />
+                        >
+                          <div className="absolute inset-0 w-1/3 bg-white/25 animate-[progressShine_2.5s_linear_infinite]" />
+                        </div>
                       </div>
                     </div>
                   )}
@@ -1506,24 +1635,19 @@ export default function BuyerPage() {
                       </p>
 
                       <p className="mt-1 text-sm text-red-700">
-                        This order has
-                        been marked as
-                        disputed and
-                        requires
-                        attention.
+                        This order has been marked as disputed
+                        and requires attention.
                       </p>
                     </div>
                   ) : (
                     <div className="mt-8">
                       <div className="mb-6 flex items-center justify-between">
-                        <p className="text-sm font-bold uppercase tracking-wider text-slate-500">
+                        <p className="text-sm font-black uppercase tracking-wider text-[#718276]">
                           Order Timeline
                         </p>
 
-                        <p className="text-xs font-semibold text-slate-400">
-                          Live updates
-                          every 10
-                          seconds
+                        <p className="text-xs font-semibold text-[#9aa79e]">
+                          Live updates every 10 seconds
                         </p>
                       </div>
 
@@ -1543,9 +1667,7 @@ export default function BuyerPage() {
 
                             return (
                               <div
-                                key={
-                                  step
-                                }
+                                key={step}
                                 className="flex flex-1 items-start md:flex-col md:items-center"
                               >
                                 <div className="flex items-center md:w-full">
@@ -1553,7 +1675,7 @@ export default function BuyerPage() {
                                     className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-sm font-black ${
                                       completed
                                         ? "bg-emerald-600 text-white"
-                                        : "bg-slate-200 text-slate-500"
+                                        : "bg-[#e7ece7] text-[#718276]"
                                     } ${
                                       isCurrent
                                         ? "ring-4 ring-emerald-100"
@@ -1562,8 +1684,7 @@ export default function BuyerPage() {
                                   >
                                     {completed
                                       ? "✓"
-                                      : index +
-                                        1}
+                                      : index + 1}
                                   </div>
 
                                   {index <
@@ -1574,7 +1695,7 @@ export default function BuyerPage() {
                                         index <
                                         currentOrderStep
                                           ? "bg-emerald-500"
-                                          : "bg-slate-200"
+                                          : "bg-[#e5ebe4]"
                                       }`}
                                     />
                                   )}
@@ -1582,18 +1703,16 @@ export default function BuyerPage() {
 
                                 <div className="ml-4 md:ml-0 md:mt-3 md:text-center">
                                   <p
-                                    className={`font-bold ${
+                                    className={`font-black ${
                                       completed
-                                        ? "text-slate-900"
-                                        : "text-slate-400"
+                                        ? "text-[#173b2a]"
+                                        : "text-[#9aa79e]"
                                     }`}
                                   >
-                                    {
-                                      step
-                                    }
+                                    {step}
                                   </p>
 
-                                  <p className="mt-1 text-xs text-slate-500">
+                                  <p className="mt-1 text-xs text-[#718276]">
                                     {step ===
                                       "Accepted" &&
                                       "Order confirmed"}
@@ -1617,12 +1736,12 @@ export default function BuyerPage() {
 
                   {/* CURRENT STATUS */}
 
-                  <div className="mt-8 rounded-2xl bg-blue-50 p-5">
-                    <p className="font-bold text-blue-900">
+                  <div className="mt-8 rounded-2xl border border-blue-100 bg-blue-50 p-5">
+                    <p className="font-black text-blue-900">
                       Current Status
                     </p>
 
-                    <p className="mt-1 text-sm text-blue-800">
+                    <p className="mt-1 text-sm leading-6 text-blue-800">
                       {order.status ===
                         "Accepted" &&
                         "Your order has been accepted and the selected farmer inventory has been reserved."}
@@ -1645,308 +1764,313 @@ export default function BuyerPage() {
                 {/* SHIPMENT TRACKING */}
 
                 {shipment && (
-                  <section className="rounded-3xl border border-blue-200 bg-white p-6 shadow-sm">
-                    <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
-                      <div>
-                        <p className="text-sm font-bold uppercase tracking-wider text-blue-600">
-                          Live Shipment
-                        </p>
+                  <section className="fade-up relative overflow-hidden rounded-[2rem] border border-blue-100 bg-white p-6 shadow-sm md:p-7">
+                    <div className="absolute right-0 top-0 h-48 w-48 rounded-full bg-blue-100/50 blur-3xl" />
 
-                        <h3 className="mt-1 text-2xl font-black text-slate-900">
-                          Shipment Tracking
-                        </h3>
+                    <div className="relative">
+                      <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
+                        <div>
+                          <p className="text-sm font-black uppercase tracking-wider text-blue-600">
+                            Step 08 · Live Logistics
+                          </p>
 
-                        <p className="mt-1 break-all text-sm text-slate-500">
-                          Shipment ID:{" "}
-                          {shipment.id}
-                        </p>
-                      </div>
+                          <h3 className="mt-1 text-2xl font-black text-[#173b2a]">
+                            Shipment Tracking
+                          </h3>
 
-                      <div className="flex items-center gap-3">
-                        {shipment.status !==
-                          "Delivered" && (
-                          <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-blue-500" />
-                        )}
-
-                        <span
-                          className={`rounded-full px-4 py-2 text-sm font-bold ${
-                            shipment.status ===
-                            "Delivered"
-                              ? "bg-emerald-100 text-emerald-700"
-                              : shipment.status ===
-                                  "In Transit"
-                                ? "bg-blue-100 text-blue-700"
-                                : shipment.status ===
-                                    "Delayed"
-                                  ? "bg-red-100 text-red-700"
-                                  : "bg-amber-100 text-amber-700"
-                          }`}
-                        >
-                          {
-                            shipment.status
-                          }
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* SHIPMENT PROGRESS */}
-
-                    {shipment.status !==
-                      "Delayed" && (
-                      <div className="mt-8">
-                        <div className="mb-3 flex justify-between text-sm font-bold text-slate-600">
-                          <span>
-                            Shipment Progress
-                          </span>
-
-                          <span>
-                            {Math.round(
-                              shipmentProgress
-                            )}
-                            %
-                          </span>
-                        </div>
-
-                        <div className="h-3 overflow-hidden rounded-full bg-slate-200">
-                          <div
-                            className="h-full rounded-full bg-blue-500 transition-all duration-1000"
-                            style={{
-                              width: `${shipmentProgress}%`,
-                            }}
-                          />
-                        </div>
-                      </div>
-                    )}
-
-                    {/* SHIPMENT TIMELINE */}
-
-                    <div className="mt-8">
-                      <div className="mb-6 flex items-center justify-between">
-                        <p className="text-sm font-bold uppercase tracking-wider text-slate-500">
-                          Shipment Timeline
-                        </p>
-
-                        <p className="text-xs font-semibold text-slate-400">
-                          Live updates
-                          every 10
-                          seconds
-                        </p>
-                      </div>
-
-                      <div className="grid gap-4 md:grid-cols-4">
-                        {shipmentSteps.map(
-                          (
-                            step,
-                            index
-                          ) => {
-                            const completed =
-                              index <=
-                              currentShipmentStep;
-
-                            const isCurrent =
-                              index ===
-                              currentShipmentStep;
-
-                            return (
-                              <div
-                                key={
-                                  step
-                                }
-                                className={`rounded-2xl border p-4 ${
-                                  completed
-                                    ? "border-blue-200 bg-blue-50"
-                                    : "border-slate-200 bg-slate-50"
-                                } ${
-                                  isCurrent
-                                    ? "ring-2 ring-blue-100"
-                                    : ""
-                                }`}
-                              >
-                                <div
-                                  className={`flex h-10 w-10 items-center justify-center rounded-full font-black ${
-                                    completed
-                                      ? "bg-blue-600 text-white"
-                                      : "bg-slate-200 text-slate-500"
-                                  }`}
-                                >
-                                  {completed
-                                    ? "✓"
-                                    : index +
-                                      1}
-                                </div>
-
-                                <p
-                                  className={`mt-3 font-bold ${
-                                    completed
-                                      ? "text-slate-900"
-                                      : "text-slate-400"
-                                  }`}
-                                >
-                                  {
-                                    step
-                                  }
-                                </p>
-                              </div>
-                            );
-                          }
-                        )}
-                      </div>
-                    </div>
-
-                    {/* ROUTE */}
-
-                    <div className="mt-8 grid gap-4 md:grid-cols-2">
-                      <div className="rounded-2xl bg-slate-50 p-5">
-                        <p className="text-sm font-semibold text-slate-500">
-                          Pickup
-                        </p>
-
-                        <p className="mt-1 text-xl font-black text-slate-900">
-                          {
-                            shipment.origin ||
-                            "Pickup location"
-                          }
-                        </p>
-                      </div>
-
-                      <div className="rounded-2xl bg-slate-50 p-5">
-                        <p className="text-sm font-semibold text-slate-500">
-                          Destination
-                        </p>
-
-                        <p className="mt-1 text-xl font-black text-slate-900">
-                          {
-                            shipment.destination
-                          }
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* CURRENT LOCATION */}
-
-                    <div className="mt-4 rounded-2xl bg-blue-50 p-5">
-                      <p className="text-sm font-bold text-blue-700">
-                        📍 Current
-                        Location
-                      </p>
-
-                      <p className="mt-1 text-lg font-black text-blue-950">
-                        {shipment.current_location ||
-                          shipment.origin ||
-                          "Location unavailable"}
-                      </p>
-
-                      <p className="mt-1 text-xs text-blue-700">
-                        Last updated{" "}
-                        {new Date(
-                          shipment.updated_at
-                        ).toLocaleString()}
-                      </p>
-                    </div>
-
-                    {/* SHIPMENT DETAILS */}
-
-                    <div className="mt-6 grid gap-4 md:grid-cols-3">
-                      <div className="rounded-2xl bg-slate-50 p-4">
-                        <p className="text-sm text-slate-500">
-                          Quantity
-                        </p>
-
-                        <p className="mt-1 text-2xl font-black text-slate-900">
-                          {shipment.total_quantity_kg.toLocaleString()}{" "}
-                          kg
-                        </p>
-                      </div>
-
-                      <div className="rounded-2xl bg-slate-50 p-4">
-                        <p className="text-sm text-slate-500">
-                          Distance Remaining
-                        </p>
-
-                        <p className="mt-1 text-2xl font-black text-slate-900">
-                          {shipment.estimated_distance_km !=
-                          null
-                            ? `${Number(
-                                shipment.estimated_distance_km
-                              ).toFixed(1)} km`
-                            : "—"}
-                        </p>
-                      </div>
-
-                      <div className="rounded-2xl bg-slate-50 p-4">
-                        <p className="text-sm text-slate-500">
-                          Estimated Time
-                        </p>
-
-                        <p className="mt-1 text-2xl font-black text-slate-900">
-                          {shipment.estimated_time_minutes !=
-                          null
-                            ? `${Math.round(
-                                Number(
-                                  shipment.estimated_time_minutes
-                                )
-                              )} min`
-                            : "—"}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* LIVE MOVEMENT */}
-
-                    {shipment.status ===
-                      "In Transit" && (
-                      <div className="mt-6 rounded-2xl border border-blue-100 bg-blue-50 p-5">
-                        <div className="flex items-center gap-3">
-                          <span className="h-3 w-3 animate-pulse rounded-full bg-blue-600" />
-
-                          <p className="font-black text-blue-950">
-                            🚚 Shipment moving
-                            toward{" "}
-                            {
-                              shipment.destination
-                            }
+                          <p className="mt-1 break-all text-sm text-[#718276]">
+                            Shipment ID: {shipment.id}
                           </p>
                         </div>
 
-                        <p className="mt-2 text-sm text-blue-800">
-                          HARVEX automatically
-                          updates the shipment
-                          position every 10
-                          seconds.
+                        <div className="flex items-center gap-3">
+                          {shipment.status !==
+                            "Delivered" && (
+                            <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-blue-500" />
+                          )}
+
+                          <span
+                            className={`rounded-full px-4 py-2 text-sm font-black ${
+                              shipment.status ===
+                              "Delivered"
+                                ? "bg-emerald-100 text-emerald-700"
+                                : shipment.status ===
+                                    "In Transit"
+                                  ? "bg-blue-100 text-blue-700"
+                                  : shipment.status ===
+                                      "Delayed"
+                                    ? "bg-red-100 text-red-700"
+                                    : "bg-amber-100 text-amber-700"
+                            }`}
+                          >
+                            {shipment.status}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* SHIPMENT PROGRESS */}
+
+                      {shipment.status !==
+                        "Delayed" && (
+                        <div className="mt-8">
+                          <div className="mb-3 flex justify-between text-sm font-black text-[#607468]">
+                            <span>
+                              Shipment Progress
+                            </span>
+
+                            <span>
+                              {Math.round(
+                                shipmentProgress
+                              )}%
+                            </span>
+                          </div>
+
+                          <div className="h-4 overflow-hidden rounded-full bg-[#e5eaf0]">
+                            <div
+                              className="relative h-full rounded-full bg-blue-500 transition-all duration-1000"
+                              style={{
+                                width: `${shipmentProgress}%`,
+                              }}
+                            >
+                              <div className="absolute inset-0 w-1/3 bg-white/30 animate-[progressShine_2.2s_linear_infinite]" />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* SHIPMENT TIMELINE */}
+
+                      <div className="mt-8">
+                        <div className="mb-6 flex items-center justify-between">
+                          <p className="text-sm font-black uppercase tracking-wider text-[#718276]">
+                            Shipment Timeline
+                          </p>
+
+                          <p className="text-xs font-semibold text-[#9aa79e]">
+                            Live updates every 10 seconds
+                          </p>
+                        </div>
+
+                        <div className="grid gap-4 md:grid-cols-4">
+                          {shipmentSteps.map(
+                            (
+                              step,
+                              index
+                            ) => {
+                              const completed =
+                                index <=
+                                currentShipmentStep;
+
+                              const isCurrent =
+                                index ===
+                                currentShipmentStep;
+
+                              return (
+                                <div
+                                  key={step}
+                                  className={`card-hover rounded-2xl border p-4 ${
+                                    completed
+                                      ? "border-blue-200 bg-blue-50"
+                                      : "border-[#e5ebe4] bg-[#f7f8f5]"
+                                  } ${
+                                    isCurrent
+                                      ? "ring-2 ring-blue-100"
+                                      : ""
+                                  }`}
+                                >
+                                  <div
+                                    className={`flex h-10 w-10 items-center justify-center rounded-full font-black ${
+                                      completed
+                                        ? "bg-blue-600 text-white"
+                                        : "bg-[#e4e9e4] text-[#718276]"
+                                    }`}
+                                  >
+                                    {completed
+                                      ? "✓"
+                                      : index + 1}
+                                  </div>
+
+                                  <p
+                                    className={`mt-3 font-black ${
+                                      completed
+                                        ? "text-[#173b2a]"
+                                        : "text-[#9aa79e]"
+                                    }`}
+                                  >
+                                    {step}
+                                  </p>
+
+                                  {isCurrent && (
+                                    <div className="mt-2 flex items-center gap-2 text-xs font-bold text-blue-600">
+                                      <span className="h-2 w-2 animate-pulse rounded-full bg-blue-500" />
+                                      Current stage
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            }
+                          )}
+                        </div>
+                      </div>
+
+                      {/* ROUTE */}
+
+                      <div className="mt-8 grid gap-4 md:grid-cols-2">
+                        <div className="card-hover rounded-2xl bg-[#f5f7f3] p-5">
+                          <p className="text-sm font-semibold text-[#718276]">
+                            Pickup
+                          </p>
+
+                          <p className="mt-1 text-xl font-black text-[#173b2a]">
+                            {shipment.origin ||
+                              "Pickup location"}
+                          </p>
+                        </div>
+
+                        <div className="card-hover rounded-2xl bg-[#f5f7f3] p-5">
+                          <p className="text-sm font-semibold text-[#718276]">
+                            Destination
+                          </p>
+
+                          <p className="mt-1 text-xl font-black text-[#173b2a]">
+                            {shipment.destination}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* CURRENT LOCATION */}
+
+                      <div className="mt-4 rounded-2xl border border-blue-100 bg-blue-50 p-5">
+                        <div className="flex items-center gap-3">
+                          <span className="text-xl">
+                            📍
+                          </span>
+
+                          <p className="text-sm font-black text-blue-700">
+                            Current Location
+                          </p>
+                        </div>
+
+                        <p className="mt-1 text-lg font-black text-blue-950">
+                          {shipment.current_location ||
+                            shipment.origin ||
+                            "Location unavailable"}
+                        </p>
+
+                        <p className="mt-1 text-xs text-blue-700">
+                          Last updated{" "}
+                          {new Date(
+                            shipment.updated_at
+                          ).toLocaleString()}
                         </p>
                       </div>
-                    )}
 
-                    {/* DELIVERY COMPLETE */}
+                      {/* SHIPMENT DETAILS */}
 
-                    {shipment.status ===
-                      "Delivered" && (
-                      <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
-                        <p className="font-black text-emerald-900">
-                          ✅ Shipment Delivered
-                        </p>
+                      <div className="mt-6 grid gap-4 md:grid-cols-3">
+                        <div className="rounded-2xl border border-[#e5ebe4] bg-white p-5">
+                          <p className="text-sm text-[#718276]">
+                            Quantity
+                          </p>
 
-                        <p className="mt-1 text-sm text-emerald-800">
-                          The shipment has
-                          reached{" "}
-                          {
-                            shipment.destination
-                          }{" "}
-                          successfully.
+                          <p className="mt-1 text-2xl font-black text-[#173b2a]">
+                            {shipment.total_quantity_kg.toLocaleString()} kg
+                          </p>
+                        </div>
+
+                        <div className="rounded-2xl border border-[#e5ebe4] bg-white p-5">
+                          <p className="text-sm text-[#718276]">
+                            Distance Remaining
+                          </p>
+
+                          <p className="mt-1 text-2xl font-black text-[#173b2a]">
+                            {shipment.estimated_distance_km !=
+                            null
+                              ? `${Number(
+                                  shipment.estimated_distance_km
+                                ).toFixed(1)} km`
+                              : "—"}
+                          </p>
+                        </div>
+
+                        <div className="rounded-2xl border border-[#e5ebe4] bg-white p-5">
+                          <p className="text-sm text-[#718276]">
+                            Estimated Time
+                          </p>
+
+                          <p className="mt-1 text-2xl font-black text-[#173b2a]">
+                            {shipment.estimated_time_minutes !=
+                            null
+                              ? `${Math.round(
+                                  Number(
+                                    shipment.estimated_time_minutes
+                                  )
+                                )} min`
+                              : "—"}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* LIVE MOVEMENT */}
+
+                      {shipment.status ===
+                        "In Transit" && (
+                        <div className="mt-6 overflow-hidden rounded-2xl border border-blue-100 bg-blue-50 p-5">
+                          <div className="flex items-center gap-3">
+                            <span className="truck text-2xl">
+                              🚚
+                            </span>
+
+                            <div>
+                              <p className="font-black text-blue-950">
+                                Shipment moving toward{" "}
+                                {shipment.destination}
+                              </p>
+
+                              <p className="mt-1 text-sm text-blue-800">
+                                HARVEX automatically advances
+                                shipment progress every 10 seconds.
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="mt-4 h-2 overflow-hidden rounded-full bg-blue-100">
+                            <div
+                              className="h-full rounded-full bg-blue-500 transition-all duration-1000"
+                              style={{
+                                width: `${shipmentProgress}%`,
+                              }}
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* DELIVERY COMPLETE */}
+
+                      {shipment.status ===
+                        "Delivered" && (
+                        <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
+                          <p className="font-black text-emerald-900">
+                            ✅ Shipment Delivered
+                          </p>
+
+                          <p className="mt-1 text-sm text-emerald-800">
+                            The shipment has reached{" "}
+                            {shipment.destination} successfully.
+                          </p>
+                        </div>
+                      )}
+
+                      {/* LIVE INDICATOR */}
+
+                      <div className="mt-6 flex items-center gap-3 rounded-2xl bg-[#f5f7f3] p-4">
+                        <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-emerald-500" />
+
+                        <p className="text-sm font-semibold text-[#607468]">
+                          Shipment data refreshes automatically
+                          every 10 seconds.
                         </p>
                       </div>
-                    )}
-
-                    {/* LIVE INDICATOR */}
-
-                    <div className="mt-6 flex items-center gap-3 rounded-2xl bg-slate-50 p-4">
-                      <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-emerald-500" />
-
-                      <p className="text-sm font-semibold text-slate-600">
-                        Shipment data refreshes
-                        automatically every 10
-                        seconds.
-                      </p>
                     </div>
                   </section>
                 )}
@@ -1954,6 +2078,23 @@ export default function BuyerPage() {
             )}
           </>
         )}
+
+        {/* FOOTER */}
+
+        <footer className="border-t border-[#dce6dc] py-8">
+          <div className="flex flex-col justify-between gap-3 text-sm text-[#718276] md:flex-row">
+            <p>
+              <span className="font-black text-[#173b2a]">
+                HARVEX
+              </span>{" "}
+              · Smart Agricultural Supply Network
+            </p>
+
+            <p>
+              Demand → Supply → Quality → Logistics → Delivery
+            </p>
+          </div>
+        </footer>
       </div>
     </main>
   );

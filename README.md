@@ -12,6 +12,7 @@ X-MILE is an intelligent, farmer-first agricultural marketplace and supply aggre
 - **Smart Harvest Pool**: Algorithmic supply aggregation prioritizing quality, pickup proximity, and volume fulfillment.
 - **Demand Forecasting**: Predictive demand insights to guide regional procurement and inventory balancing.
 - **Milestone Escrow & Logistics**: End-to-end transparent order tracking from acceptance to dispatch and delivery.
+- **X-MILE AI Assistant**: Responsive platform-wide conversational chatbot powered by OpenRouter for agricultural questions and platform guidance.
 
 ## Tech Stack
 
@@ -39,4 +40,6 @@ Configure the following environment variables in `.env.local`:
 NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-supabase-publishable-key
 GEMINI_API_KEY=your-gemini-api-key
+OPENROUTER_API_KEY=your-openrouter-api-key
+OPENROUTER_MODEL=openrouter/free
 ```

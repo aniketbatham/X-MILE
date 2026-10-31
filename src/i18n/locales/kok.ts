@@ -59,7 +59,10 @@ export const kok: TranslationDictionary = {
     "openLauncher": "जलद कृती मेनू उगडा",
     "closeLauncher": "जलद कृती मेनू बंद करा",
     "openAssistant": "सहाय्यक उगडा",
-    "closeAssistant": "सहाय्यक बंद करा"
+    "closeAssistant": "सहाय्यक बंद करा",
+    "languagesCount": "२३ भासो",
+    "noLanguagesFound": "खंयचीच जुळपी भास मेळ्ळी ना",
+    "other": "हेर"
   },
   "nav": {
     "home": "घर",
@@ -420,5 +423,24 @@ export const kok: TranslationDictionary = {
     "mapFallbackDesc": "पिकअप बिंदू आनी खरेदीदाराची सुवात सकयल सूचीत दिली आसा.",
     "pickupStop": "पिकअप बिंदू",
     "buyerDestination": "खरेदीदाराचो मुक्काम"
+  },
+  "validation": {
+    "uploadImage": "उपकार करून पिकाचे छायाचित्र अपलोड करा.",
+    "selectProduce": "उपकार करून पीक निवडा.",
+    "validQuantity": "उपकार करून योग्य प्रमाण प्रविष्ट करा.",
+    "analyzeFirst": "पयलीं पिकाच्या छायाचित्राचें विश्लेषण करा.",
+    "produceAddedSuccess": "X-MILE पूल्ड इन्व्हेंटरींत पीक यशस्वीपणान जोडलां.",
+    "saveListingFailed": "नोंदणी सांबाळपाक अपेस आयलें.",
+    "validRequirements": "उपकार करून खरेदीदाराची योग्य गरज प्रविष्ट करा.",
+    "noInventoryAvailable": "सद्या खंयचीच शेतकाराची इन्व्हेंटरी उपलब्ध ना.",
+    "supplyFailed": "पुरवण शोधपाक अपेस आयलें.",
+    "findSupplyFirst": "ऑर्डर करचे पयलीं उपकार करून पुरवण सोधा.",
+    "noInventorySelected": "खंयचीच शेतकाराची इन्व्हेंटरी निवडूंक ना.",
+    "orderAlreadyExists": "ह्या खरेदी विनंतीक पयलींच एक ऑर्डर आसा.",
+    "invalidOrderGrade": "अवैध ऑर्डर दर्जो. उपकार करून दर्जो A, B, वा C निवडा.",
+    "orderCreateFailed": "ऑर्डर तयार करपाक अपेस आयलें.",
+    "analysisFailed": "विश्लेषण अपेसी जालें.",
+    "unexpectedResponse": "AI कडून अनपेक्षित जाप आयली.",
+    "aiAnalysisFailed": "AI विश्लेषण अपेसी जालें. उपकार करून दुसरें छायाचित्र वापरून पळयात."
   }
 };

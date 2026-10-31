@@ -96,6 +96,9 @@ export interface TranslationDictionary {
     closeLauncher: string;
     openAssistant: string;
     closeAssistant: string;
+    languagesCount: string;
+    noLanguagesFound: string;
+    other: string;
   };
   nav: {
     home: string;
@@ -456,5 +459,24 @@ export interface TranslationDictionary {
     mapFallbackDesc: string;
     pickupStop: string;
     buyerDestination: string;
+  };
+  validation: {
+    uploadImage: string;
+    selectProduce: string;
+    validQuantity: string;
+    analyzeFirst: string;
+    produceAddedSuccess: string;
+    saveListingFailed: string;
+    validRequirements: string;
+    noInventoryAvailable: string;
+    supplyFailed: string;
+    findSupplyFirst: string;
+    noInventorySelected: string;
+    orderAlreadyExists: string;
+    invalidOrderGrade: string;
+    orderCreateFailed: string;
+    analysisFailed: string;
+    unexpectedResponse: string;
+    aiAnalysisFailed: string;
   };
 }

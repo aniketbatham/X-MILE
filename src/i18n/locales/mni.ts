@@ -59,7 +59,10 @@ export const mni: TranslationDictionary = {
     "openLauncher": "ꯌꯥꯝꯅꯥ ꯊꯨꯅꯥ ꯇꯧꯕꯥ ꯃꯦꯅꯨ ꯍꯥꯡꯗꯣꯛꯎ",
     "closeLauncher": "ꯌꯥꯝꯅꯥ ꯊꯨꯅꯥ ꯇꯧꯕꯥ ꯃꯦꯅꯨ ꯊꯤꯡꯖꯤꯜꯂꯨ",
     "openAssistant": "ꯃꯇꯦꯡ ꯄꯥꯡꯕꯥ ꯍꯥꯡꯗꯣꯛꯎ",
-    "closeAssistant": "ꯃꯇꯦꯡ ꯄꯥꯡꯕꯥ ꯊꯤꯡꯖꯤꯜꯂꯨ"
+    "closeAssistant": "ꯃꯇꯦꯡ ꯄꯥꯡꯕꯥ ꯊꯤꯡꯖꯤꯜꯂꯨ",
+    "languagesCount": "ꯂꯣꯟ ꯲꯳",
+    "noLanguagesFound": "ꯆꯥꯅꯕ ꯂꯣꯟ ꯑꯃꯠꯇ ꯐꯪꯗꯦ",
+    "other": "ꯑꯇꯣꯞꯄ"
   },
   "nav": {
     "home": "ꯌꯨꯝ",
@@ -420,5 +423,24 @@ export const mni: TranslationDictionary = {
     "mapFallbackDesc": "ꯄꯤꯛ-ꯑꯞ ꯄꯣꯏꯟꯇꯁꯤꯡ ꯑꯃꯁꯨꯡ ꯂꯩꯔꯣꯏꯒꯤ ꯃꯐꯝ ꯃꯈꯥꯗꯥ ꯂꯤꯁ꯭ꯠ ꯇꯧꯔꯦ꯫",
     "pickupStop": "ꯄꯤꯛ-ꯑꯞ ꯄꯣꯏꯟꯇ",
     "buyerDestination": "ꯂꯩꯔꯣꯏ ꯌꯧꯒꯗꯕꯥ ꯃꯐꯝ"
+  },
+  "validation": {
+    "uploadImage": "ꯆꯥꯅꯕꯤꯗꯨꯅ ꯄꯣꯠꯊꯣꯛꯀꯤ ꯐꯣꯇꯣ ꯑꯃ ꯑꯄꯂꯣꯗ ꯇꯧꯕꯤꯌꯨ꯫",
+    "selectProduce": "ꯆꯥꯅꯕꯤꯗꯨꯅ ꯄꯣꯠꯊꯣꯛ ꯈꯜꯂꯨ꯫",
+    "validQuantity": "ꯆꯥꯅꯕꯤꯗꯨꯅ ꯑꯆꯨꯝꯕ ꯆꯥꯡ ꯏꯌꯨ꯫",
+    "analyzeFirst": "ꯍꯥꯟꯅ ꯄꯣꯠꯊꯣꯛꯀꯤ ꯐꯣꯇꯣ ꯊꯤꯖꯤꯜꯂꯨ꯫",
+    "produceAddedSuccess": "X-MILE ꯄꯨꯜ ꯏꯟꯚꯦꯟꯇꯔꯤꯗ ꯄꯣꯠꯊꯣꯛ ꯃꯥꯌꯄꯥꯛꯅ ꯍꯥꯞꯆꯤꯟꯈ꯭ꯔꯦ꯫",
+    "saveListingFailed": "ꯂꯤꯁ꯭ꯇꯤꯡ ꯊꯝꯕ ꯉꯃꯗ꯭ꯔꯦ꯫",
+    "validRequirements": "ꯆꯥꯅꯕꯤꯗꯨꯅ ꯂꯩꯕꯤꯕꯒꯤ ꯑꯆꯨꯝꯕ ꯃꯊꯧ ꯇꯥꯕꯁꯤꯡ ꯏꯌꯨ꯫",
+    "noInventoryAvailable": "ꯍꯧꯖꯤꯛ ꯂꯧꯃꯤꯒꯤ ꯄꯣꯠꯊꯣꯛ ꯑꯃꯠꯇ ꯂꯩꯇꯦ꯫",
+    "supplyFailed": "ꯄꯣꯠ ꯐꯪꯐꯝ ꯊꯤꯕ ꯉꯃꯗ꯭ꯔꯦ꯫",
+    "findSupplyFirst": "ꯑꯣꯔꯗꯔ ꯁꯦꯝꯗ꯭ꯔꯤꯉꯩꯗ ꯍꯥꯟꯅ ꯄꯣꯠ ꯐꯪꯐꯝ ꯊꯤꯌꯨ꯫",
+    "noInventorySelected": "ꯂꯧꯃꯤꯒꯤ ꯄꯣꯠꯊꯣꯛ ꯑꯃꯠꯇ ꯈꯟꯗꯦ꯫",
+    "orderAlreadyExists": "ꯄꯣꯠ ꯂꯩꯕꯒꯤ ꯇꯛꯁꯤꯅꯕ ꯑꯁꯤꯗ ꯍꯥꯟꯅꯅ ꯑꯣꯔꯗꯔ ꯑꯃ ꯂꯩꯔꯦ꯫",
+    "invalidOrderGrade": "ꯑꯔꯥꯟꯕ ꯑꯣꯔꯗꯔ ꯒ꯭ꯔꯦꯗ꯫ ꯆꯥꯅꯕꯤꯗꯨꯅ ꯒ꯭ꯔꯦꯗ A, B, ꯅꯠꯇ꯭ꯔꯒ C ꯈꯜꯂꯨ꯫",
+    "orderCreateFailed": "ꯑꯣꯔꯗꯔ ꯁꯦꯝꯕ ꯉꯃꯗ꯭ꯔꯦ꯫",
+    "analysisFailed": "ꯊꯤꯖꯤꯟꯕ ꯃꯥꯌꯄꯥꯛꯈꯤꯗꯦ꯫",
+    "unexpectedResponse": "AI ꯅ ꯊꯥꯖꯗꯕ ꯄꯥꯎꯈꯨꯝ ꯄꯤꯔꯛꯈ꯭ꯔꯦ꯫",
+    "aiAnalysisFailed": "AI ꯊꯤꯖꯤꯟꯕ ꯃꯥꯌꯄꯥꯛꯈꯤꯗꯦ꯫ ꯆꯥꯅꯕꯤꯗꯨꯅ ꯑꯇꯣꯞꯄ ꯐꯣꯇꯣ ꯑꯃ ꯆꯥꯡꯌꯦꯡ ꯇꯧꯕꯤꯌꯨ꯫"
   }
 };

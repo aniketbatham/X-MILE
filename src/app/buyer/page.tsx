@@ -153,7 +153,7 @@ export default function BuyerPage() {
       requestedQuantity <= 0
     ) {
       setError(
-        "Please enter valid buyer requirements."
+        t("validation.validRequirements")
       );
       return;
     }
@@ -171,7 +171,7 @@ export default function BuyerPage() {
 
       if (inventory.length === 0) {
         setError(
-          "No farmer inventory is currently available."
+          t("validation.noInventoryAvailable")
         );
         return;
       }
@@ -226,7 +226,7 @@ export default function BuyerPage() {
       setError(
         err instanceof Error
           ? err.message
-          : "Failed to find supply."
+          : t("validation.supplyFailed")
       );
     } finally {
       setLoading(false);
@@ -240,7 +240,7 @@ export default function BuyerPage() {
   async function createOrder() {
     if (!result) {
       setError(
-        "Please find supply before creating an order."
+        t("validation.findSupplyFirst")
       );
       return;
     }
@@ -250,14 +250,14 @@ export default function BuyerPage() {
       0
     ) {
       setError(
-        "No farmer inventory has been selected."
+        t("validation.noInventorySelected")
       );
       return;
     }
 
     if (order) {
       setError(
-        "This procurement request already has an order."
+        t("validation.orderAlreadyExists")
       );
       return;
     }
@@ -286,7 +286,7 @@ export default function BuyerPage() {
         orderGrade !== "C"
       ) {
         setError(
-          "Invalid order grade. Please select Grade A, B, or C."
+          t("validation.invalidOrderGrade")
         );
         return;
       }
@@ -346,7 +346,7 @@ export default function BuyerPage() {
       if (!response.ok) {
         throw new Error(
           data.error ||
-            "Failed to create X-MILE order."
+            t("validation.orderCreateFailed")
         );
       }
 

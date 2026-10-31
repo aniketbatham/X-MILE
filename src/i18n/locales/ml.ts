@@ -59,7 +59,10 @@ export const ml: TranslationDictionary = {
     "openLauncher": "X-MILE പ്രവർത്തന ലോഞ്ചർ തുറക്കുക",
     "closeLauncher": "ലോഞ്ചർ അടയ്ക്കുക",
     "openAssistant": "X-MILE AI അസിസ്റ്റന്റ് തുറക്കുക",
-    "closeAssistant": "AI അസിസ്റ്റന്റ് അടയ്ക്കുക"
+    "closeAssistant": "AI അസിസ്റ്റന്റ് അടയ്ക്കുക",
+    "languagesCount": "23 ഭാഷകൾ",
+    "noLanguagesFound": "പൊരുത്തപ്പെടുന്ന ഭാഷകൾ കണ്ടെത്തിയില്ല",
+    "other": "മറ്റുള്ളവ"
   },
   "nav": {
     "home": "ഹോം",
@@ -420,5 +423,24 @@ export const ml: TranslationDictionary = {
     "mapFallbackDesc": "മാപ്പ് കാണുന്നതിന് സാധുവായ OSRM റൂട്ട് സൃഷ്ടിക്കുക.",
     "pickupStop": "പിക്കപ്പ് #",
     "buyerDestination": "X-MILE ലക്ഷ്യസ്ഥാനം"
+  },
+  "validation": {
+    "uploadImage": "ദയവായി വിളയുടെ ചിത്രം അപ്‌ലോഡ് ചെയ്യുക.",
+    "selectProduce": "ദയവായി വിള തിരഞ്ഞെടുക്കുക.",
+    "validQuantity": "ദയവായി സാധുവായ അളവ് രേഖപ്പെടുത്തുക.",
+    "analyzeFirst": "ദയവായി ആദ്യം വിളയുടെ ചിത്രം വിശകലനം ചെയ്യുക.",
+    "produceAddedSuccess": "വിള X-MILE പൂൾ ചെയ്ത ഇൻവെന്ററിയിലേക്ക് വിജയകരമായി ചേർത്തു.",
+    "saveListingFailed": "ലിസ്റ്റിംഗ് സേവ് ചെയ്യുന്നതിൽ പരാജയപ്പെട്ടു.",
+    "validRequirements": "ദയവായി സാധുവായ വാങ്ങൽ ആവശ്യകതകൾ നൽകുക.",
+    "noInventoryAvailable": "നിലവിൽ കർഷക ഇൻവെന്ററി ലഭ്യമല്ല.",
+    "supplyFailed": "സപ്ലൈ കണ്ടെത്തുന്നതിൽ പരാജയപ്പെട്ടു.",
+    "findSupplyFirst": "ഓർഡർ സൃഷ്ടിക്കുന്നതിന് മുൻപ് സപ്ലൈ കണ്ടെത്തുക.",
+    "noInventorySelected": "കർഷക ഇൻവെന്ററിയൊന്നും തിരഞ്ഞെടുത്തിട്ടില്ല.",
+    "orderAlreadyExists": "ഈ സംഭരണ ​​അഭ്യർത്ഥനയ്ക്ക് ഇതിനകം ഒരു ഓർഡർ ഉണ്ട്.",
+    "invalidOrderGrade": "അസാധുവായ ഓർഡർ ഗ്രേഡ്. ദയവായി ഗ്രേഡ് A, B, അല്ലെങ്കിൽ C തിരഞ്ഞെടുക്കുക.",
+    "orderCreateFailed": "ഓർഡർ സൃഷ്ടിക്കുന്നതിൽ പരാജയപ്പെട്ടു.",
+    "analysisFailed": "വിശകലനം പരാജയപ്പെട്ടു.",
+    "unexpectedResponse": "AI അപ്രതീക്ഷിത പ്രതികരണം നൽകി.",
+    "aiAnalysisFailed": "AI വിശകലനം പരാജയപ്പെട്ടു. ദയവായി മറ്റൊരു ചിത്രം പരീക്ഷിക്കുക."
   }
 };

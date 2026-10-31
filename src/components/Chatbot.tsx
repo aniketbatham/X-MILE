@@ -11,21 +11,6 @@ type Message = {
   timestamp: string;
 };
 
-const STARTER_QUESTIONS = [
-  "How does X-MILE help smallholder farmers?",
-  "How does AI produce quality grading work?",
-  "What is the Smart Harvest Pool?",
-  "How do buyers submit procurement requirements?",
-];
-
-const INITIAL_WELCOME_MESSAGE: Message = {
-  id: "welcome-msg",
-  role: "assistant",
-  content:
-    "Hello! I am the **X-MILE AI Assistant**.\n\n*Every MILE Matters, Every FARMER Matters.*\n\nI can help answer agricultural queries, explain our AI produce quality grading, guide you through farmer pooling, or help you navigate the platform. What would you like to know?",
-  timestamp: "",
-};
-
 type ChatbotProps = {
   isOpen?: boolean;
   onClose?: () => void;
@@ -224,7 +209,7 @@ export default function Chatbot({
       const errorMsg =
         err instanceof Error
           ? err.message
-          : "An unexpected error occurred while communicating with the assistant.";
+          : t("common.error");
       setErrorMessage(errorMsg);
     } finally {
       setIsLoading(false);
@@ -308,7 +293,7 @@ export default function Chatbot({
         <div className="fixed bottom-5 right-5 z-50">
           <button
             onClick={handleToggle}
-            aria-label={isOpen ? "Close X-MILE AI Assistant" : "Open X-MILE AI Assistant"}
+            aria-label={isOpen ? t("chatbot.closeChat") : t("common.chatWithAi")}
             className="group relative flex h-14 w-14 items-center justify-center rounded-2xl bg-[#173b2a] text-white shadow-xl transition-all duration-300 hover:scale-105 hover:bg-[#1f6b3b] hover:shadow-2xl active:scale-95 focus:outline-none focus:ring-4 focus:ring-emerald-400/40"
           >
             {isOpen ? (
@@ -366,9 +351,9 @@ export default function Chatbot({
             <div className="flex items-center gap-1">
               <button
                 onClick={handleClearConversation}
-                title="Clear conversation"
+                title={t("chatbot.clearChat")}
                 className="rounded-lg p-1.5 text-white/70 hover:bg-white/10 hover:text-white transition-colors"
-                aria-label="Clear conversation"
+                aria-label={t("chatbot.clearChat")}
               >
                 <svg
                   className="h-4 w-4"
@@ -387,9 +372,9 @@ export default function Chatbot({
 
               <button
                 onClick={handleClose}
-                title="Close chat"
+                title={t("chatbot.closeChat")}
                 className="rounded-lg p-1.5 text-white/70 hover:bg-white/10 hover:text-white transition-colors"
-                aria-label="Close chat"
+                aria-label={t("chatbot.closeChat")}
               >
                 <svg
                   className="h-4 w-4"

@@ -59,7 +59,10 @@ export const mr: TranslationDictionary = {
     "openLauncher": "X-MILE कृती लाँचर उघडा",
     "closeLauncher": "लाँचर बंद करा",
     "openAssistant": "X-MILE AI सहाय्यक उघडा",
-    "closeAssistant": "AI सहाय्यक बंद करा"
+    "closeAssistant": "AI सहाय्यक बंद करा",
+    "languagesCount": "२३ भाषा",
+    "noLanguagesFound": "कोणतीही जुळणारी भाषा आढळली नाही",
+    "other": "इतर"
   },
   "nav": {
     "home": "मुख्यपृष्ठ",
@@ -420,5 +423,24 @@ export const mr: TranslationDictionary = {
     "mapFallbackDesc": "नकाशा पाहण्यासाठी वैध OSRM मार्ग तयार करा.",
     "pickupStop": "पिकअप #",
     "buyerDestination": "X-MILE खरेदीदार गंतव्यस्थान"
+  },
+  "validation": {
+    "uploadImage": "कृपया शेतमालाचा एक फोटो अपलोड करा.",
+    "selectProduce": "कृपया शेतमाल निवडा.",
+    "validQuantity": "कृपया वैध प्रमाण प्रविष्ट करा.",
+    "analyzeFirst": "कृपया आधी शेतमालाच्या फोटोचे विश्लेषण करा.",
+    "produceAddedSuccess": "X-MILE पूल्ड इन्व्हेंटरीमध्ये शेतमाल यशस्वीरीत्या जोडला गेला.",
+    "saveListingFailed": "नोंदणी जतन करण्यात अयशस्वी.",
+    "validRequirements": "कृपया खरेदीदाराच्या वैध गरजा प्रविष्ट करा.",
+    "noInventoryAvailable": "सध्या कोणतीही शेतकरी इन्व्हेंटरी उपलब्ध नाही.",
+    "supplyFailed": "पुरवठा शोधण्यात अयशस्वी.",
+    "findSupplyFirst": "कृपया ऑर्डर तयार करण्यापूर्वी पुरवठा शोधा.",
+    "noInventorySelected": "कोणतीही शेतकरी इन्व्हेंटरी निवडलेली नाही.",
+    "orderAlreadyExists": "या खरेदी विनंतीसाठी आधीच एक ऑर्डर अस्तित्वात आहे.",
+    "invalidOrderGrade": "अवैध ऑर्डर श्रेणी. कृपया ग्रेड A, B किंवा C निवडा.",
+    "orderCreateFailed": "ऑर्डर तयार करण्यात अयशस्वी.",
+    "analysisFailed": "विश्लेषण अयशस्वी झाले.",
+    "unexpectedResponse": "AI ने अनपेक्षित प्रतिसाद दिला.",
+    "aiAnalysisFailed": "AI विश्लेषण अयशस्वी झाले. कृपया दुसरा फोटो वापरून पहा."
   }
 };

@@ -59,7 +59,10 @@ export const ks: TranslationDictionary = {
     "openLauncher": "تیز عمل مینو کھولِو",
     "closeLauncher": "تیز عمل مینو بنٛد کٔرِو",
     "openAssistant": "معاون کھولِو",
-    "closeAssistant": "معاون بنٛد کٔرِو"
+    "closeAssistant": "معاون بنٛد کٔرِو",
+    "languagesCount": "۲۳ زبانہٕ",
+    "noLanguagesFound": "کانٛہہ زَبان میلہِ نہٕ",
+    "other": "باقی"
   },
   "nav": {
     "home": "ہوم",
@@ -420,5 +423,24 @@ export const ks: TranslationDictionary = {
     "mapFallbackDesc": "پِک اَپ پوائنٹس تہٕ خریدار منزل لِسٹ طور پؠٹھ دِتھ چِھ۔",
     "pickupStop": "پِک اَپ پوائنٹ",
     "buyerDestination": "خریدار منزل"
+  },
+  "validation": {
+    "uploadImage": "مہربٲنی کٔرِتھ تٔصویر کٔرِو اپلوڈ۔",
+    "selectProduce": "مہربٲنی کٔرِتھ فصٕل چھانٹِو۔",
+    "validQuantity": "مہربٲنی کٔرِتھ صٔحیح تعداد لؠکھِو۔",
+    "analyzeFirst": "گوڈٕ کٔرِو فوٹو تجزیہٕ۔",
+    "produceAddedSuccess": "X-MILE پُول مَنٛز کٔرِو فصٕل کامِیابی سان شٲمِل۔",
+    "saveListingFailed": "فہرست محفوٗظ گژھنس مَنٛز رکاوٹ۔",
+    "validRequirements": "مہربٲنی کٔرِتھ گاہکٕچ صٔحیح ضروٗرت درٕج کٔرِو۔",
+    "noInventoryAvailable": "ازکَل چھُ نہٕ کانٛہہ اسٽاک دٔستیاب۔",
+    "supplyFailed": "سپلائی لبنس مَنٛز ناکامی۔",
+    "findSupplyFirst": "آرڈر بناونہٕ برونٛٹھ کٔرِو سپلائی تلاش۔",
+    "noInventorySelected": "کانٛہہ فصٕل چھُ نہٕ چُننہٕ آمُت۔",
+    "orderAlreadyExists": "امِچ خٔریٖداری ہُنٛد آرڈر چھُ گوڈے موجوٗد۔",
+    "invalidOrderGrade": "غلط گرٛیڈ۔ مہربٲنی کٔرِتھ گریڈ A، B یا C چُنِو۔",
+    "orderCreateFailed": "آرڈر بناونس مَنٛز ناکامی۔",
+    "analysisFailed": "تجزیہٕ گوٚو ناکام۔",
+    "unexpectedResponse": "AI ین دِیُو غٲر متوقع جواب۔",
+    "aiAnalysisFailed": "AI تجزیہٕ گوٚو ناکام۔ مہربٲنی کٔرِتھ بییہٚ تصوِیر کٔرِو کوٗشِش۔"
   }
 };

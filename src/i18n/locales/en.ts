@@ -59,7 +59,10 @@ export const en: TranslationDictionary = {
     "openLauncher": "Open X-MILE actions launcher",
     "closeLauncher": "Close actions launcher",
     "openAssistant": "Open X-MILE AI Assistant",
-    "closeAssistant": "Close X-MILE AI Assistant"
+    "closeAssistant": "Close X-MILE AI Assistant",
+    "languagesCount": "23 Languages",
+    "noLanguagesFound": "No languages found matching",
+    "other": "Other"
   },
   "nav": {
     "home": "Home",
@@ -420,5 +423,24 @@ export const en: TranslationDictionary = {
     "mapFallbackDesc": "Generate a valid OSRM route to display the map.",
     "pickupStop": "Pickup #",
     "buyerDestination": "X-MILE Buyer"
+  },
+  "validation": {
+    "uploadImage": "Please upload a produce image.",
+    "selectProduce": "Please select the produce.",
+    "validQuantity": "Please enter a valid quantity.",
+    "analyzeFirst": "Please analyze the produce image first.",
+    "produceAddedSuccess": "Produce successfully added to X-MILE pooled inventory.",
+    "saveListingFailed": "Failed to save listing.",
+    "validRequirements": "Please enter valid buyer requirements.",
+    "noInventoryAvailable": "No farmer inventory is currently available.",
+    "supplyFailed": "Failed to find supply.",
+    "findSupplyFirst": "Please find supply before creating an order.",
+    "noInventorySelected": "No farmer inventory has been selected.",
+    "orderAlreadyExists": "This procurement request already has an order.",
+    "invalidOrderGrade": "Invalid order grade. Please select Grade A, B, or C.",
+    "orderCreateFailed": "Failed to create order.",
+    "analysisFailed": "Analysis failed.",
+    "unexpectedResponse": "AI returned an unexpected response.",
+    "aiAnalysisFailed": "AI analysis failed. Please try another image."
   }
 };

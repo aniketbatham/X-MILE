@@ -69,19 +69,19 @@ export default function QualityPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Analysis failed");
+        throw new Error(data.error || t("validation.analysisFailed"));
       }
 
       const text = data.result;
 
       if (typeof text !== "string") {
-        throw new Error("AI returned an unexpected response.");
+        throw new Error(t("validation.unexpectedResponse"));
       }
 
       const jsonMatch = text.match(/\{[\s\S]*\}/);
 
       if (!jsonMatch) {
-        throw new Error("AI returned an unexpected response.");
+        throw new Error(t("validation.unexpectedResponse"));
       }
 
       const parsed = JSON.parse(jsonMatch[0]) as QualityResult;
@@ -96,7 +96,7 @@ export default function QualityPage() {
       setError(
         err instanceof Error
           ? err.message
-          : "AI analysis failed. Please try another image."
+          : t("validation.aiAnalysisFailed")
       );
     } finally {
       setTimeout(() => {
@@ -472,7 +472,7 @@ export default function QualityPage() {
                 <option value="Cabbage">{t("quality.produceTypes.cabbage")}</option>
                 <option value="Brinjal">{t("quality.produceTypes.brinjal")}</option>
                 <option value="Chilli">{t("quality.produceTypes.chilli")}</option>
-                <option value="Other">Other</option>
+                <option value="Other">{t("common.other")}</option>
               </select>
             </div>
 

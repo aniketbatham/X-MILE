@@ -59,7 +59,10 @@ export const sat: TranslationDictionary = {
     "openLauncher": "X-MILE ᱮᱠᱥᱚᱱ ᱞᱚᱸᱪᱟᱨ ᱠᱷᱩᱞᱟᱹᱭ ᱢᱮ",
     "closeLauncher": "ᱞᱚᱸᱪᱟᱨ ᱵᱚᱸᱫᱽ ᱢᱮ",
     "openAssistant": "X-MILE AI ᱜᱚᱲᱚᱭᱤᱡ ᱠᱷᱩᱞᱟᱹᱭ ᱢᱮ",
-    "closeAssistant": "AI ᱜᱚᱲᱚᱭᱤᱡ ᱵᱚᱸᱫᱽ ᱢᱮ"
+    "closeAssistant": "AI ᱜᱚᱲᱚᱭᱤᱡ ᱵᱚᱸᱫᱽ ᱢᱮ",
+    "languagesCount": "᱒᱓ ᱯᱟᱹᱨᱥᱤ",
+    "noLanguagesFound": "ᱡᱩᱲᱟᱹᱣᱜ ᱠᱟᱱ ᱡᱟᱦᱟᱸ ᱯᱟᱹᱨᱥᱤ ᱵᱟᱝ ᱧᱟᱢ ᱞᱮᱱᱟ",
+    "other": "ᱮᱴᱟᱜ"
   },
   "nav": {
     "home": "ᱢᱩᱬᱩᱛ",
@@ -420,5 +423,24 @@ export const sat: TranslationDictionary = {
     "mapFallbackDesc": "ᱱᱚᱠᱥᱟ ᱧᱮᱞ ᱞᱟᱹᱜᱤᱫ ᱥᱟᱹᱨᱤ OSRM ᱦᱚᱨ ᱵᱮᱱᱟᱣ ᱢᱮ᱾",
     "pickupStop": "ᱯᱤᱠᱟᱯ #",
     "buyerDestination": "X-MILE ᱠᱤᱨᱤᱧᱤᱭᱟᱹ ᱴᱷᱟᱶ"
+  },
+  "validation": {
+    "uploadImage": "ᱫᱟᱭᱟ ᱠᱟᱛᱮ ᱪᱟᱥ ᱨᱮᱱᱟᱜ ᱢᱤᱫ ᱪᱤᱛᱟᱹᱨ ᱟᱯᱞᱳᱰ ᱢᱮ ᱾",
+    "selectProduce": "ᱫᱟᱭᱟ ᱠᱟᱛᱮ ᱪᱟᱥ ᱡᱤᱱᱤᱥ ᱵᱟᱪᱷᱟᱣ ᱢᱮ ᱾",
+    "validQuantity": "ᱫᱟᱭᱟ ᱠᱟᱛᱮ ᱴᱷᱤᱠ ᱞᱮᱠᱷᱟ ᱮᱢ ᱢᱮ ᱾",
+    "analyzeFirst": "ᱯᱩᱭᱞᱩ ᱪᱟᱥ ᱪᱤᱛᱟᱹᱨ ᱯᱟᱨᱠᱷᱟᱣ ᱢᱮ ᱾",
+    "produceAddedSuccess": "X-MILE ᱨᱮ ᱪᱟᱥ ᱡᱤᱱᱤᱥ ᱥᱟᱹᱛ ᱥᱟᱶᱛᱮ ᱥᱮᱞᱮᱫ ᱮᱱᱟ ᱾",
+    "saveListingFailed": "ᱛᱟᱹᱞᱠᱟᱹ ᱥᱟᱺᱪᱟᱣ ᱵᱟᱝ ᱦᱩᱭ ᱞᱮᱱᱟ ᱾",
+    "validRequirements": "ᱫᱟᱭᱟ ᱠᱟᱛᱮ ᱠᱤᱨᱤᱧᱤᱡᱟᱜ ᱴᱷᱤᱠ ᱞᱟᱹᱠᱛᱤ ᱮᱢ ᱢᱮ ᱾",
+    "noInventoryAvailable": "ᱱᱤᱛᱚᱜ ᱪᱟᱹᱥᱤ ᱴᱷᱮᱱ ᱪᱮᱫ ᱦᱚᱸ ᱡᱤᱱᱤᱥ ᱵᱟᱹᱱᱩᱜᱼᱟ ᱾",
+    "supplyFailed": "ᱥᱟᱯᱞᱟᱭ ᱧᱟᱢ ᱵᱟᱝ ᱦᱩᱭ ᱞᱮᱱᱟ ᱾",
+    "findSupplyFirst": "ᱚᱨᱰᱟᱨ ᱵᱮᱱᱟᱣ ᱢᱟᱲᱟᱝ ᱥᱟᱯᱞᱟᱭ ᱯᱟᱱᱛᱷᱟᱭ ᱢᱮ ᱾",
+    "noInventorySelected": "ᱪᱮᱫ ᱪᱟᱹᱥᱤ ᱡᱤᱱᱤᱥ ᱦᱚᱸ ᱵᱟᱪᱷᱟᱣ ᱵᱟᱝ ᱦᱩᱭ ᱟᱠᱟᱱᱟ ᱾",
+    "orderAlreadyExists": "ᱱᱚᱣᱟ ᱠᱤᱨᱤᱧ ᱱᱮᱦᱚᱸᱨ ᱨᱮ ᱢᱟᱲᱟᱝ ᱠᱷᱚᱱ ᱜᱮ ᱚᱨᱰᱟᱨ ᱢᱮᱱᱟᱜᱼᱟ ᱾",
+    "invalidOrderGrade": "ᱵᱟᱹᱲᱤᱡ ᱚᱨᱰᱟᱨ ᱜᱽᱨᱮᱰ ᱾ ᱫᱟᱭᱟ ᱠᱟᱛᱮ ᱜᱽᱨᱮᱰ A, B, ᱥᱮ C ᱵᱟᱪᱷᱟᱣ ᱢᱮ ᱾",
+    "orderCreateFailed": "ᱚᱨᱰᱟᱨ ᱵᱮᱱᱟᱣ ᱵᱟᱝ ᱦᱩᱭ ᱞᱮᱱᱟ ᱾",
+    "analysisFailed": "ᱯᱟᱨᱠᱷᱟᱣ ᱵᱟᱝ ᱦᱩᱭ ᱞᱮᱱᱟ ᱾",
+    "unexpectedResponse": "AI ᱟᱸᱥ ᱵᱟᱝ ᱛᱟᱦᱮᱸ ᱠᱟᱱ ᱞᱮᱠᱟ ᱛᱮᱞᱟ ᱮᱢ ᱠᱮᱫᱼᱟ ᱾",
+    "aiAnalysisFailed": "AI ᱯᱟᱨᱠᱷᱟᱣ ᱵᱟᱝ ᱦᱩᱭ ᱞᱮᱱᱟ ᱾ ᱫᱟᱭᱟ ᱠᱟᱛᱮ ᱮᱴᱟᱜ ᱪᱤᱛᱟᱹᱨ ᱞᱟᱜᱟᱣ ᱢᱮ ᱾"
   }
 };

@@ -59,7 +59,10 @@ export const or: TranslationDictionary = {
     "openLauncher": "X-MILE କାର୍ଯ୍ୟ ଲଞ୍ଚର୍ ଖୋଲନ୍ତୁ",
     "closeLauncher": "ଲଞ୍ଚର୍ ବନ୍ଦ କରନ୍ତୁ",
     "openAssistant": "X-MILE AI ସହାୟକ ଖୋଲନ୍ତୁ",
-    "closeAssistant": "AI ସହାୟକ ବନ୍ଦ କରନ୍ତୁ"
+    "closeAssistant": "AI ସହାୟକ ବନ୍ଦ କରନ୍ତୁ",
+    "languagesCount": "୨୩ଟି ଭାଷା",
+    "noLanguagesFound": "ମେଳ ଖାଉଥିବା କୌଣସି ଭାଷା ମିଳିଲା ନାହିଁ",
+    "other": "ଅନ୍ୟାନ୍ୟ"
   },
   "nav": {
     "home": "ମୁଖ୍ୟ ପୃଷ୍ଠା",
@@ -420,5 +423,24 @@ export const or: TranslationDictionary = {
     "mapFallbackDesc": "ମାନଚିତ୍ର ଦେଖିବାକୁ ବୈଧ OSRM ରୁଟ୍ ପ୍ରସ୍ତୁତ କରନ୍ତୁ।",
     "pickupStop": "ପିକଅପ୍ #",
     "buyerDestination": "X-MILE କ୍ରେତା ଗନ୍ତବ୍ୟସ୍ଥଳ"
+  },
+  "validation": {
+    "uploadImage": "ଦୟାକରି ଫସଲର ଗୋଟିଏ ଫଟୋ ଅପଲୋଡ୍ କରନ୍ତୁ।",
+    "selectProduce": "ଦୟାକରି ଫସଲ ଚୟନ କରନ୍ତୁ।",
+    "validQuantity": "ଦୟାକରି ଏକ ବୈଧ ପରିମାଣ ପ୍ରବେଶ କରନ୍ତୁ।",
+    "analyzeFirst": "ଦୟାକରି ପ୍ରଥମେ ଫସଲ ଫଟୋର ବିଶ୍ଳେଷଣ କରନ୍ତୁ।",
+    "produceAddedSuccess": "X-MILE ପୁଲ୍ ଇନଭେଣ୍ଟୋରୀରେ ଫସଲ ସଫଳତାର ସହ ଯୋଡ଼ାଗଲା।",
+    "saveListingFailed": "ତାଲିକା ସଂରକ୍ଷଣ କରିବାରେ ବିଫଳ ହେଲା।",
+    "validRequirements": "ଦୟାକରି କ୍ରେତାଙ୍କ ବୈଧ ଆବଶ୍ୟକତା ପ୍ରବେଶ କରନ୍ତୁ।",
+    "noInventoryAvailable": "ବର୍ତ୍ତମାନ କୌଣସି କୃଷକ ଇନଭେଣ୍ଟୋରୀ ଉପଲବ୍ଧ ନାହିଁ।",
+    "supplyFailed": "ଯୋଗାଣ ଖୋଜିବାରେ ବିଫଳ ହେଲା।",
+    "findSupplyFirst": "ଅର୍ଡର ସୃଷ୍ଟି କରିବା ପୂର୍ବରୁ ଦୟାକରି ଯୋଗାଣ ଖୋଜନ୍ତୁ।",
+    "noInventorySelected": "କୌଣସି କୃଷକ ଇନଭେଣ୍ଟୋରୀ ଚୟନ କରାଯାଇ ନାହିଁ।",
+    "orderAlreadyExists": "ଏହି କ୍ରୟ ଅନୁରୋଧର ପୂର୍ବରୁ ଏକ ଅର୍ଡର ରହିଛି।",
+    "invalidOrderGrade": "ଅବୈଧ ଅର୍ଡର ଗ୍ରେଡ୍। ଦୟାକରି ଗ୍ରେଡ୍ A, B, କିମ୍ବା C ଚୟନ କରନ୍ତୁ।",
+    "orderCreateFailed": "ଅର୍ଡର ସୃଷ୍ଟି କରିବାରେ ବିଫଳ ହେଲା।",
+    "analysisFailed": "ବିଶ୍ଳେଷଣ ବିଫଳ ହେଲା।",
+    "unexpectedResponse": "AI ଅପ୍ରତ୍ୟାଶିତ ପ୍ରତିକ୍ରିୟା ଦେଇଛି।",
+    "aiAnalysisFailed": "AI ବିଶ୍ଳେଷଣ ବିଫଳ ହେଲା। ଦୟାକରି ଅନ୍ୟ ଏକ ଫଟୋ ଚେଷ୍ଟା କରନ୍ତୁ।"
   }
 };

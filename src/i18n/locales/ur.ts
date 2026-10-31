@@ -59,7 +59,10 @@ export const ur: TranslationDictionary = {
     "openLauncher": "X-MILE ایکشن لانچر کھولیں",
     "closeLauncher": "ایکشن لانچر بند کریں",
     "openAssistant": "X-MILE AI اسسٹنٹ کھولیں",
-    "closeAssistant": "AI اسسٹنٹ بند کریں"
+    "closeAssistant": "AI اسسٹنٹ بند کریں",
+    "languagesCount": "۲۳ زبانیں",
+    "noLanguagesFound": "کوئی مماثل زبان نہیں ملی",
+    "other": "دیگر"
   },
   "nav": {
     "home": "ہوم",
@@ -420,5 +423,24 @@ export const ur: TranslationDictionary = {
     "mapFallbackDesc": "نقشہ دیکھنے کے لیے درست OSRM روٹ بنائیں۔",
     "pickupStop": "پک اپ #",
     "buyerDestination": "X-MILE خریدار کی منزل"
+  },
+  "validation": {
+    "uploadImage": "براہ کرم فصل کی ایک تصویر اپ لوڈ کریں۔",
+    "selectProduce": "براہ کرم فصل کا انتخاب کریں۔",
+    "validQuantity": "براہ کرم درست مقدار درج کریں۔",
+    "analyzeFirst": "براہ کرم پہلے فصل کی تصویر کا تجزیہ کریں۔",
+    "produceAddedSuccess": "فصل کامیابی کے ساتھ X-MILE پول شدہ انوینٹری میں شامل کر دی گئی ہے۔",
+    "saveListingFailed": "لسٹنگ محفوظ کرنے میں ناکامی۔",
+    "validRequirements": "براہ کرم خریدار کی درست ضروریات درج کریں۔",
+    "noInventoryAvailable": "فی الحال کسانوں کی کوئی انوینٹری دستیاب نہیں ہے۔",
+    "supplyFailed": "سپلائی تلاش کرنے میں ناکامی۔",
+    "findSupplyFirst": "براہ کرم آرڈر بنانے سے پہلے سپلائی تلاش کریں۔",
+    "noInventorySelected": "کسانوں کی کوئی انوینٹری منتخب نہیں کی گئی ہے۔",
+    "orderAlreadyExists": "اس خریداری کی درخواست کے لیے پہلے سے ایک آرڈر موجود ہے۔",
+    "invalidOrderGrade": "غلط آرڈر گریڈ۔ براہ کرم گریڈ A، B، یا C منتخب کریں۔",
+    "orderCreateFailed": "آرڈر بنانے میں ناکامی۔",
+    "analysisFailed": "تجزیہ ناکام رہا۔",
+    "unexpectedResponse": "AI نے غیر متوقع جواب دیا۔",
+    "aiAnalysisFailed": "AI تجزیہ ناکام رہا۔ براہ کرم دوسری تصویر آزمائیں۔"
   }
 };

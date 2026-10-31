@@ -59,7 +59,10 @@ export const doi: TranslationDictionary = {
     "openLauncher": "झटपट कम्म मेन्यू खोह्लो",
     "closeLauncher": "झटपट कम्म मेन्यू बंद करो",
     "openAssistant": "मददगार खोह्लो",
-    "closeAssistant": "मददगार बंद करो"
+    "closeAssistant": "मददगार बंद करो",
+    "languagesCount": "२३ भाशां",
+    "noLanguagesFound": "कोई भाशा नेईं लब्भी",
+    "other": "होर"
   },
   "nav": {
     "home": "घर",
@@ -420,5 +423,24 @@ export const doi: TranslationDictionary = {
     "mapFallbackDesc": "पिकअप प्वाइंट ते खरीदार दी मंजिल थल्ले सूची च दित्ती दी ऐ।",
     "pickupStop": "पिकअप प्वाइंट",
     "buyerDestination": "खरीदार दी मंजिल"
+  },
+  "validation": {
+    "uploadImage": "किरपा करियै फसल दी फोटो अपलोड करो।",
+    "selectProduce": "किरपा करियै फसल चुनो।",
+    "validQuantity": "किरपा करियै सही मात्रा भरो।",
+    "analyzeFirst": "पैह्ले फसल दी फोटो दा विशलेषण करो।",
+    "produceAddedSuccess": "X-MILE पूल कीते गेदे स्टाक च फसल सफलतापूवर्क जोड़ी गेई।",
+    "saveListingFailed": "लिस्ट संभालना असफल रेहा।",
+    "validRequirements": "किरपा करियै खरीदार दी सही जरूरत भरो।",
+    "noInventoryAvailable": "इस वेले कोई बी जमींदार दा स्टाक मौजूद नेईं ऐ।",
+    "supplyFailed": "सप्लाई लभने च नाकामी होई।",
+    "findSupplyFirst": "आर्डर बनाने थमां पैह्ले सप्लाई लभो।",
+    "noInventorySelected": "कोई बी जमींदार दा स्टाक नेईं चुनेआ गेआ।",
+    "orderAlreadyExists": "इस खरीद मँग दा पैह्ले थमां आर्डर मौजूद ऐ।",
+    "invalidOrderGrade": "गलत आर्डर ग्रेड। किरपा करियै ग्रेड A, B, या C चुनो।",
+    "orderCreateFailed": "आर्डर बनाना असफल रेहा।",
+    "analysisFailed": "विशलेषण असफल रेहा।",
+    "unexpectedResponse": "AI आसेआ अनपेखित जबाब दित्ता।",
+    "aiAnalysisFailed": "AI विशलेषण असफल रेहा। किरपा करियै दूई फोटो बरतो।"
   }
 };

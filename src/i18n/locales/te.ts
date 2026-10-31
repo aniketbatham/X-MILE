@@ -59,7 +59,10 @@ export const te: TranslationDictionary = {
     "openLauncher": "X-MILE చర్యల లాంచర్ తెరవండి",
     "closeLauncher": "లాంచర్ మూసివేయండి",
     "openAssistant": "X-MILE AI సహాయకుడిని తెరవండి",
-    "closeAssistant": "AI సహాయకుడిని మూసివేయండి"
+    "closeAssistant": "AI సహాయకుడిని మూసివేయండి",
+    "languagesCount": "23 భాషలు",
+    "noLanguagesFound": "సరిపోలే భాషలేవీ కనుగొనబడలేదు",
+    "other": "ఇతర"
   },
   "nav": {
     "home": "హోమ్",
@@ -420,5 +423,24 @@ export const te: TranslationDictionary = {
     "mapFallbackDesc": "మ్యాప్ ప్రదర్శించడానికి సరైన OSRM రూట్ రూపొందించండి.",
     "pickupStop": "పికప్ #",
     "buyerDestination": "X-MILE కొనుగోలుదారు గమ్యం"
+  },
+  "validation": {
+    "uploadImage": "దయచేసి పంట చిత్రాన్ని అప్‌లోడ్ చేయండి.",
+    "selectProduce": "దయచేసి పంటను ఎంచుకోండి.",
+    "validQuantity": "దయచేసి సరైన పరిమాణాన్ని నమోదు చేయండి.",
+    "analyzeFirst": "దయచేసి ముందుగా పంట చిత్రాన్ని విశ్లేషించండి.",
+    "produceAddedSuccess": "X-MILE పూల్డ్ ఇన్వెంటరీకి పంట విజయవంతంగా జోడించబడింది.",
+    "saveListingFailed": "జాబితాను భద్రపరచడంలో విఫలమైంది.",
+    "validRequirements": "దయచేసి సరైన కొనుగోలుదారు అవసరాలను నమోదు చేయండి.",
+    "noInventoryAvailable": "ప్రస్తుతం ఏ రైతు ఇన్వెంటరీ అందుబాటులో లేదు.",
+    "supplyFailed": "సరఫరాను కనుగొనడంలో విఫలమైంది.",
+    "findSupplyFirst": "దయచేసి ఆర్డర్ సృష్టించే ముందు సరఫరాను కనుగొనండి.",
+    "noInventorySelected": "ఏ రైతు ఇన్వెంటరీ ఎంపిక చేయబడలేదు.",
+    "orderAlreadyExists": "ఈ సేకరణ అభ్యర్థనకు ఇప్పటికే ఒక ఆర్డర్ ఉంది.",
+    "invalidOrderGrade": "చెల్లని ఆర్డర్ గ్రేడ్. దయచేసి గ్రేడ్ A, B, లేదా C ఎంచుకోండి.",
+    "orderCreateFailed": "ఆర్డర్ సృష్టించడంలో విఫలమైంది.",
+    "analysisFailed": "విశ్లేషణ విఫలమైంది.",
+    "unexpectedResponse": "AI ఊహించని ప్రతిస్పందనను ఇచ్చింది.",
+    "aiAnalysisFailed": "AI విశ్లేషణ విఫలమైంది. దయచేసి మరొక చిత్రాన్ని ప్రయత్నించండి."
   }
 };

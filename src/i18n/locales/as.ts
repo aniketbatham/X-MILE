@@ -59,7 +59,10 @@ export const as: TranslationDictionary = {
     "openLauncher": "X-MILE একচন লঞ্চাৰ খোলক",
     "closeLauncher": "লঞ্চাৰ বন্ধ কৰক",
     "openAssistant": "X-MILE AI সহায়ক খোলক",
-    "closeAssistant": "AI সহায়ক বন্ধ কৰক"
+    "closeAssistant": "AI সহায়ক বন্ধ কৰক",
+    "languagesCount": "২৩ টা ভাষা",
+    "noLanguagesFound": "অনুসন্ধানৰ লগত কোনো ভাষা পোৱা নগ'ল",
+    "other": "অন্যান্য"
   },
   "nav": {
     "home": "মূল পৃষ্ঠা",
@@ -420,5 +423,24 @@ export const as: TranslationDictionary = {
     "mapFallbackDesc": "মানচিত্ৰ চাবলৈ বৈধ OSRM পথ প্ৰস্তুত কৰক।",
     "pickupStop": "পিকআপ #",
     "buyerDestination": "X-MILE গন্তব্যস্থান"
+  },
+  "validation": {
+    "uploadImage": "অনুগ্ৰহ কৰি শস্যৰ এখন ছবি আপলোড কৰক।",
+    "selectProduce": "অনুগ্ৰহ কৰি শস্য নিৰ্বাচন কৰক।",
+    "validQuantity": "অনুগ্ৰহ কৰি সঠিক পৰিমাণ লিখক।",
+    "analyzeFirst": "প্ৰথমে শস্যৰ ছবিখন বিশ্লেষণ কৰক।",
+    "produceAddedSuccess": "X-MILE সংগ্ৰহিত মজুতলৈ শস্য সফলভাৱে যোগ কৰা হ'ল।",
+    "saveListingFailed": "তালিকা সংৰক্ষণ কৰিবলৈ ব্যৰ্থ হ'ল।",
+    "validRequirements": "অনুগ্ৰহ কৰি সঠিক ক্ৰেতাৰ প্ৰয়োজনীয়তা লিখক।",
+    "noInventoryAvailable": "বৰ্তমান কোনো কৃষকৰ শস্য মজুত নাই।",
+    "supplyFailed": "যোগান বিচাৰিবলৈ ব্যৰ্থ হ'ল।",
+    "findSupplyFirst": "অৰ্ডাৰ সৃষ্টি কৰাৰ পূৰ্বে যোগান বিচাৰি লওক।",
+    "noInventorySelected": "কোনো কৃষকৰ মজুত নিৰ্বাচন কৰা হোৱা নাই।",
+    "orderAlreadyExists": "এই ক্ৰয় অনুৰোধৰ ইতিমধ্যে এটা অৰ্ডাৰ আছে।",
+    "invalidOrderGrade": "অবৈধ অৰ্ডাৰ গ্ৰেড। অনুগ্ৰহ কৰি গ্ৰেড A, B, বা C নিৰ্বাচন কৰক।",
+    "orderCreateFailed": "অৰ্ডাৰ সৃষ্টি কৰিবলৈ ব্যৰ্থ হ'ল।",
+    "analysisFailed": "বিশ্লেষণ ব্যৰ্থ হ'ল।",
+    "unexpectedResponse": "AI য়ে অপ্ৰত্যাশিত সঁহাৰি দিলে।",
+    "aiAnalysisFailed": "AI বিশ্লেষণ ব্যৰ্থ হ'ল। অনুগ্ৰহ কৰি অন্য এখন ছবি চেষ্টা কৰক।"
   }
 };

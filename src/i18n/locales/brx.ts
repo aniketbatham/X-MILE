@@ -59,7 +59,10 @@ export const brx: TranslationDictionary = {
     "openLauncher": "गोख्रै हाबा मेनु खुलि",
     "closeLauncher": "गोख्रै हाबा मेनु बन्द खालाम",
     "openAssistant": "हेफाजाबगिरि खुलि",
-    "closeAssistant": "हेफाजाबगिरि बन्द खालाम"
+    "closeAssistant": "हेफाजाबगिरि बन्द खालाम",
+    "languagesCount": "২৩ रावफोर",
+    "noLanguagesFound": "जेबो राव मोननाय जायाखै",
+    "other": "गुबुन"
   },
   "nav": {
     "home": "न'",
@@ -420,5 +423,24 @@ export const brx: TranslationDictionary = {
     "mapFallbackDesc": "पिकआप बिन्दो आरो बायग्रानि थांखिया गाहायाव फारिलाइ दं।",
     "pickupStop": "पिकआप बिन्दो",
     "buyerDestination": "बायग्रानि थांखि जायगा"
+  },
+  "validation": {
+    "uploadImage": "अननानै फसलनि सावगारि आपल'ड खालाम।",
+    "selectProduce": "अननानै फसल सायख।",
+    "validQuantity": "अननानै थि बिबां लिर।",
+    "analyzeFirst": "सिगां फसलनि सावगारिखौ बिजिर।",
+    "produceAddedSuccess": "X-MILE जमा गोदामो फसल दाजाबबाय।",
+    "saveListingFailed": "फारिलाइ दोनथुमनायाव फेलें जाबाय।",
+    "validRequirements": "अननानै थि बायग्रा गोनांथिखौ लिर।",
+    "noInventoryAvailable": "दासान्दि जेबो आबादारी गोदाम गैया।",
+    "supplyFailed": "जगाइनायखौ नागिरनाय फेलें जाबाय।",
+    "findSupplyFirst": "अर्डार बानायनायनि सिगां जगाइनायखौ नागिर।",
+    "noInventorySelected": "जेबो आबादारी गोदाम सायखनाय जायाखै।",
+    "orderAlreadyExists": "बे बायनाय खावलायनायाव सिगांनो अर्डार दं।",
+    "invalidOrderGrade": "गोनां नङै अर्डार थाखो। अननानै थाखो A, B, एबा C सायख।",
+    "orderCreateFailed": "अर्डार बानायनो फेलें जाबाय।",
+    "analysisFailed": "बिजिरनाय फेलें जाबाय।",
+    "unexpectedResponse": "AI निफ्राय मिजिंथियै फिननाय फैबाय।",
+    "aiAnalysisFailed": "AI बिजिरनाय फेलें जाबाय। अननानै गुबुन सावगारि नाजा।"
   }
 };

@@ -107,12 +107,12 @@ export default function FarmerPage() {
     setQuality(null);
 
     if (!image) {
-      setError("Please upload a produce image.");
+      setError(t("validation.uploadImage"));
       return;
     }
 
     if (!produce.trim()) {
-      setError("Please select the produce type.");
+      setError(t("validation.selectProduce"));
       return;
     }
 
@@ -134,7 +134,7 @@ export default function FarmerPage() {
       if (!response.ok) {
         throw new Error(
           data.error ||
-            "Quality analysis failed."
+            t("validation.analysisFailed")
         );
       }
 
@@ -146,7 +146,7 @@ export default function FarmerPage() {
       setError(
         err instanceof Error
           ? err.message
-          : "Quality analysis failed."
+          : t("validation.analysisFailed")
       );
     } finally {
       setLoading(false);
@@ -159,18 +159,18 @@ export default function FarmerPage() {
     const quantityNumber = Number(quantity);
 
     if (!produce.trim()) {
-      setError("Please select the produce.");
+      setError(t("validation.selectProduce"));
       return;
     }
 
     if (!quantityNumber || quantityNumber <= 0) {
-      setError("Please enter a valid quantity.");
+      setError(t("validation.validQuantity"));
       return;
     }
 
     if (!quality) {
       setError(
-        "Please analyze the produce image first."
+        t("validation.analyzeFirst")
       );
       return;
     }
@@ -218,13 +218,13 @@ export default function FarmerPage() {
       }
 
       alert(
-        "Produce successfully added to X-MILE pooled inventory."
+        t("validation.produceAddedSuccess")
       );
     } catch (err) {
       setError(
         err instanceof Error
           ? err.message
-          : "Failed to save listing."
+          : t("validation.saveListingFailed")
       );
     } finally {
       setSaving(false);

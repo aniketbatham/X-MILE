@@ -59,7 +59,10 @@ export const sd: TranslationDictionary = {
     "openLauncher": "تڪڙي عمل جي مينيو کوليو",
     "closeLauncher": "تڪڙي عمل جي مينيو بند ڪريو",
     "openAssistant": "معاون کوليو",
-    "closeAssistant": "معاون بند ڪريو"
+    "closeAssistant": "معاون بند ڪريو",
+    "languagesCount": "۲۳ ٻوليون",
+    "noLanguagesFound": "ڪابه ٻولي نه ملي",
+    "other": "ٻيو"
   },
   "nav": {
     "home": "گھر",
@@ -420,5 +423,24 @@ export const sd: TranslationDictionary = {
     "mapFallbackDesc": "پِڪ اپ پوائنٽون ۽ خريدار جي منزل هيٺ ڏنل فهرست ۾ ڏنل آهن.",
     "pickupStop": "پِڪ اپ پوائنٽ",
     "buyerDestination": "خريدار جي منزل"
+  },
+  "validation": {
+    "uploadImage": "مهرباني ڪري فصل جي تصوير اپلوڊ ڪريو.",
+    "selectProduce": "مهرباني ڪري فصل چونڊيو.",
+    "validQuantity": "مهرباني ڪري صحيح مقدار داخل ڪريو.",
+    "analyzeFirst": "پهرين فصل جي تصوير جو تجزيو ڪريو.",
+    "produceAddedSuccess": "فصل ڪاميابي سان X-MILE گڏ ڪيل اسٽاڪ ۾ شامل ڪيو ويو.",
+    "saveListingFailed": "لسٽ محفوظ ڪرڻ ۾ ناڪامي.",
+    "validRequirements": "مهرباني ڪري خريدار جون صحيح ضرورتون داخل ڪريو.",
+    "noInventoryAvailable": "هن وقت ڪوبه هارين جو اسٽاڪ موجود ناهي.",
+    "supplyFailed": "سپلائي ڳولڻ ۾ ناڪامي.",
+    "findSupplyFirst": "آرڊر ٺاهڻ کان اڳ سپلائي ڳوليو.",
+    "noInventorySelected": "ڪابه هارين جو اسٽاڪ چونڊيل ناهي.",
+    "orderAlreadyExists": "هن خريداري درخواست لاءِ اڳ ۾ ئي آرڊر موجود آهي.",
+    "invalidOrderGrade": "غلط آرڊر گريڊ. مهرباني ڪري گريڊ A، B يا C چونڊيو.",
+    "orderCreateFailed": "آرڊر ٺاهڻ ۾ ناڪامي.",
+    "analysisFailed": "تجزيو ناڪام ٿيو.",
+    "unexpectedResponse": "AI غير متوقع جواب ڏنو.",
+    "aiAnalysisFailed": "AI تجزيو ناڪام ٿيو. مهرباني ڪري ٻي تصوير آزمايو."
   }
 };

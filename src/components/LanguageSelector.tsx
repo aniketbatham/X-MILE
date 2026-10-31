@@ -97,7 +97,7 @@ export default function LanguageSelector({
                 {t("common.selectLanguage")}
               </span>
               <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
-                23 Languages
+                {t("common.languagesCount")}
               </span>
             </div>
 
@@ -126,7 +126,7 @@ export default function LanguageSelector({
           <div className="max-h-72 overflow-y-auto p-2 divide-y divide-gray-50">
             {filteredLanguages.length === 0 ? (
               <div className="py-8 text-center text-xs text-gray-400">
-                No languages found matching &ldquo;{search}&rdquo;
+                {t("common.noLanguagesFound")} &ldquo;{search}&rdquo;
               </div>
             ) : (
               filteredLanguages.map((lang) => {

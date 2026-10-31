@@ -59,7 +59,10 @@ export const bn: TranslationDictionary = {
     "openLauncher": "X-MILE অ্যাকশন লঞ্চার খুলুন",
     "closeLauncher": "লঞ্চার বন্ধ করুন",
     "openAssistant": "X-MILE AI সহকারী খুলুন",
-    "closeAssistant": "সহকারী বন্ধ করুন"
+    "closeAssistant": "সহকারী বন্ধ করুন",
+    "languagesCount": "২৩টি ভাষা",
+    "noLanguagesFound": "কোনো ভাষা পাওয়া যায়নি",
+    "other": "অন্যান্য"
   },
   "nav": {
     "home": "হোম",
@@ -420,5 +423,24 @@ export const bn: TranslationDictionary = {
     "mapFallbackDesc": "মানচিত্র দেখতে একটি কার্যকর OSRM রুট তৈরি করুন।",
     "pickupStop": "পিকআপ #",
     "buyerDestination": "X-MILE ক্রেতার গন্তব্য"
+  },
+  "validation": {
+    "uploadImage": "অনুগ্রহ করে ফসলের একটি ছবি আপলোড করুন।",
+    "selectProduce": "অনুগ্রহ করে ফসল নির্বাচন করুন।",
+    "validQuantity": "অনুগ্রহ করে সঠিক পরিমাণ লিখুন।",
+    "analyzeFirst": "প্রথমে ফসলের ছবিটি বিশ্লেষণ করুন।",
+    "produceAddedSuccess": "X-MILE পুল করা ইনভেন্টরিতে ফসল সফলভাবে যুক্ত হয়েছে।",
+    "saveListingFailed": "তালিকা সংরক্ষণ করতে ব্যর্থ হয়েছে।",
+    "validRequirements": "অনুগ্রহ করে সঠিক ক্রেতার প্রয়োজনীয়তা লিখুন।",
+    "noInventoryAvailable": "বর্তমানে কোনো কৃষকের ইনভেন্টরি উপলব্ধ নেই।",
+    "supplyFailed": "সরবরাহ খুঁজে পেতে ব্যর্থ হয়েছে।",
+    "findSupplyFirst": "অর্ডার তৈরি করার আগে সরবরাহ খুঁজুন।",
+    "noInventorySelected": "কোনো কৃষকের ইনভেন্টরি নির্বাচিত হয়নি।",
+    "orderAlreadyExists": "এই ক্রয় অনুরোধের ইতোমধ্যে একটি অর্ডার রয়েছে।",
+    "invalidOrderGrade": "অবৈধ অর্ডার গ্রেড। অনুগ্রহ করে গ্রেড A, B, বা C নির্বাচন করুন।",
+    "orderCreateFailed": "অর্ডার তৈরি করতে ব্যর্থ হয়েছে।",
+    "analysisFailed": "বিশ্লেষণ ব্যর্থ হয়েছে।",
+    "unexpectedResponse": "AI অপ্রত্যাশিত প্রতিক্রিয়া দিয়েছে।",
+    "aiAnalysisFailed": "AI বিশ্লেষণ ব্যর্থ হয়েছে। অনুগ্রহ করে অন্য ছবি দিয়ে চেষ্টা করুন।"
   }
 };

@@ -59,7 +59,10 @@ export const sa: TranslationDictionary = {
     "openLauncher": "त्वरित-क्रिया-सूचीम् उद्घाटयतु",
     "closeLauncher": "त्वरित-क्रिया-सूचीं पिधत्त",
     "openAssistant": "सहायकम् उद्घाटयतु",
-    "closeAssistant": "सहायकं पिधत्त"
+    "closeAssistant": "सहायकं पिधत्त",
+    "languagesCount": "२३ भाषाः",
+    "noLanguagesFound": "मेलनयुक्ता कापि भाषा न प्राप्ता",
+    "other": "अन्यत्"
   },
   "nav": {
     "home": "मुख्यपृष्ठम्",
@@ -420,5 +423,24 @@ export const sa: TranslationDictionary = {
     "mapFallbackDesc": "सङ्ग्रहण-स्थानानि क्रेतुः गन्तव्यं च अधः सूचीबद्धाः सन्ति।",
     "pickupStop": "सङ्ग्रहण-स्थानम्",
     "buyerDestination": "क्रेतुः गन्तव्यस्थानम्"
+  },
+  "validation": {
+    "uploadImage": "कृपया उपजस्य चित्रम् उत्थापयन्तु।",
+    "selectProduce": "कृपया उपजं चिनुत।",
+    "validQuantity": "कृपया मान्यां मात्रां प्रविशन्तु।",
+    "analyzeFirst": "कृपया प्रथमं उपजचित्रस्य विश्लेषणं कुर्वन्तु।",
+    "produceAddedSuccess": "उपजः X-MILE पूल्ड-इन्वेंट्री-मध्ये सफलतया योजितः।",
+    "saveListingFailed": "सूचीसंरक्षणे विफलता जाता।",
+    "validRequirements": "कृपया क्रेतुः मान्याम् आवश्यकतां प्रविशन्तु।",
+    "noInventoryAvailable": "वर्तमानकाले कोऽपि कृषकसंग्रहः उपलब्धः नास्ति।",
+    "supplyFailed": "आपूर्तेः अन्वेषणे विफलता जाता।",
+    "findSupplyFirst": "आदेशकरणपूर्वं कृपया आपूर्तिम् अन्विषन्तु।",
+    "noInventorySelected": "कोऽपि कृषकसंग्रहः न चितः।",
+    "orderAlreadyExists": "अस्य क्रयाभ्यर्थनस्य कृते पूर्वमेव आदेशः अस्ति।",
+    "invalidOrderGrade": "अमान्यः आदेशवर्गः। कृपया वर्गं A, B, अथवा C चिनुत।",
+    "orderCreateFailed": "आदेशनिर्माणाभ्यासे विफलता जाता।",
+    "analysisFailed": "विश्लेषणं विफलम् अभवत्।",
+    "unexpectedResponse": "AI अप्रत्याशितं प्रत्युत्तरम् अयच्छत्।",
+    "aiAnalysisFailed": "AI विश्लेषणं विफलम् अभवत्। कृपया अन्यं चित्रं प्रयतन्ताम्।"
   }
 };

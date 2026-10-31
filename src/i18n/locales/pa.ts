@@ -59,7 +59,10 @@ export const pa: TranslationDictionary = {
     "openLauncher": "X-MILE ਐਕਸ਼ਨ ਲਾਂਚਰ ਖੋਲ੍ਹੋ",
     "closeLauncher": "ਲਾਂਚਰ ਬੰਦ ਕਰੋ",
     "openAssistant": "X-MILE AI ਸਹਾਇਕ ਖੋਲ੍ਹੋ",
-    "closeAssistant": "AI ਸਹਾਇਕ ਬੰਦ ਕਰੋ"
+    "closeAssistant": "AI ਸਹਾਇਕ ਬੰਦ ਕਰੋ",
+    "languagesCount": "੨੩ ਭਾਸ਼ਾਵਾਂ",
+    "noLanguagesFound": "ਕੋਈ ਮੇਲ ਖਾਂਦੀ ਭਾਸ਼ਾ ਨਹੀਂ ਮਿਲੀ",
+    "other": "ਹੋਰ"
   },
   "nav": {
     "home": "ਮੁੱਖ ਪੰਨਾ",
@@ -420,5 +423,24 @@ export const pa: TranslationDictionary = {
     "mapFallbackDesc": "ਨਕਸ਼ਾ ਦੇਖਣ ਲਈ ਵੈਧ OSRM ਰੂਟ ਬਣਾਓ।",
     "pickupStop": "ਪਿਕਅੱਪ #",
     "buyerDestination": "X-MILE ਮੰਜ਼ਿਲ"
+  },
+  "validation": {
+    "uploadImage": "ਕਿਰਪਾ ਕਰਕੇ ਫ਼ਸਲ ਦੀ ਤਸਵੀਰ ਅੱਪਲੋਡ ਕਰੋ।",
+    "selectProduce": "ਕਿਰਪਾ ਕਰਕੇ ਫ਼ਸਲ ਚੁਣੋ।",
+    "validQuantity": "ਕਿਰਪਾ ਕਰਕੇ ਸਹੀ ਮਾਤਰਾ ਦਰਜ ਕਰੋ।",
+    "analyzeFirst": "ਕਿਰਪਾ ਕਰਕੇ ਪਹਿਲਾਂ ਫ਼ਸਲ ਦੀ ਤਸਵੀਰ ਦਾ ਵਿਸ਼ਲੇਸ਼ਣ ਕਰੋ।",
+    "produceAddedSuccess": "ਫ਼ਸਲ ਸਫ਼ਲਤਾਪੂਰਵਕ X-MILE ਪੂਲਡ ਇਨਵੈਂਟਰੀ ਵਿੱਚ ਸ਼ਾਮਲ ਹੋ ਗਈ ਹੈ।",
+    "saveListingFailed": "ਸੂਚੀ ਸੁਰੱਖਿਅਤ ਕਰਨ ਵਿੱਚ ਅਸਫਲ।",
+    "validRequirements": "ਕਿਰਪਾ ਕਰਕੇ ਖਰੀਦਦਾਰ ਦੀਆਂ ਸਹੀ ਲੋੜਾਂ ਦਰਜ ਕਰੋ।",
+    "noInventoryAvailable": "ਮੌਜੂਦਾ ਸਮੇਂ ਕੋਈ ਕਿਸਾਨ ਇਨਵੈਂਟਰੀ ਉਪਲਬਧ ਨਹੀਂ ਹੈ।",
+    "supplyFailed": "ਸਪਲਾਈ ਲੱਭਣ ਵਿੱਚ ਅਸਫਲ।",
+    "findSupplyFirst": "ਆਰਡਰ ਬਣਾਉਣ ਤੋਂ ਪਹਿਲਾਂ ਕਿਰਪਾ ਕਰਕੇ ਸਪਲਾਈ ਲੱਭੋ।",
+    "noInventorySelected": "ਕਿਸੇ ਕਿਸਾਨ ਦੀ ਇਨਵੈਂਟਰੀ ਦੀ ਚੋਣ ਨਹੀਂ ਕੀਤੀ ਗਈ ਹੈ।",
+    "orderAlreadyExists": "ਇਸ ਖਰੀਦ ਬੇਨਤੀ ਦਾ ਪਹਿਲਾਂ ਤੋਂ ਹੀ ਇੱਕ ਆਰਡਰ ਹੈ।",
+    "invalidOrderGrade": "ਅਵੈਧ ਆਰਡਰ ਗ੍ਰੇਡ। ਕਿਰਪਾ ਕਰਕੇ ਗ੍ਰੇਡ A, B, ਜਾਂ C ਚੁਣੋ।",
+    "orderCreateFailed": "ਆਰਡਰ ਬਣਾਉਣ ਵਿੱਚ ਅਸਫਲ।",
+    "analysisFailed": "ਵਿਸ਼ਲੇਸ਼ਣ ਅਸਫਲ ਰਿਹਾ।",
+    "unexpectedResponse": "AI ਨੇ ਅਣਕਿਆਸਿਆ ਜਵਾਬ ਦਿੱਤਾ।",
+    "aiAnalysisFailed": "AI ਵਿਸ਼ਲੇਸ਼ਣ ਅਸਫਲ ਰਿਹਾ। ਕਿਰਪਾ ਕਰਕੇ ਕੋਈ ਹੋਰ ਤਸਵੀਰ ਅਜ਼ਮਾਓ।"
   }
 };

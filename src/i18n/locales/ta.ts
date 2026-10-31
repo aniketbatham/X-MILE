@@ -59,7 +59,10 @@ export const ta: TranslationDictionary = {
     "openLauncher": "X-MILE தொடக்கியைத் திறக்கவும்",
     "closeLauncher": "தொடக்கியை மூடவும்",
     "openAssistant": "X-MILE AI உதவியாளரைத் திறக்கவும்",
-    "closeAssistant": "AI உதவியாளரை மூடவும்"
+    "closeAssistant": "AI உதவியாளரை மூடவும்",
+    "languagesCount": "23 மொழிகள்",
+    "noLanguagesFound": "பொருந்தும் மொழிகள் எதுவும் கிடைக்கவில்லை",
+    "other": "மற்றவை"
   },
   "nav": {
     "home": "முகப்பு",
@@ -420,5 +423,24 @@ export const ta: TranslationDictionary = {
     "mapFallbackDesc": "வரைபடத்தைக் காட்ட சரியான OSRM வழியை உருவாக்கவும்.",
     "pickupStop": "பிக்கப் #",
     "buyerDestination": "X-MILE வாங்குபவர் சேருமிடம்"
+  },
+  "validation": {
+    "uploadImage": "தயவுசெய்து விளைபொருளின் புகைப்படத்தை பதிவேற்றவும்.",
+    "selectProduce": "தயவுசெய்து விளைபொருளைத் தேர்ந்தெடுக்கவும்.",
+    "validQuantity": "தயவுசெய்து சரியான அளவை உள்ளிடவும்.",
+    "analyzeFirst": "தயவுசெய்து முதலில் விளைபொருளின் புகைப்படத்தை பகுப்பாய்வு செய்யவும்.",
+    "produceAddedSuccess": "X-MILE திரட்டப்பட்ட சரக்கில் விளைபொருள் வெற்றிகரமாக சேர்க்கப்பட்டது.",
+    "saveListingFailed": "பட்டியலைச் சேமிக்க முடியவில்லை.",
+    "validRequirements": "தயவுசெய்து சரியான கொள்முதல் தேவைகளை உள்ளிடவும்.",
+    "noInventoryAvailable": "தற்போது விவசாயிகள் கையிருப்பு எதுவும் இல்லை.",
+    "supplyFailed": "விநியோகத்தைக் கண்டறிய முடியவில்லை.",
+    "findSupplyFirst": "ஆர்டரை உருவாக்கும் முன் விநியோகத்தைக் கண்டறியவும்.",
+    "noInventorySelected": "விவசாயிகள் சரக்கு எதுவும் தேர்ந்தெடுக்கப்படவில்லை.",
+    "orderAlreadyExists": "இந்தக் கொள்முதல் கோரிக்கைக்கு ஏற்கனவே ஒரு ஆர்டர் உள்ளது.",
+    "invalidOrderGrade": "தவறான ஆர்டர் தரம். தயவுசெய்து தரம் A, B, அல்லது C ஐத் தேர்ந்தெடுக்கவும்.",
+    "orderCreateFailed": "ஆர்டரை உருவாக்க முடியவில்லை.",
+    "analysisFailed": "பகுப்பாய்வு தோல்வியடைந்தது.",
+    "unexpectedResponse": "AI எதிர்பாராத பதிலை அளித்துள்ளது.",
+    "aiAnalysisFailed": "AI பகுப்பாய்வு தோல்வியடைந்தது. தயவுசெய்து வேறு படத்தை முயற்சிக்கவும்."
   }
 };

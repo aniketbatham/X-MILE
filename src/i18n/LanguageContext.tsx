@@ -100,10 +100,20 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 
       let resolved = resolve(activeDict, keyPath);
       if (resolved === undefined || resolved === "") {
+        if (process.env.NODE_ENV === "development" && locale !== "en") {
+          console.warn(
+            `[i18n] Missing translation for key "${keyPath}" in locale "${locale}". Falling back to English.`
+          );
+        }
         resolved = resolve(fallbackDict, keyPath);
       }
 
       if (typeof resolved !== "string") {
+        if (process.env.NODE_ENV === "development") {
+          console.warn(
+            `[i18n] Untranslated key "${keyPath}" not found in English fallback dictionary.`
+          );
+        }
         return keyPath;
       }
 

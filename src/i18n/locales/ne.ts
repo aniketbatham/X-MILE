@@ -59,7 +59,10 @@ export const ne: TranslationDictionary = {
     "openLauncher": "द्रुत कार्य मेनु खोल्नुहोस्",
     "closeLauncher": "द्रुत कार्य मेनु बन्द गर्नुहोस्",
     "openAssistant": "सहायक खोल्नुहोस्",
-    "closeAssistant": "सहायक बन्द गर्नुहोस्"
+    "closeAssistant": "सहायक बन्द गर्नुहोस्",
+    "languagesCount": "२३ भाषाहरू",
+    "noLanguagesFound": "मिल्दो कुनै भाषा भेटिएन",
+    "other": "अन्य"
   },
   "nav": {
     "home": "गृहपृष्ठ",
@@ -420,5 +423,24 @@ export const ne: TranslationDictionary = {
     "mapFallbackDesc": "पिकअप विन्दुहरू र खरीददारको गन्तव्य तल सूचीकृत गरिएको छ।",
     "pickupStop": "पिकअप पोइन्ट",
     "buyerDestination": "खरीददारको गन्तव्य"
+  },
+  "validation": {
+    "uploadImage": "कृपया उत्पादनको तस्बिर अपलोड गर्नुहोस्।",
+    "selectProduce": "कृपया उत्पादन छान्नुहोस्।",
+    "validQuantity": "कृपया मान्य परिमाण प्रविष्ट गर्नुहोस्।",
+    "analyzeFirst": "कृपया पहिले उत्पादनको तस्बिर विश्लेषण गर्नुहोस्।",
+    "produceAddedSuccess": "X-MILE पूल्ड इन्भेन्टरीमा उत्पादन सफलतापूर्वक थपियो।",
+    "saveListingFailed": "सूची बचत गर्न असफल भयो।",
+    "validRequirements": "कृपया मान्य खरिदकर्ता आवश्यकता प्रविष्ट गर्नुहोस्।",
+    "noInventoryAvailable": "हाल कुनै किसान इन्भेन्टरी उपलब्ध छैन।",
+    "supplyFailed": "आपूर्ति फेला पार्न असफल भयो।",
+    "findSupplyFirst": "कृपया अर्डर सिर्जना गर्नु अघि आपूर्ति खोज्नुहोस्।",
+    "noInventorySelected": "कुनै किसान इन्भेन्टरी चयन गरिएको छैन।",
+    "orderAlreadyExists": "यो खरिद अनुरोधको पहिले नै एउटा अर्डर छ।",
+    "invalidOrderGrade": "अमान्य अर्डर ग्रेड। कृपया ग्रेड A, B, वा C छान्नुहोस्।",
+    "orderCreateFailed": "अर्डर सिर्जना गर्न असफल भयो।",
+    "analysisFailed": "विश्लेषण असफल भयो।",
+    "unexpectedResponse": "AI ले अप्रत्याशित प्रतिक्रिया दियो।",
+    "aiAnalysisFailed": "AI विश्लेषण असफल भयो। कृपया अर्को तस्बिर प्रयास गर्नुहोस्।"
   }
 };

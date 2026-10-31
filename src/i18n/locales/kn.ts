@@ -59,7 +59,10 @@ export const kn: TranslationDictionary = {
     "openLauncher": "X-MILE ಕ್ರಿಯೆಗಳ ಲಾಂಚರ್ ತೆರೆಯಿರಿ",
     "closeLauncher": "ಲಾಂಚರ್ ಮುಚ್ಚಿ",
     "openAssistant": "X-MILE AI ಸಹಾಯಕವನ್ನು ತೆರೆಯಿರಿ",
-    "closeAssistant": "AI ಸಹಾಯಕವನ್ನು ಮುಚ್ಚಿ"
+    "closeAssistant": "AI ಸಹಾಯಕವನ್ನು ಮುಚ್ಚಿ",
+    "languagesCount": "೨೩ ಭಾಷೆಗಳು",
+    "noLanguagesFound": "ಯಾವುದೇ ಹೊಂದಾಣಿಕೆಯಾಗುವ ಭಾಷೆ ಕಂಡುಬಂದಿಲ್ಲ",
+    "other": "ಇತರ"
   },
   "nav": {
     "home": "ಮುಖಪುಟ",
@@ -420,5 +423,24 @@ export const kn: TranslationDictionary = {
     "mapFallbackDesc": "ನಕ್ಷೆ ಪ್ರದರ್ಶಿಸಲು ಮಾನ್ಯವಾದ OSRM ಮಾರ್ಗವನ್ನು ರಚಿಸಿ.",
     "pickupStop": "ಪಿಕಪ್ #",
     "buyerDestination": "X-MILE ಖರೀದಿದಾರರ ಗಮ್ಯಸ್ಥಾನ"
+  },
+  "validation": {
+    "uploadImage": "ದಯವಿಟ್ಟು ಉತ್ಪನ್ನದ ಚಿತ್ರವನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಿ.",
+    "selectProduce": "ದಯವಿಟ್ಟು ಉತ್ಪನ್ನವನ್ನು ಆಯ್ಕೆಮಾಡಿ.",
+    "validQuantity": "ದಯವಿಟ್ಟು ಮಾನ್ಯವಾದ ಪ್ರಮಾಣವನ್ನು ನಮೂದಿಸಿ.",
+    "analyzeFirst": "ದಯವಿಟ್ಟು ಮೊದಲು ಉತ್ಪನ್ನದ ಚಿತ್ರವನ್ನು ವಿಶ್ಲೇಷಿಸಿ.",
+    "produceAddedSuccess": "X-MILE ಪೂಲ್ಡ್ ದಾಸ್ತಾನಿಗೆ ಉತ್ಪನ್ನವನ್ನು ಯಶಸ್ವಿಯಾಗಿ ಸೇರಿಸಲಾಗಿದೆ.",
+    "saveListingFailed": "ಪಟ್ಟಿಯನ್ನು ಉಳಿಸಲು ವಿಫಲವಾಗಿದೆ.",
+    "validRequirements": "ದಯವಿಟ್ಟು ಮಾನ್ಯವಾದ ಖರೀದಿದಾರರ ಅಗತ್ಯತೆಗಳನ್ನು ನಮೂದಿಸಿ.",
+    "noInventoryAvailable": "ಪ್ರಸ್ತುತ ಯಾವುದೇ ರೈತರ ದಾಸ್ತಾನು ಲಭ್ಯವಿಲ್ಲ.",
+    "supplyFailed": "ಪೂರೈಕೆಯನ್ನು ಹುಡುಕಲು ವಿಫಲವಾಗಿದೆ.",
+    "findSupplyFirst": "ಆರ್ಡರ್ ರಚಿಸುವ ಮೊದಲು ದಯವಿಟ್ಟು ಪೂರೈಕೆಯನ್ನು ಹುಡುಕಿ.",
+    "noInventorySelected": "ಯಾವುದೇ ರೈತರ ದಾಸ್ತಾನನ್ನು ಆಯ್ಕೆ ಮಾಡಲಾಗಿಲ್ಲ.",
+    "orderAlreadyExists": "ಈ ಖರೀದಿ ವಿನಂತಿಯು ಈಗಾಗಲೇ ಆರ್ಡರ್ ಹೊಂದಿದೆ.",
+    "invalidOrderGrade": "ಅಮಾನ್ಯ ಆರ್ಡರ್ ಗ್ರೇಡ್. ದಯವಿಟ್ಟು ಗ್ರೇಡ್ A, B, ಅಥವಾ C ಆಯ್ಕೆಮಾಡಿ.",
+    "orderCreateFailed": "ಆರ್ಡರ್ ರಚಿಸಲು ವಿಫಲವಾಗಿದೆ.",
+    "analysisFailed": "ವಿಶ್ಲೇಷಣೆ ವಿಫಲವಾಗಿದೆ.",
+    "unexpectedResponse": "AI ಅನಿರೀಕ್ಷಿತ ಪ್ರತಿಕ್ರಿಯೆಯನ್ನು ನೀಡಿದೆ.",
+    "aiAnalysisFailed": "AI ವಿಶ್ಲೇಷಣೆ ವಿಫಲವಾಗಿದೆ. ದಯವಿಟ್ಟು ಇನ್ನೊಂದು ಚಿತ್ರವನ್ನು ಪ್ರಯತ್ನಿಸಿ."
   }
 };

@@ -59,7 +59,10 @@ export const gu: TranslationDictionary = {
     "openLauncher": "X-MILE ક્રિયા લૉન્ચર ખોલો",
     "closeLauncher": "લૉન્ચર બંધ કરો",
     "openAssistant": "X-MILE AI સહાયક ખોલો",
-    "closeAssistant": "AI સહાયક બંધ કરો"
+    "closeAssistant": "AI સહાયક બંધ કરો",
+    "languagesCount": "૨૩ ભાષાઓ",
+    "noLanguagesFound": "કોઈ મેળ ખાતી ભાષા મળી નથી",
+    "other": "અન્ય"
   },
   "nav": {
     "home": "હોમ",
@@ -420,5 +423,24 @@ export const gu: TranslationDictionary = {
     "mapFallbackDesc": "નકશો જોવા માટે માન્ય OSRM રૂટ બનાવો.",
     "pickupStop": "પિકઅપ #",
     "buyerDestination": "X-MILE ખરીદદાર ગંતવ્ય"
+  },
+  "validation": {
+    "uploadImage": "કૃપા કરીને પાકની છબી અપલોડ કરો.",
+    "selectProduce": "કૃપા કરીને પાક પસંદ કરો.",
+    "validQuantity": "કૃપા કરીને માન્ય જથ્થો દાખલ કરો.",
+    "analyzeFirst": "પહેલાં પાકની છબીનું વિશ્લેષણ કરો.",
+    "produceAddedSuccess": "X-MILE પૂલ કરેલ ઇન્વેન્ટરીમાં પાક સફળતાપૂર્વક ઉમેરાયો.",
+    "saveListingFailed": "યાદી સાચવવામાં નિષ્ફળતા મળી.",
+    "validRequirements": "કૃપા કરીને ખરીદનારની માન્ય જરૂરિયાતો દાખલ કરો.",
+    "noInventoryAvailable": "હાલમાં કોઈ ખેડૂત ઇન્વેન્ટરી ઉપલબ્ધ નથી.",
+    "supplyFailed": "પુરવઠો શોધવામાં નિષ્ફળતા મળી.",
+    "findSupplyFirst": "ઓર્ડર બનાવતા પહેલાં કૃપા કરીને પુરવઠો શોધો.",
+    "noInventorySelected": "કોઈ ખેડૂત ઇન્વેન્ટરી પસંદ કરવામાં આવી નથી.",
+    "orderAlreadyExists": "આ પ્રાપ્તિ વિનંતી માટે પહેલેથી જ ઓર્ડર અસ્તિત્વમાં છે.",
+    "invalidOrderGrade": "અમાન્ય ઓર્ડર ગ્રેડ. કૃપા કરીને ગ્રેડ A, B, અથવા C પસંદ કરો.",
+    "orderCreateFailed": "ઓર્ડર બનાવવામાં નિષ્ફળતા મળી.",
+    "analysisFailed": "વિશ્લેષણ નિષ્ફળ ગયું.",
+    "unexpectedResponse": "AI એ અણધારી પ્રતિક્રિયા આપી.",
+    "aiAnalysisFailed": "AI વિશ્લેષણ નિષ્ફળ ગયું. કૃપા કરીને અન્ય છબી અજમાવો."
   }
 };

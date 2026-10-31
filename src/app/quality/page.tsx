@@ -19,6 +19,9 @@ export default function QualityPage() {
   const [error, setError] = useState("");
   const [scanProgress, setScanProgress] = useState(0);
 
+  // FIX: the API requires a produce type.
+  const [produce, setProduce] = useState("Tomato");
+
   useEffect(() => {
     if (!loading) {
       setScanProgress(0);
@@ -50,7 +53,9 @@ export default function QualityPage() {
     setScanProgress(0);
 
     const formData = new FormData();
+
     formData.append("image", image);
+    formData.append("produce", produce);
 
     try {
       const response = await fetch("/api/quality", {
@@ -65,13 +70,18 @@ export default function QualityPage() {
       }
 
       const text = data.result;
+
+      if (typeof text !== "string") {
+        throw new Error("AI returned an unexpected response.");
+      }
+
       const jsonMatch = text.match(/\{[\s\S]*\}/);
 
       if (!jsonMatch) {
         throw new Error("AI returned an unexpected response.");
       }
 
-      const parsed = JSON.parse(jsonMatch[0]);
+      const parsed = JSON.parse(jsonMatch[0]) as QualityResult;
 
       setScanProgress(100);
 
@@ -80,7 +90,11 @@ export default function QualityPage() {
       }, 500);
     } catch (err) {
       console.error(err);
-      setError("AI analysis failed. Please try another image.");
+      setError(
+        err instanceof Error
+          ? err.message
+          : "AI analysis failed. Please try another image."
+      );
     } finally {
       setTimeout(() => {
         setLoading(false);
@@ -178,15 +192,6 @@ export default function QualityPage() {
           to {
             opacity: 1;
             transform: scale(1);
-          }
-        }
-
-        @keyframes fillBar {
-          from {
-            width: 0%;
-          }
-          to {
-            width: var(--target-width);
           }
         }
 
@@ -300,15 +305,12 @@ export default function QualityPage() {
           <h1 className="text-4xl font-black tracking-[-0.04em] sm:text-5xl lg:text-6xl">
             See the quality.
             <br />
-            <span className="text-[#277443]">
-              Before you sell.
-            </span>
+            <span className="text-[#277443]">Before you sell.</span>
           </h1>
 
           <p className="mx-auto mt-5 max-w-2xl text-base leading-7 text-[#66766c] sm:text-lg">
-            Upload a produce image and HARVEX AI Vision
-            analyzes visible characteristics to estimate
-            quality, grade and suitability.
+            Upload a produce image and HARVEX AI Vision analyzes visible
+            characteristics to estimate quality, grade and suitability.
           </p>
         </div>
 
@@ -401,7 +403,7 @@ export default function QualityPage() {
                     TEXTURE
                   </div>
 
-                  <div className="absolute left-[29%] bottom-[13%] rounded-md bg-[#173523]/85 px-2 py-1 text-[8px] font-black tracking-wider text-white">
+                  <div className="absolute bottom-[13%] left-[29%] rounded-md bg-[#173523]/85 px-2 py-1 text-[8px] font-black tracking-wider text-white">
                     SIZE
                   </div>
                 </>
@@ -412,6 +414,7 @@ export default function QualityPage() {
                 <div>
                   <div className="flex items-center gap-2 text-[10px] font-black tracking-[0.15em]">
                     <span className="blink h-1.5 w-1.5 rounded-full bg-[#b9ed9f]" />
+
                     {loading
                       ? "ANALYZING HARVEST"
                       : preview
@@ -436,6 +439,42 @@ export default function QualityPage() {
               </div>
             </div>
 
+            {/* Produce selector */}
+            <div className="mt-5 rounded-2xl border border-[#dce8df] bg-[#f8fbf8] p-5">
+              <label
+                htmlFor="produce"
+                className="block text-sm font-black text-[#294432]"
+              >
+                What produce is this?
+              </label>
+
+              <p className="mt-1 text-xs leading-5 text-[#7a887f]">
+                Select the crop so HARVEX evaluates the image in the correct
+                context.
+              </p>
+
+              <select
+                id="produce"
+                value={produce}
+                onChange={(e) => {
+                  setProduce(e.target.value);
+                  setResult(null);
+                  setError("");
+                }}
+                disabled={loading}
+                className="mt-4 w-full rounded-xl border border-[#cbdccd] bg-white px-4 py-3 text-sm font-semibold text-[#294432] outline-none transition focus:border-[#3f8b51] focus:ring-2 focus:ring-[#dcebdd] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <option value="Tomato">Tomato</option>
+                <option value="Onion">Onion</option>
+                <option value="Potato">Potato</option>
+                <option value="Carrot">Carrot</option>
+                <option value="Cabbage">Cabbage</option>
+                <option value="Brinjal">Brinjal</option>
+                <option value="Chilli">Chilli</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+
             {/* Upload */}
             <div className="mt-5 rounded-2xl border border-dashed border-[#cbdccd] bg-[#f8fbf8] p-5">
               <label className="block cursor-pointer">
@@ -451,9 +490,7 @@ export default function QualityPage() {
                   type="file"
                   accept="image/*"
                   onChange={(e) =>
-                    handleImageChange(
-                      e.target.files?.[0] || null
-                    )
+                    handleImageChange(e.target.files?.[0] || null)
                   }
                   className="mt-4 block w-full cursor-pointer text-sm text-[#53665a] file:mr-4 file:rounded-xl file:border-0 file:bg-[#e7f1e8] file:px-4 file:py-2.5 file:font-bold file:text-[#317247] file:transition hover:file:bg-[#dcebdd]"
                 />
@@ -468,6 +505,12 @@ export default function QualityPage() {
                 </div>
               )}
             </div>
+
+            {error && (
+              <div className="mt-4 rounded-2xl border border-[#f0cccc] bg-[#fff4f4] px-4 py-3 text-sm font-semibold leading-6 text-[#a34a4a]">
+                {error}
+              </div>
+            )}
 
             <button
               onClick={analyzeImage}
@@ -579,9 +622,8 @@ export default function QualityPage() {
                 </div>
 
                 <p className="mt-5 text-sm leading-6 text-white/65">
-                  Computer vision helps create a
-                  consistent first-level visual assessment
-                  before a produce transaction.
+                  Computer vision helps create a consistent first-level visual
+                  assessment before a produce transaction.
                 </p>
 
                 <div className="mt-5 flex flex-wrap gap-2">
@@ -615,9 +657,7 @@ export default function QualityPage() {
                 </div>
 
                 <div>
-                  <h2 className="font-black">
-                    AI Observations
-                  </h2>
+                  <h2 className="font-black">AI Observations</h2>
 
                   <p className="text-xs text-[#819087]">
                     Visual indicators detected
@@ -626,20 +666,15 @@ export default function QualityPage() {
               </div>
 
               <ul className="mt-5 space-y-3">
-                {result.observations?.map(
-                  (item, index) => (
-                    <li
-                      key={index}
-                      className="flex gap-3 rounded-xl bg-[#f7faf7] p-3 text-sm leading-5 text-[#52645a]"
-                    >
-                      <span className="font-black text-[#347247]">
-                        ✓
-                      </span>
-
-                      {item}
-                    </li>
-                  )
-                )}
+                {result.observations?.map((item, index) => (
+                  <li
+                    key={index}
+                    className="flex gap-3 rounded-xl bg-[#f7faf7] p-3 text-sm leading-5 text-[#52645a]"
+                  >
+                    <span className="font-black text-[#347247]">✓</span>
+                    {item}
+                  </li>
+                ))}
               </ul>
             </div>
 
@@ -650,9 +685,7 @@ export default function QualityPage() {
                 </div>
 
                 <div>
-                  <h2 className="font-black">
-                    Visible Defects
-                  </h2>
+                  <h2 className="font-black">Visible Defects</h2>
 
                   <p className="text-xs text-[#819087]">
                     AI-detected visual concerns
@@ -662,21 +695,18 @@ export default function QualityPage() {
 
               {result.visibleDefects?.length > 0 ? (
                 <ul className="mt-5 space-y-3">
-                  {result.visibleDefects.map(
-                    (item, index) => (
-                      <li
-                        key={index}
-                        className="rounded-xl bg-[#fffaf0] p-3 text-sm leading-5 text-[#756444]"
-                      >
-                        • {item}
-                      </li>
-                    )
-                  )}
+                  {result.visibleDefects.map((item, index) => (
+                    <li
+                      key={index}
+                      className="rounded-xl bg-[#fffaf0] p-3 text-sm leading-5 text-[#756444]"
+                    >
+                      • {item}
+                    </li>
+                  ))}
                 </ul>
               ) : (
                 <div className="mt-5 rounded-xl bg-[#f1f8f1] p-4 text-sm font-semibold text-[#3e7349]">
-                  ✓ No obvious visible defects
-                  detected.
+                  ✓ No obvious visible defects detected.
                 </div>
               )}
             </div>
@@ -685,12 +715,9 @@ export default function QualityPage() {
 
         {/* DISCLAIMER */}
         <div className="mt-8 rounded-2xl border border-[#e4e8e4] bg-white p-5 text-xs leading-6 text-[#7b867f]">
-          <span className="font-black text-[#56645b]">
-            ⚠️ Important:
-          </span>{" "}
-          This is a visual AI estimate. It cannot
-          determine food safety, chemical contamination,
-          or internal quality from an image alone.
+          <span className="font-black text-[#56645b]">⚠️ Important:</span>{" "}
+          This is a visual AI estimate. It cannot determine food safety,
+          chemical contamination, or internal quality from an image alone.
         </div>
       </div>
     </main>
@@ -721,13 +748,9 @@ function VisionStep({
       </div>
 
       <div className="flex-1">
-        <div className="text-sm font-black text-[#294432]">
-          {title}
-        </div>
+        <div className="text-sm font-black text-[#294432]">{title}</div>
 
-        <div className="mt-0.5 text-xs text-[#78867d]">
-          {description}
-        </div>
+        <div className="mt-0.5 text-xs text-[#78867d]">{description}</div>
       </div>
 
       {active && (
@@ -750,9 +773,7 @@ function Metric({
         {label}
       </div>
 
-      <div className="mt-1 text-2xl font-black text-[#277443]">
-        {value}
-      </div>
+      <div className="mt-1 text-2xl font-black text-[#277443]">{value}</div>
     </div>
   );
 }

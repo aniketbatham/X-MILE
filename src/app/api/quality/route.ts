@@ -1,3 +1,4 @@
+
 import { GoogleGenAI } from "@google/genai";
 
 export async function POST(request: Request) {
@@ -24,6 +25,8 @@ export async function POST(request: Request) {
     const apiKey = process.env.GEMINI_API_KEY;
 
     if (!apiKey) {
+      console.error("HARVEX: GEMINI_API_KEY is missing.");
+
       return Response.json(
         { error: "Gemini API key is missing." },
         { status: 500 }
@@ -31,24 +34,14 @@ export async function POST(request: Request) {
     }
 
     const arrayBuffer = await image.arrayBuffer();
-    const base64Image = Buffer.from(arrayBuffer).toString("base64");
+    const base64Image =
+      Buffer.from(arrayBuffer).toString("base64");
 
     const ai = new GoogleGenAI({
       apiKey,
     });
 
-    const interaction = await ai.interactions.create({
-      model: "gemini-3.6-flash",
-
-      input: [
-        {
-          type: "user_input",
-
-          content: [
-            {
-              type: "text",
-
-              text: `
+    const prompt = `
 You are HARVEX AI Quality Grading Engine.
 
 The farmer has declared that the agricultural produce is:
@@ -109,78 +102,151 @@ Poor visible quality with significant visible defects.
 
 Remember:
 The declared crop is "${produce}".
-`,
-            },
+`;
 
-            {
-              type: "image",
-              data: base64Image,
-              mime_type: image.type || "image/jpeg",
-            },
-          ],
+    /*
+      Use the standard Gemini Generate Content API
+      for multimodal image understanding.
+    */
+    const response = await ai.models.generateContent({
+      model: "gemini-3.6-flash",
+
+      contents: [
+        {
+          inlineData: {
+            mimeType: image.type || "image/jpeg",
+            data: base64Image,
+          },
+        },
+        {
+          text: prompt,
         },
       ],
     });
 
-    let resultText = interaction.output_text?.trim();
+    let resultText = response.text?.trim();
 
     if (!resultText) {
+      console.error(
+        "HARVEX: Gemini returned an empty response."
+      );
+
       return Response.json(
-        { error: "Gemini returned an empty response." },
+        {
+          error:
+            "Gemini returned an empty quality result.",
+        },
         { status: 500 }
       );
     }
 
-    // Remove accidental Markdown code fences if Gemini adds them.
+    /*
+      Remove accidental Markdown fences.
+    */
     resultText = resultText
       .replace(/^```json\s*/i, "")
       .replace(/^```\s*/i, "")
       .replace(/\s*```$/i, "")
       .trim();
 
-    let parsedResult;
+    let parsedResult: {
+      grade: string;
+      score: number;
+      confidence: number;
+      observations: string[];
+      visibleDefects: string[];
+      suitability: string;
+    };
 
     try {
       parsedResult = JSON.parse(resultText);
     } catch {
-      console.error("Invalid Gemini JSON:", resultText);
+      console.error(
+        "HARVEX: Invalid Gemini JSON:",
+        resultText
+      );
 
       return Response.json(
         {
-          error: "Gemini returned an invalid quality result.",
-          rawResult: resultText,
+          error:
+            "Gemini returned an invalid quality result.",
         },
         { status: 500 }
       );
     }
 
-    // Basic validation
+    /*
+      Validate the returned structure.
+    */
     if (
-      !["A", "B", "C"].includes(parsedResult.grade) ||
+      !["A", "B", "C"].includes(
+        parsedResult.grade
+      ) ||
       typeof parsedResult.score !== "number" ||
-      typeof parsedResult.confidence !== "number" ||
-      !Array.isArray(parsedResult.observations) ||
-      !Array.isArray(parsedResult.visibleDefects) ||
-      !["High", "Medium", "Low"].includes(parsedResult.suitability)
+      typeof parsedResult.confidence !==
+        "number" ||
+      !Array.isArray(
+        parsedResult.observations
+      ) ||
+      !Array.isArray(
+        parsedResult.visibleDefects
+      ) ||
+      !["High", "Medium", "Low"].includes(
+        parsedResult.suitability
+      )
     ) {
+      console.error(
+        "HARVEX: Invalid quality structure:",
+        parsedResult
+      );
+
       return Response.json(
-        { error: "Gemini returned an invalid quality structure." },
+        {
+          error:
+            "Gemini returned an invalid quality structure.",
+        },
         { status: 500 }
       );
     }
+
+    /*
+      Clamp numeric values so the frontend
+      always receives valid percentages.
+    */
+    parsedResult.score = Math.max(
+      0,
+      Math.min(
+        100,
+        Math.round(parsedResult.score)
+      )
+    );
+
+    parsedResult.confidence = Math.max(
+      0,
+      Math.min(
+        100,
+        Math.round(parsedResult.confidence)
+      )
+    );
 
     return Response.json({
       result: JSON.stringify(parsedResult),
     });
   } catch (error) {
-    console.error("HARVEX AI error:", error);
+    console.error(
+      "HARVEX AI quality error:",
+      error
+    );
 
     return Response.json(
       {
         error:
-          error instanceof Error ? error.message : String(error),
+          error instanceof Error
+            ? error.message
+            : String(error),
       },
       { status: 500 }
     );
   }
 }
+

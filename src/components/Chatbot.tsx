@@ -25,8 +25,37 @@ const INITIAL_WELCOME_MESSAGE: Message = {
   timestamp: "",
 };
 
-export default function Chatbot() {
-  const [isOpen, setIsOpen] = useState(false);
+type ChatbotProps = {
+  isOpen?: boolean;
+  onClose?: () => void;
+  showStandaloneToggle?: boolean;
+};
+
+export default function Chatbot({
+  isOpen: controlledIsOpen,
+  onClose,
+  showStandaloneToggle = true,
+}: ChatbotProps = {}) {
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
+  const isOpen = typeof controlledIsOpen === "boolean" ? controlledIsOpen : internalIsOpen;
+
+  const handleClose = () => {
+    if (onClose) {
+      onClose();
+    } else {
+      setInternalIsOpen(false);
+    }
+  };
+
+  const handleToggle = () => {
+    if (typeof controlledIsOpen === "boolean" && onClose) {
+      if (isOpen) {
+        onClose();
+      }
+    } else {
+      setInternalIsOpen((prev) => !prev);
+    }
+  };
   const [messages, setMessages] = useState<Message[]>([INITIAL_WELCOME_MESSAGE]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -48,7 +77,7 @@ export default function Chatbot() {
 
       const savedOpenState = sessionStorage.getItem("xmile_chat_open");
       if (savedOpenState === "true") {
-        setIsOpen(true);
+        setInternalIsOpen(true);
       }
     } catch {
       // Ignore storage errors
@@ -245,39 +274,41 @@ export default function Chatbot() {
 
   return (
     <>
-      {/* Floating Toggle Button */}
-      <div className="fixed bottom-5 right-5 z-50">
-        <button
-          onClick={() => setIsOpen((prev) => !prev)}
-          aria-label={isOpen ? "Close X-MILE AI Assistant" : "Open X-MILE AI Assistant"}
-          className="group relative flex h-14 w-14 items-center justify-center rounded-2xl bg-[#173b2a] text-white shadow-xl transition-all duration-300 hover:scale-105 hover:bg-[#1f6b3b] hover:shadow-2xl active:scale-95 focus:outline-none focus:ring-4 focus:ring-emerald-400/40"
-        >
-          {isOpen ? (
-            <svg
-              className="h-6 w-6 transition-transform duration-200 group-hover:rotate-90"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2.5}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          ) : (
-            <div className="relative flex items-center justify-center">
-              <span className="text-2xl">🌱</span>
-              {/* Online pulse indicator */}
-              <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex h-3.5 w-3.5 rounded-full border-2 border-white bg-emerald-500" />
-              </span>
-            </div>
-          )}
-        </button>
-      </div>
+      {/* Floating Toggle Button (Used only in standalone mode) */}
+      {showStandaloneToggle && (
+        <div className="fixed bottom-5 right-5 z-50">
+          <button
+            onClick={handleToggle}
+            aria-label={isOpen ? "Close X-MILE AI Assistant" : "Open X-MILE AI Assistant"}
+            className="group relative flex h-14 w-14 items-center justify-center rounded-2xl bg-[#173b2a] text-white shadow-xl transition-all duration-300 hover:scale-105 hover:bg-[#1f6b3b] hover:shadow-2xl active:scale-95 focus:outline-none focus:ring-4 focus:ring-emerald-400/40"
+          >
+            {isOpen ? (
+              <svg
+                className="h-6 w-6 transition-transform duration-200 group-hover:rotate-90"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2.5}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            ) : (
+              <div className="relative flex items-center justify-center">
+                <span className="text-2xl">🌱</span>
+                {/* Online pulse indicator */}
+                <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex h-3.5 w-3.5 rounded-full border-2 border-white bg-emerald-500" />
+                </span>
+              </div>
+            )}
+          </button>
+        </div>
+      )}
 
       {/* Chat Window Panel */}
       {isOpen && (
@@ -326,7 +357,7 @@ export default function Chatbot() {
               </button>
 
               <button
-                onClick={() => setIsOpen(false)}
+                onClick={handleClose}
                 title="Close chat"
                 className="rounded-lg p-1.5 text-white/70 hover:bg-white/10 hover:text-white transition-colors"
                 aria-label="Close chat"

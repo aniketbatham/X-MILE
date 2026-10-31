@@ -348,21 +348,21 @@ export default function HomePage() {
               href="#how-it-works"
               className="text-sm font-medium text-[#52655a] transition-colors hover:text-[#1f6b3b]"
             >
-              How it works
+              {t("common.howItWorks")}
             </a>
 
             <a
               href="#ai-vision"
               className="text-sm font-medium text-[#52655a] transition-colors hover:text-[#1f6b3b]"
             >
-              AI Vision
+              {t("common.aiVision")}
             </a>
 
             <a
               href="#harvest-pool"
               className="text-sm font-medium text-[#52655a] transition-colors hover:text-[#1f6b3b]"
             >
-              Harvest Pool
+              {t("common.harvestPool")}
             </a>
           </div>
 
@@ -499,15 +499,15 @@ export default function HomePage() {
 
                 {/* Detection labels */}
                 <div className="absolute left-[13%] top-[34%] rounded-md bg-[#173523]/85 px-2 py-1 text-[8px] font-bold tracking-wider text-white">
-                  COLOR
+                  {t("common.color").toUpperCase()}
                 </div>
 
                 <div className="absolute right-[10%] top-[43%] rounded-md bg-[#173523]/85 px-2 py-1 text-[8px] font-bold tracking-wider text-white">
-                  TEXTURE
+                  {t("common.texture").toUpperCase()}
                 </div>
 
                 <div className="absolute left-[29%] bottom-[14%] rounded-md bg-[#173523]/85 px-2 py-1 text-[8px] font-bold tracking-wider text-white">
-                  SIZE
+                  {t("common.size").toUpperCase()}
                 </div>
 
                 {/* Scan frame */}
@@ -527,12 +527,12 @@ export default function HomePage() {
                 <div className="absolute bottom-4 left-4 rounded-xl border border-white/20 bg-[#122a1b]/80 px-4 py-3 text-white backdrop-blur-md">
                   <div className="flex items-center gap-2 text-[10px] font-bold tracking-[0.15em]">
                     <span className="blink h-1.5 w-1.5 rounded-full bg-[#b9ed9f]" />
-                    ANALYZING HARVEST
+                    {t("home.analyzingHarvest").toUpperCase()}
                   </div>
                   <div className="mt-1 text-xs text-white/65">
                     {scanComplete
-                      ? "Visual indicators detected"
-                      : "Scanning produce surface..."}
+                      ? t("home.visualIndicatorsDetected")
+                      : t("home.scanningSurface")}
                   </div>
                 </div>
               </div>
@@ -547,7 +547,7 @@ export default function HomePage() {
               >
                 <div>
                   <div className="text-[10px] font-bold tracking-[0.16em] text-[#718078]">
-                    QUALITY GRADE
+                    {t("common.grade").toUpperCase()}
                   </div>
 
                   <div className="mt-1 flex items-center gap-3">
@@ -558,8 +558,8 @@ export default function HomePage() {
                     <div>
                       <div className="text-xs font-bold text-[#31533c]">
                         {scanComplete
-                          ? "Excellent visual quality"
-                          : "Processing..."}
+                          ? t("home.excellentQuality")
+                          : t("common.processing")}
                       </div>
                       <div className="mt-2 h-1.5 w-36 overflow-hidden rounded-full bg-[#d9e7da]">
                         <div
@@ -655,27 +655,27 @@ export default function HomePage() {
         <div className="grid gap-5 md:grid-cols-3">
           <FeatureCard
             icon="🤖"
-            label="AI QUALITY"
-            title="Computer vision for your harvest."
-            description="X-MILE AI Vision analyzes visual quality indicators and generates an easy-to-understand grade."
+            label={t("home.featureQualityLabel")}
+            title={t("home.featureQualityTitle")}
+            description={t("home.featureQualityDesc")}
             href="/quality"
             delay="0s"
           />
 
           <FeatureCard
             icon="🌾"
-            label="SMART HARVEST POOL"
-            title="Small farms. One stronger supply."
-            description="Combine produce from multiple farmers to fulfill buyer requirements without losing farmer participation."
+            label={t("home.featurePoolLabel")}
+            title={t("home.featurePoolTitle")}
+            description={t("home.featurePoolDesc")}
             href="/buyer"
             delay="0.12s"
           />
 
           <FeatureCard
             icon="🚚"
-            label="TRANSPARENT LOGISTICS"
-            title="Know where the order is."
-            description="Track order progress from dispatch to delivery with visible shipment status."
+            label={t("home.featureLogisticsLabel")}
+            title={t("home.featureLogisticsTitle")}
+            description={t("home.featureLogisticsDesc")}
             href="/buyer"
             delay="0.24s"
           />
@@ -741,15 +741,15 @@ export default function HomePage() {
               <div className="mb-5 flex items-center justify-between">
                 <div>
                   <div className="text-xs font-black tracking-[0.16em] text-[#819087]">
-                    BUYER REQUIREMENT
+                    {t("home.buyerRequirement").toUpperCase()}
                   </div>
                   <div className="mt-1 text-xl font-black">
-                    5,000 kg Onion
+                    5,000 {t("common.kg")} {t("quality.produceTypes.onion")}
                   </div>
                 </div>
 
                 <div className="rounded-full bg-[#eef7ef] px-3 py-1 text-xs font-bold text-[#337348]">
-                  Matched
+                  {t("home.matched")}
                 </div>
               </div>
 
@@ -800,8 +800,7 @@ export default function HomePage() {
               </div>
 
               <div className="mt-5 rounded-2xl bg-[#f2f7f2] p-4 text-center text-sm font-semibold text-[#4f6256]">
-                4 farmers combined to fulfill one
-                buyer requirement.
+                {t("home.poolingDemoSummary")}
               </div>
             </div>
           </div>
@@ -814,26 +813,22 @@ export default function HomePage() {
           <div className="grid items-center gap-12 lg:grid-cols-[0.8fr_1.2fr]">
             <div>
               <div className="text-xs font-black tracking-[0.18em] text-[#34794a]">
-                TRANSPARENT LOGISTICS
+                {t("home.featureLogisticsLabel")}
               </div>
 
               <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
-                From farm to buyer,
-                <br />
-                keep it visible.
+                {t("home.logisticsJourneyTitle")}
               </h2>
 
               <p className="mt-5 max-w-lg leading-7 text-[#69786e]">
-                Once an order is dispatched, X-MILE
-                provides a clear shipment status so both
-                sides can follow the journey.
+                {t("home.logisticsJourneySubtitle")}
               </p>
 
               <Link
                 href="/buyer"
                 className="button-hover mt-7 inline-flex rounded-xl bg-[#1f6b3b] px-5 py-3 text-sm font-bold text-white"
               >
-                View Buyer Tracking →
+                {t("common.viewTracking")} →
               </Link>
             </div>
 
@@ -841,15 +836,15 @@ export default function HomePage() {
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-xs font-black tracking-[0.16em] text-[#7b8a81]">
-                    SHIPMENT STATUS
+                    {t("common.status").toUpperCase()}
                   </div>
                   <div className="mt-1 text-lg font-black">
-                    Order in transit
+                    {t("home.orderInTransit")}
                   </div>
                 </div>
 
                 <div className="rounded-full bg-[#e9f5ea] px-3 py-1 text-xs font-bold text-[#327247]">
-                  ● LIVE
+                  ● {t("common.live").toUpperCase()}
                 </div>
               </div>
 
@@ -886,16 +881,16 @@ export default function HomePage() {
 
               <div className="mt-8 grid gap-3 sm:grid-cols-3">
                 <StatusBox
-                  title="STATUS"
-                  value="In Transit"
+                  title={t("common.status").toUpperCase()}
+                  value={t("farmer.orderInTransit")}
                 />
                 <StatusBox
-                  title="CURRENT"
+                  title={t("common.currentLocation").toUpperCase()}
                   value="Tumakuru"
                 />
                 <StatusBox
-                  title="VISIBILITY"
-                  value="Live"
+                  title={t("home.visibility").toUpperCase()}
+                  value={t("common.live")}
                 />
               </div>
             </div>
@@ -907,16 +902,15 @@ export default function HomePage() {
       <section className="mx-auto max-w-7xl px-5 py-20 lg:px-8">
         <div className="text-center">
           <div className="text-xs font-black tracking-[0.2em] text-[#34794a]">
-            EXPLORE X-MILE
+            {t("home.exploreTitle").toUpperCase()}
           </div>
 
           <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
-            Everything connected in one platform.
+            {t("home.exploreTitle")}
           </h2>
 
           <p className="mx-auto mt-4 max-w-2xl text-[#69786e]">
-            Use the actual X-MILE modules below to
-            explore the complete procurement workflow.
+            {t("home.exploreSubtitle")}
           </p>
         </div>
 
@@ -945,7 +939,7 @@ export default function HomePage() {
               </p>
 
               <div className="mt-5 text-xs font-black text-[#317247]">
-                Open module →
+                {t("common.openModule")} →
               </div>
             </Link>
           ))}
@@ -960,14 +954,11 @@ export default function HomePage() {
 
           <div className="relative">
             <div className="text-3xl font-black tracking-tight sm:text-4xl">
-              Better value for farmers.
-              <br />
-              Better sourcing for buyers.
+              {t("home.finalCtaTitle")}
             </div>
 
             <p className="mx-auto mt-5 max-w-xl text-sm leading-6 text-white/65">
-              Experience the X-MILE procurement workflow
-              through the working demo.
+              {t("home.finalCtaSubtitle")}
             </p>
 
             <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">

@@ -23,30 +23,27 @@ type Order = {
   created_at: string;
 };
 
-const milestones = [
-  {
-    name: "Order Accepted",
-    percentage: 20,
-    description:
-      "Buyer confirms the pooled agricultural order.",
-  },
-  {
-    name: "Dispatch Verified",
-    percentage: 40,
-    description:
-      "Produce is collected and dispatch is verified.",
-  },
-  {
-    name: "Delivery Confirmed",
-    percentage: 40,
-    description:
-      "Buyer confirms successful delivery.",
-  },
-];
-
 export default function TransactionPage() {
   const { t, formatNumber, formatDate } = useLanguage();
   const [order, setOrder] = useState<Order | null>(null);
+
+  const milestones = [
+    {
+      name: t("transaction.milestoneAccepted"),
+      percentage: 20,
+      description: t("transaction.milestoneAcceptedDesc"),
+    },
+    {
+      name: t("transaction.milestoneDispatched"),
+      percentage: 40,
+      description: t("transaction.milestoneDispatchedDesc"),
+    },
+    {
+      name: t("transaction.milestoneDelivered"),
+      percentage: 40,
+      description: t("transaction.milestoneDeliveredDesc"),
+    },
+  ];
 
   const [loading, setLoading] = useState(true);
 
@@ -372,14 +369,14 @@ export default function TransactionPage() {
             <div className="flex justify-between">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wider text-emerald-700">
-                  Supply Fulfillment
+                  {t("transaction.supplyFulfillment")}
                 </p>
 
                 <p className="mt-1 text-lg font-bold text-emerald-950">
                   {Number(
                     order.fulfilled_quantity_kg
                   ).toLocaleString()}{" "}
-                  kg aggregated
+                  {t("transaction.kgAggregated")}
                 </p>
               </div>
 
@@ -392,7 +389,7 @@ export default function TransactionPage() {
                 </p>
 
                 <p className="text-xs text-emerald-800">
-                  fulfillment
+                  {t("buyer.fulfillmentRate")}
                 </p>
               </div>
             </div>
@@ -403,11 +400,11 @@ export default function TransactionPage() {
 
         <section className="mt-6 rounded-3xl border bg-white p-6 shadow-sm">
           <p className="text-sm font-semibold uppercase tracking-wider text-emerald-700">
-            Escrow Progress
+            {t("transaction.escrowProgress")}
           </p>
 
           <h3 className="mt-1 text-2xl font-bold">
-            Milestone Release
+            {t("transaction.milestoneRelease")}
           </h3>
 
           <div className="mt-8 space-y-7">
@@ -441,11 +438,7 @@ export default function TransactionPage() {
                     <div className="flex-1">
                       <div className="flex justify-between gap-4">
                         <h4 className="font-semibold">
-                          {index === 0
-                            ? t("transaction.stepOrderPlaced")
-                            : index === 1
-                              ? t("transaction.stepDispatched")
-                              : t("transaction.stepDelivered")}
+                          {milestone.name}
                         </h4>
 
                         <span className="font-bold text-emerald-700">
@@ -459,10 +452,10 @@ export default function TransactionPage() {
 
                       <p className="mt-2 text-xs font-medium text-slate-400">
                         {completed
-                          ? "Released"
+                          ? t("common.completed")
                           : active
-                            ? "Current milestone"
-                            : "Pending"}
+                            ? t("buyer.currentStage")
+                            : t("common.ready")}
                       </p>
                     </div>
                   </div>
@@ -476,11 +469,11 @@ export default function TransactionPage() {
 
         <section className="mt-6 rounded-3xl border bg-white p-6 shadow-sm">
           <p className="text-sm font-semibold uppercase tracking-wider text-slate-500">
-            Transaction Controls
+            {t("transaction.transactionControls")}
           </p>
 
           <h3 className="mt-1 text-xl font-bold">
-            Update Order Status
+            {t("transaction.updateOrderStatus")}
           </h3>
 
           <div className="mt-5 flex flex-wrap gap-3">
@@ -499,7 +492,7 @@ export default function TransactionPage() {
                   className="rounded-xl bg-slate-900 px-5 py-3 font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
                 >
                   {updating
-                    ? "Updating..."
+                    ? t("common.processing")
                     : order.status ===
                         "Accepted"
                       ? `${t("transaction.stepDispatched")} →`
@@ -516,7 +509,7 @@ export default function TransactionPage() {
                   disabled={updating}
                   className="rounded-xl border border-red-200 px-5 py-3 font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50"
                 >
-                  Raise Dispute
+                  {t("transaction.raiseDispute")}
                 </button>
               )}
 
@@ -525,7 +518,7 @@ export default function TransactionPage() {
               disabled={loading}
               className="rounded-xl border border-slate-300 px-5 py-3 font-semibold hover:bg-slate-50"
             >
-              ↻ Refresh Order
+              ↻ {t("common.refresh")}
             </button>
           </div>
         </section>
@@ -535,16 +528,15 @@ export default function TransactionPage() {
         {showDispute && (
           <section className="mt-6 rounded-3xl border border-red-200 bg-red-50 p-6">
             <p className="text-sm font-semibold uppercase tracking-wider text-red-700">
-              Transaction Review
+              {t("common.disputed")}
             </p>
 
             <h3 className="mt-1 text-xl font-bold text-red-950">
-              Dispute Simulation
+              {t("transaction.raiseDispute")}
             </h3>
 
             <p className="mt-2 text-sm leading-6 text-red-900">
-              In production, the relevant milestone would
-              remain held while the dispute is reviewed.
+              {t("transaction.msgDisputeHeld")}
             </p>
 
             <div className="mt-5 flex gap-3">
@@ -556,8 +548,8 @@ export default function TransactionPage() {
                 className="rounded-xl bg-red-700 px-5 py-3 font-semibold text-white hover:bg-red-800 disabled:opacity-50"
               >
                 {updating
-                  ? "Processing..."
-                  : "Confirm Dispute"}
+                  ? t("common.processing")
+                  : t("transaction.confirmDispute")}
               </button>
 
               <button
@@ -567,7 +559,7 @@ export default function TransactionPage() {
                 disabled={updating}
                 className="rounded-xl border border-red-300 px-5 py-3 font-semibold text-red-700 hover:bg-white"
               >
-                Cancel
+                {t("common.cancel")}
               </button>
             </div>
           </section>
@@ -593,26 +585,26 @@ export default function TransactionPage() {
               <h3 className="font-semibold">
                 {order.status ===
                   "Accepted" &&
-                  "Order accepted — first milestone active."}
+                  t("transaction.msgAccepted")}
 
                 {order.status ===
                   "Dispatched" &&
-                  "Dispatch verified — second milestone active."}
+                  t("transaction.msgDispatched")}
 
                 {order.status ===
                   "Delivered" &&
-                  "Delivery confirmed — transaction completed."}
+                  t("transaction.msgDelivered")}
 
                 {order.status ===
                   "Disputed" &&
-                  "Dispute raised — transaction under review."}
+                  t("transaction.msgDisputed")}
               </h3>
 
               <p className="mt-1 text-sm text-slate-500">
                 {order.status ===
                 "Disputed"
-                  ? "The disputed amount would remain held until resolution."
-                  : "Milestone status is persisted in the X-MILE database."}
+                  ? t("transaction.msgDisputeHeld")
+                  : t("transaction.msgPersisted")}
               </p>
             </div>
           </div>
@@ -621,10 +613,7 @@ export default function TransactionPage() {
         {/* PROTOTYPE NOTE */}
 
         <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-          <strong>Prototype note:</strong>{" "}
-          This workflow simulates milestone escrow. It
-          does not process real payments or hold real
-          funds.
+          {t("transaction.prototypeEscrowNote")}
         </div>
       </section>
     </main>

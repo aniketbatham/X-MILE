@@ -103,12 +103,12 @@ export default function ForecastPage() {
               onClick={runForecast}
               className="mt-5 w-full rounded-lg bg-slate-900 px-4 py-3 font-semibold text-white hover:bg-slate-800"
             >
-              Run AI Forecast
+              {t("forecast.runForecast")}
             </button>
 
             <div className="mt-6 rounded-xl bg-slate-50 p-4">
               <h4 className="font-semibold">
-                Historical Demand
+                {t("forecast.historicalDemand")}
               </h4>
 
               <div className="mt-3 space-y-2">
@@ -122,7 +122,7 @@ export default function ForecastPage() {
                     </span>
 
                     <span className="font-medium">
-                      {item.quantity.toLocaleString()} kg
+                      {item.quantity.toLocaleString()} {t("common.kg")}
                     </span>
                   </div>
                 ))}
@@ -138,12 +138,11 @@ export default function ForecastPage() {
                   <div className="text-4xl">🧠</div>
 
                   <h3 className="mt-4 text-lg font-semibold">
-                    Forecast not generated
+                    {t("forecast.forecastNotGenerated")}
                   </h3>
 
                   <p className="mt-2 text-sm text-slate-500">
-                    Click the button to run the X-MILE demand
-                    forecasting engine.
+                    {t("forecast.forecastEmptyDesc")}
                   </p>
                 </div>
               </div>
@@ -152,7 +151,7 @@ export default function ForecastPage() {
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-sm text-slate-500">
-                      Forecast for
+                      {t("forecast.forecastFor")}
                     </p>
 
                     <h3 className="text-2xl font-bold">
@@ -161,40 +160,40 @@ export default function ForecastPage() {
                   </div>
 
                   <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
-                    AI Forecast
+                    {t("forecast.aiForecast")}
                   </span>
                 </div>
 
                 <div className="mt-6 grid gap-4 sm:grid-cols-2">
                   <div className="rounded-xl bg-slate-50 p-5">
                     <p className="text-sm text-slate-500">
-                      Predicted Demand
+                      {t("forecast.aiForecast")}
                     </p>
 
                     <p className="mt-2 text-3xl font-bold">
                       {result.forecastQuantity.toLocaleString()}
                       <span className="ml-1 text-sm font-medium text-slate-500">
-                        kg
+                        {t("common.kg")}
                       </span>
                     </p>
                   </div>
 
                   <div className="rounded-xl bg-slate-50 p-5">
                     <p className="text-sm text-slate-500">
-                      Historical Average
+                      {t("forecast.historicalAverage")}
                     </p>
 
                     <p className="mt-2 text-3xl font-bold">
                       {result.historicalAverage.toLocaleString()}
                       <span className="ml-1 text-sm font-medium text-slate-500">
-                        kg
+                        {t("common.kg")}
                       </span>
                     </p>
                   </div>
 
                   <div className="rounded-xl bg-slate-50 p-5">
                     <p className="text-sm text-slate-500">
-                      Demand Trend
+                      {t("forecast.demandTrend")}
                     </p>
 
                     <p className="mt-2 text-2xl font-bold">
@@ -204,7 +203,7 @@ export default function ForecastPage() {
 
                   <div className="rounded-xl bg-slate-50 p-5">
                     <p className="text-sm text-slate-500">
-                      Confidence
+                      {t("forecast.confidence")}
                     </p>
 
                     <p className="mt-2 text-2xl font-bold">
@@ -215,7 +214,7 @@ export default function ForecastPage() {
 
                 <div className="mt-6 rounded-xl bg-emerald-50 p-5">
                   <p className="text-xs font-semibold uppercase text-emerald-700">
-                    X-MILE Recommendation
+                    {t("forecast.recommendation")}
                   </p>
 
                   <p className="mt-2 text-sm text-emerald-950">
@@ -228,9 +227,7 @@ export default function ForecastPage() {
         </div>
 
         <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-          <strong>Prototype:</strong> Forecasting currently uses
-          sample historical demand data. Later we will connect it
-          to real buyer orders and market signals.
+          {t("forecast.prototypeNotice")}
         </div>
       </section>
     </main>

@@ -327,12 +327,12 @@ export default function QualityPage() {
                 </div>
 
                 <h2 className="mt-1 text-xl font-black">
-                  Harvest Scanner
+                  {t("quality.harvestScanner")}
                 </h2>
               </div>
 
               <div className="rounded-full bg-[#eff8f0] px-3 py-1.5 text-[10px] font-black text-[#347247]">
-                {loading ? "SCANNING" : "READY"}
+                {loading ? t("common.scanning").toUpperCase() : t("common.ready").toUpperCase()}
               </div>
             </div>
 
@@ -398,15 +398,15 @@ export default function QualityPage() {
               {loading && (
                 <>
                   <div className="absolute left-[12%] top-[31%] rounded-md bg-[#173523]/85 px-2 py-1 text-[8px] font-black tracking-wider text-white">
-                    COLOR
+                    {t("common.color").toUpperCase()}
                   </div>
 
                   <div className="absolute right-[9%] top-[42%] rounded-md bg-[#173523]/85 px-2 py-1 text-[8px] font-black tracking-wider text-white">
-                    TEXTURE
+                    {t("common.texture").toUpperCase()}
                   </div>
 
                   <div className="absolute bottom-[13%] left-[29%] rounded-md bg-[#173523]/85 px-2 py-1 text-[8px] font-black tracking-wider text-white">
-                    SIZE
+                    {t("common.size").toUpperCase()}
                   </div>
                 </>
               )}
@@ -418,18 +418,18 @@ export default function QualityPage() {
                     <span className="blink h-1.5 w-1.5 rounded-full bg-[#b9ed9f]" />
 
                     {loading
-                      ? "ANALYZING HARVEST"
+                      ? t("home.analyzingHarvest").toUpperCase()
                       : preview
-                        ? "IMAGE READY"
-                        : "AI SCANNER READY"}
+                        ? t("farmer.imageLoaded").toUpperCase()
+                        : t("farmer.aiVisionReady")}
                   </div>
 
                   <div className="mt-1 text-xs text-white/60">
                     {loading
-                      ? "Detecting visual indicators..."
+                      ? t("home.scanningSurface")
                       : preview
-                        ? "Ready for computer vision analysis"
-                        : "Upload an image to begin"}
+                        ? t("farmer.readyForAssessment")
+                        : t("quality.step1Desc")}
                   </div>
                 </div>
 
@@ -500,7 +500,7 @@ export default function QualityPage() {
               {image && (
                 <div className="mt-4 rounded-xl bg-white px-4 py-3 text-xs text-[#617168]">
                   <span className="font-bold text-[#294432]">
-                    Selected:
+                    {t("quality.selectedFile")}:
                   </span>{" "}
                   {image.name}
                 </div>
@@ -529,35 +529,35 @@ export default function QualityPage() {
             {/* AI PROCESS */}
             <div className="card-hover rounded-[2rem] border border-[#dce8df] bg-white p-6 shadow-sm">
               <div className="text-xs font-black tracking-[0.18em] text-[#327247]">
-                HOW AI VISION WORKS
+                {t("quality.howAiWorks").toUpperCase()}
               </div>
 
               <div className="mt-5 space-y-4">
                 <VisionStep
                   number="01"
-                  title="Upload"
-                  description="Provide a clear harvest image."
+                  title={t("quality.stepUploadTitle")}
+                  description={t("quality.stepUploadDesc")}
                   active={!!image}
                 />
 
                 <VisionStep
                   number="02"
-                  title="Scan"
-                  description="X-MILE analyzes visible characteristics."
+                  title={t("quality.stepScanTitle")}
+                  description={t("quality.stepScanDesc")}
                   active={loading}
                 />
 
                 <VisionStep
                   number="03"
-                  title="Evaluate"
-                  description="AI estimates quality indicators."
+                  title={t("quality.stepEvaluateTitle")}
+                  description={t("quality.stepEvaluateDesc")}
                   active={!!result}
                 />
 
                 <VisionStep
                   number="04"
-                  title="Grade"
-                  description="Receive a visual quality assessment."
+                  title={t("quality.stepGradeTitle")}
+                  description={t("quality.stepGradeDesc")}
                   active={!!result}
                 />
               </div>
@@ -569,7 +569,7 @@ export default function QualityPage() {
                 <div className="flex items-start justify-between">
                   <div>
                     <div className="text-xs font-black tracking-[0.18em] text-[#4b8055]">
-                      ANALYSIS COMPLETE
+                      {t("quality.analysisComplete").toUpperCase()}
                     </div>
 
                     <div className="mt-2 text-xl font-black">
@@ -613,27 +613,26 @@ export default function QualityPage() {
 
                   <div>
                     <div className="text-xs font-black tracking-[0.16em] text-[#b6d9bb]">
-                      X-MILE INTELLIGENCE
+                      {t("quality.aiIntelligenceTitle").toUpperCase()}
                     </div>
 
                     <div className="mt-1 font-black">
-                      AI-assisted quality insights
+                      {t("quality.aiIntelligenceDesc")}
                     </div>
                   </div>
                 </div>
 
                 <p className="mt-5 text-sm leading-6 text-white/65">
-                  Computer vision helps create a consistent first-level visual
-                  assessment before a produce transaction.
+                  {t("quality.aiVisionExplanation")}
                 </p>
 
                 <div className="mt-5 flex flex-wrap gap-2">
                   {[
-                    "Color",
-                    "Texture",
-                    "Size",
-                    "Surface",
-                    "Visual defects",
+                    t("common.color"),
+                    t("common.texture"),
+                    t("common.size"),
+                    t("common.surface"),
+                    t("common.visualDefects"),
                   ].map((item) => (
                     <span
                       key={item}

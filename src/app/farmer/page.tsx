@@ -394,7 +394,7 @@ export default function FarmerPage() {
     if (status === "Disputed") {
       return (
         <span className="text-xs font-semibold text-red-600">
-          Order disputed
+          {t("common.disputed")}
         </span>
       );
     }
@@ -402,7 +402,7 @@ export default function FarmerPage() {
     if (status === "Delivered") {
       return (
         <span className="text-xs font-bold text-emerald-600">
-          ✓ Completed
+          ✓ {t("common.completed")}
         </span>
       );
     }
@@ -421,8 +421,8 @@ export default function FarmerPage() {
           className="button-hover rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isUpdating
-            ? "Updating..."
-            : "Mark Delivered"}
+            ? t("common.processing")
+            : t("farmer.markDelivered")}
         </button>
       );
     }
@@ -440,8 +440,8 @@ export default function FarmerPage() {
         className="button-hover rounded-xl bg-[#172019] px-4 py-2.5 text-xs font-bold text-white shadow-sm transition disabled:cursor-not-allowed disabled:opacity-50"
       >
         {isUpdating
-          ? "Updating..."
-          : "Mark Dispatched"}
+          ? t("common.processing")
+          : t("farmer.markDispatched")}
       </button>
     );
   }
@@ -645,25 +645,25 @@ export default function FarmerPage() {
         >
           {[
             {
-              label: "Inventory Items",
+              label: t("farmer.statInventoryItems"),
               value: inventory.length,
               suffix: "",
               icon: "◈",
             },
             {
-              label: "Available Produce",
+              label: t("farmer.statAvailableProduce"),
               value: totalInventoryKg,
-              suffix: " kg",
+              suffix: ` ${t("common.kg")}`,
               icon: "◌",
             },
             {
-              label: "Grade A Lots",
+              label: t("farmer.statGradeALots"),
               value: gradeAItems,
               suffix: "",
               icon: "✦",
             },
             {
-              label: "Incoming Orders",
+              label: t("farmer.statIncomingOrders"),
               value: incomingOrders.length,
               suffix: "",
               icon: "→",
@@ -725,7 +725,7 @@ export default function FarmerPage() {
                 X-MILE POOL
               </p>
               <p className="mt-1 text-sm font-bold text-emerald-700">
-                Ready for buyer matching
+                {t("farmer.readyForMatching")}
               </p>
             </div>
           </div>
@@ -766,7 +766,7 @@ export default function FarmerPage() {
                 onChange={(e) =>
                   setQuantity(e.target.value)
                 }
-                placeholder="Enter quantity"
+                placeholder={t("farmer.enterQuantity")}
                 className="w-full rounded-xl border border-black/10 bg-[#fafbf8] px-4 py-3.5 text-sm font-semibold outline-none transition placeholder:text-gray-400 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
               />
             </div>
@@ -774,7 +774,7 @@ export default function FarmerPage() {
             {/* LOCATION */}
             <div>
               <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-gray-500">
-                Farm Location
+                {t("farmer.farmLocation")}
               </label>
 
               <input
@@ -790,7 +790,7 @@ export default function FarmerPage() {
             {/* IMAGE */}
             <div>
               <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-gray-500">
-                Produce Image
+                {t("farmer.produceImage")}
               </label>
 
               <label
@@ -800,11 +800,11 @@ export default function FarmerPage() {
                 <span className="truncate text-sm font-semibold text-gray-600">
                   {image
                     ? image.name
-                    : "Choose produce image"}
+                    : t("farmer.chooseImage")}
                 </span>
 
                 <span className="ml-3 rounded-lg bg-[#172019] px-3 py-2 text-xs font-bold text-white">
-                  Browse
+                  {t("farmer.browse")}
                 </span>
               </label>
 
@@ -841,7 +841,7 @@ export default function FarmerPage() {
                 </div>
 
                 <div className="absolute bottom-3 left-3 rounded-full bg-black/60 px-3 py-1.5 text-[10px] font-bold text-white backdrop-blur">
-                  AI VISION READY
+                  {t("farmer.aiVisionReady")}
                 </div>
               </div>
 
@@ -849,19 +849,16 @@ export default function FarmerPage() {
                 <div className="flex items-center gap-3">
                   <span className="pulse-dot h-2.5 w-2.5 rounded-full bg-emerald-500" />
                   <p className="text-xs font-black uppercase tracking-widest text-emerald-700">
-                    Image loaded
+                    {t("farmer.imageLoaded")}
                   </p>
                 </div>
 
                 <h3 className="mt-3 text-xl font-black">
-                  Ready for AI quality assessment
+                  {t("farmer.readyForAssessment")}
                 </h3>
 
                 <p className="mt-2 max-w-lg text-sm leading-6 text-gray-500">
-                  X-MILE will examine visible
-                  characteristics and return a quality
-                  grade, score, confidence and
-                  observations.
+                  {t("farmer.assessmentDesc")}
                 </p>
               </div>
             </div>
@@ -879,12 +876,11 @@ export default function FarmerPage() {
                 </div>
 
                 <h3 className="text-lg font-black">
-                  See the quality before you sell.
+                  {t("farmer.seeQualityBeforeSelling")}
                 </h3>
 
                 <p className="mt-1 text-xs leading-5 text-white/50">
-                  Upload an image and run the visual
-                  quality engine.
+                  {t("farmer.uploadAndRun")}
                 </p>
               </div>
 
@@ -903,8 +899,8 @@ export default function FarmerPage() {
             {loading && (
               <div className="mt-6">
                 <div className="mb-2 flex justify-between text-[10px] font-bold uppercase tracking-wider text-white/40">
-                  <span>AI visual scan</span>
-                  <span>Processing</span>
+                  <span>{t("farmer.aiVisualScan")}</span>
+                  <span>{t("common.processing")}</span>
                 </div>
 
                 <div className="h-1 overflow-hidden rounded-full bg-white/10">
@@ -925,7 +921,7 @@ export default function FarmerPage() {
                     </p>
 
                     <h3 className="mt-1 text-lg font-black">
-                      Visual assessment complete
+                      {t("farmer.assessmentComplete")}
                     </h3>
                   </div>
 
@@ -936,7 +932,7 @@ export default function FarmerPage() {
               <div className="grid gap-4 p-6 sm:grid-cols-2 lg:grid-cols-4">
                 <div className="rounded-xl bg-white p-5">
                   <p className="text-[10px] font-black uppercase tracking-wider text-gray-400">
-                    Quality Grade
+                    {t("common.grade")}
                   </p>
 
                   <p className="mt-2 text-5xl font-black text-emerald-700">
@@ -946,7 +942,7 @@ export default function FarmerPage() {
 
                 <div className="rounded-xl bg-white p-5">
                   <p className="text-[10px] font-black uppercase tracking-wider text-gray-400">
-                    Visual Score
+                    {t("buyer.thScore")}
                   </p>
 
                   <p className="mt-2 text-3xl font-black">
@@ -1052,12 +1048,11 @@ export default function FarmerPage() {
           <div className="mt-8 flex flex-col gap-4 border-t border-black/5 pt-7 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-sm font-bold">
-                Ready to join the harvest pool?
+                {t("farmer.readyToJoinPool")}
               </p>
 
               <p className="mt-1 text-xs text-gray-500">
-                AI assessment is required before
-                listing.
+                {t("farmer.assessmentRequiredBeforeListing")}
               </p>
             </div>
 
@@ -1087,13 +1082,12 @@ export default function FarmerPage() {
               </h2>
 
               <p className="mt-2 text-sm text-gray-500">
-                Produce currently available in the
-                X-MILE pooled inventory.
+                {t("farmer.inventoryDesc")}
               </p>
             </div>
 
             <div className="rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-xs font-black text-emerald-700">
-              {inventory.length} ITEMS
+              {inventory.length} {t("farmer.itemsCount")}
             </div>
           </div>
 
@@ -1104,12 +1098,11 @@ export default function FarmerPage() {
               </div>
 
               <p className="mt-4 text-sm font-bold">
-                No inventory listed yet.
+                {t("farmer.noInventoryListed")}
               </p>
 
               <p className="mt-1 text-xs text-gray-500">
-                Your approved harvest lots will appear
-                here.
+                {t("farmer.approvedLotsAppearHere")}
               </p>
             </div>
           ) : (
@@ -1118,19 +1111,19 @@ export default function FarmerPage() {
                 <thead>
                   <tr className="border-b border-black/10 text-[10px] font-black uppercase tracking-widest text-gray-400">
                     <th className="pb-4 pr-5">
-                      Produce
+                      {t("buyer.cropRequired")}
                     </th>
                     <th className="pb-4 pr-5">
-                      Quantity
+                      {t("common.quantity")}
                     </th>
                     <th className="pb-4 pr-5">
-                      Grade
+                      {t("common.grade")}
                     </th>
                     <th className="pb-4 pr-5">
-                      Location
+                      {t("farmer.farmLocation")}
                     </th>
                     <th className="pb-4">
-                      Distance
+                      {t("farmer.thDistance")}
                     </th>
                   </tr>
                 </thead>
@@ -1149,12 +1142,12 @@ export default function FarmerPage() {
                         </td>
 
                         <td className="py-5 pr-5 font-semibold">
-                          {item.quantity} kg
+                          {item.quantity} {t("common.kg")}
                         </td>
 
                         <td className="py-5 pr-5">
                           <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[10px] font-black text-emerald-700">
-                            GRADE {item.grade}
+                            {t("common.grade")} {item.grade}
                           </span>
                         </td>
 
@@ -1187,13 +1180,12 @@ export default function FarmerPage() {
               </h2>
 
               <p className="mt-2 text-sm text-gray-500">
-                Orders containing produce reserved
-                from your inventory.
+                {t("farmer.incomingOrdersDesc")}
               </p>
             </div>
 
             <div className="rounded-full border border-orange-200 bg-orange-50 px-4 py-2 text-xs font-black text-orange-700">
-              {incomingOrders.length} ORDERS
+              {incomingOrders.length} {t("farmer.ordersCount")}
             </div>
           </div>
 
@@ -1202,7 +1194,7 @@ export default function FarmerPage() {
               <div className="mx-auto h-7 w-7 animate-spin rounded-full border-2 border-gray-200 border-t-emerald-600" />
 
               <p className="mt-4 text-sm font-semibold text-gray-500">
-                Loading incoming orders...
+                {t("farmer.loadingOrders")}
               </p>
             </div>
           ) : incomingOrders.length === 0 ? (
@@ -1212,11 +1204,11 @@ export default function FarmerPage() {
               </div>
 
               <p className="mt-4 text-sm font-bold">
-                No incoming orders found.
+                {t("farmer.noOrdersFound")}
               </p>
 
               <p className="mt-1 text-xs text-gray-500">
-                Buyer reservations will appear here.
+                {t("farmer.reservationsAppearHere")}
               </p>
             </div>
           ) : (
@@ -1225,35 +1217,35 @@ export default function FarmerPage() {
                 <thead>
                   <tr className="border-b border-black/10 text-[10px] font-black uppercase tracking-widest text-gray-400">
                     <th className="pb-4 pr-5">
-                      Buyer
+                      {t("transaction.buyer")}
                     </th>
 
                     <th className="pb-4 pr-5">
-                      Produce
+                      {t("buyer.cropRequired")}
                     </th>
 
                     <th className="pb-4 pr-5">
-                      Reserved
+                      {t("farmer.thReserved")}
                     </th>
 
                     <th className="pb-4 pr-5">
-                      Grade
+                      {t("common.grade")}
                     </th>
 
                     <th className="pb-4 pr-5">
-                      Destination
+                      {t("common.destination")}
                     </th>
 
                     <th className="pb-4 pr-5">
-                      Status
+                      {t("common.status")}
                     </th>
 
                     <th className="pb-4 pr-5">
-                      Action
+                      {t("farmer.thAction")}
                     </th>
 
                     <th className="pb-4">
-                      Created
+                      {t("farmer.thCreated")}
                     </th>
                   </tr>
                 </thead>

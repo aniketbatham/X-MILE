@@ -2,12 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import Chatbot from "./Chatbot";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 // Configurable phone number via NEXT_PUBLIC_SUPPORT_PHONE
 // Leave empty if unverified to prevent invalid/accidental dialing
 const SUPPORT_PHONE = process.env.NEXT_PUBLIC_SUPPORT_PHONE || "";
 
 export default function QuickActionLauncher() {
+  const { t } = useLanguage();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const launcherRef = useRef<HTMLDivElement | null>(null);
@@ -56,9 +58,7 @@ export default function QuickActionLauncher() {
   const handleCallClick = (e: React.MouseEvent) => {
     if (!SUPPORT_PHONE) {
       e.preventDefault();
-      alert(
-        "X-MILE phone support is being configured. For immediate assistance, please use the X-MILE AI Assistant."
-      );
+      alert(t("common.callSupportConfiguring"));
     }
     setIsMenuOpen(false);
   };
@@ -97,7 +97,7 @@ export default function QuickActionLauncher() {
             {/* Tooltip */}
             <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 hidden sm:group-hover:flex items-center pointer-events-none">
               <span className="rounded-lg bg-[#173b2a] px-2.5 py-1 text-xs font-semibold text-white shadow-lg whitespace-nowrap border border-[#2d583e]/50">
-                Call X-MILE
+                {t("common.callXmile")}
               </span>
               <span className="border-y-4 border-y-transparent border-l-4 border-l-[#173b2a]" />
             </div>
@@ -106,8 +106,8 @@ export default function QuickActionLauncher() {
               <a
                 href={`tel:${SUPPORT_PHONE}`}
                 onClick={handleCallClick}
-                aria-label="Call X-MILE"
-                title="Call X-MILE"
+                aria-label={t("common.callXmile")}
+                title={t("common.callXmile")}
                 tabIndex={isMenuOpen ? 0 : -1}
                 className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#173b2a] text-white shadow-lg border border-[#2e5e41] hover:bg-[#1f6b3b] hover:scale-105 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-emerald-400/40 motion-reduce:transform-none"
               >
@@ -129,8 +129,8 @@ export default function QuickActionLauncher() {
               <button
                 type="button"
                 onClick={handleCallClick}
-                aria-label="Call X-MILE"
-                title="Call X-MILE"
+                aria-label={t("common.callXmile")}
+                title={t("common.callXmile")}
                 tabIndex={isMenuOpen ? 0 : -1}
                 className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#173b2a] text-white shadow-lg border border-[#2e5e41] hover:bg-[#1f6b3b] hover:scale-105 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-emerald-400/40 motion-reduce:transform-none"
               >
@@ -162,7 +162,7 @@ export default function QuickActionLauncher() {
             {/* Tooltip */}
             <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 hidden sm:group-hover:flex items-center pointer-events-none">
               <span className="rounded-lg bg-[#173b2a] px-2.5 py-1 text-xs font-semibold text-white shadow-lg whitespace-nowrap border border-[#2d583e]/50">
-                Chat with X-MILE AI
+                {t("common.chatWithAssistant")}
               </span>
               <span className="border-y-4 border-y-transparent border-l-4 border-l-[#173b2a]" />
             </div>
@@ -170,8 +170,8 @@ export default function QuickActionLauncher() {
             <button
               type="button"
               onClick={handleOpenChat}
-              aria-label="Open X-MILE AI Chatbot"
-              title="Open X-MILE AI Chatbot"
+              aria-label={t("common.chatWithAssistant")}
+              title={t("common.chatWithAssistant")}
               tabIndex={isMenuOpen ? 0 : -1}
               className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#1f6b3b] text-white shadow-lg border border-[#3c8e58]/50 hover:bg-[#277443] hover:scale-105 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-emerald-400/40 motion-reduce:transform-none"
             >
@@ -198,7 +198,7 @@ export default function QuickActionLauncher() {
           onClick={handleToggleMenu}
           aria-expanded={isMenuOpen}
           aria-haspopup="true"
-          aria-label={isMenuOpen ? "Close actions launcher" : "Open X-MILE actions launcher"}
+          aria-label={isMenuOpen ? t("common.closeLauncher") : t("common.openLauncher")}
           className="group relative flex h-14 w-14 items-center justify-center rounded-2xl bg-[#173b2a] text-white shadow-xl hover:shadow-2xl hover:bg-[#1f6b3b] active:scale-95 border border-[#2d583e]/60 focus:outline-none focus:ring-4 focus:ring-emerald-400/40 transition-all duration-300 motion-reduce:transition-none"
         >
           {/* Centered 'X' with exact 180° clockwise rotation */}

@@ -1146,16 +1146,15 @@ export default function BuyerPage() {
           <div className="grid md:grid-cols-[1fr_auto]">
             <div className="p-6 md:p-7">
               <p className="text-sm font-black uppercase tracking-wider text-blue-600">
-                Step 02 · Demand Intelligence
+                Step 02 · {t("buyer.step2Title")}
               </p>
 
               <h3 className="mt-1 text-2xl font-black text-[#173b2a]">
-                Predicted Demand
+                {t("buyer.predictedDemand")}
               </h3>
 
               <p className="mt-1 max-w-2xl text-sm text-[#718276]">
-                X-MILE estimates upcoming demand using recent
-                sample demand history.
+                {t("buyer.predictedDemandDesc")}
               </p>
 
               <div className="mt-6 flex h-20 items-end gap-2">
@@ -1180,7 +1179,7 @@ export default function BuyerPage() {
             <div className="flex min-w-[220px] items-center justify-center bg-[#eef6ff] p-7">
               <div className="text-center">
                 <p className="text-sm font-bold text-blue-600">
-                  Forecast
+                  {t("buyer.forecast")}
                 </p>
 
                 <p className="mt-1 text-4xl font-black text-blue-950">
@@ -1188,7 +1187,7 @@ export default function BuyerPage() {
                 </p>
 
                 <p className="text-sm font-bold text-blue-700">
-                  kg
+                  {t("common.kg")}
                 </p>
               </div>
             </div>
@@ -1211,12 +1210,12 @@ export default function BuyerPage() {
               <div className="flex flex-col justify-between gap-5 md:flex-row md:items-start">
                 <div>
                   <p className="text-sm font-black uppercase tracking-wider text-emerald-600">
-                    Step 03 · Supply Intelligence
+                    Step 03 · {t("buyer.step3Title")}
                   </p>
 
                   <h3 className="mt-1 text-3xl font-black text-[#173b2a]">
-                    {result.totalQuantity.toLocaleString()} kg
-                    {" "}Fulfilled
+                    {result.totalQuantity.toLocaleString()} {t("common.kg")}{" "}
+                    {t("buyer.fulfilled")}
                   </h3>
 
                   <p className="mt-2 max-w-3xl leading-7 text-[#63766a]">
@@ -1226,7 +1225,7 @@ export default function BuyerPage() {
 
                 <div className="rounded-3xl bg-[#e8f7ee] px-7 py-5 text-center">
                   <p className="text-sm font-bold text-emerald-600">
-                    Fulfillment
+                    {t("buyer.fulfillmentRate")}
                   </p>
 
                   <p className="text-4xl font-black text-[#087443]">
@@ -1238,7 +1237,7 @@ export default function BuyerPage() {
               <div className="mt-6 grid gap-4 md:grid-cols-3">
                 <div className="card-hover rounded-2xl bg-[#f5f7f3] p-5">
                   <p className="text-sm text-[#718276]">
-                    Eligible Farmers
+                    {t("buyer.eligibleFarmers")}
                   </p>
 
                   <p className="mt-1 text-3xl font-black text-[#173b2a]">
@@ -1248,7 +1247,7 @@ export default function BuyerPage() {
 
                 <div className="card-hover rounded-2xl bg-[#f5f7f3] p-5">
                   <p className="text-sm text-[#718276]">
-                    Selected Farmers
+                    {t("buyer.selectedFarmers")}
                   </p>
 
                   <p className="mt-1 text-3xl font-black text-[#173b2a]">
@@ -1258,18 +1257,18 @@ export default function BuyerPage() {
 
                 <div className="card-hover rounded-2xl bg-[#f5f7f3] p-5">
                   <p className="text-sm text-[#718276]">
-                    Remaining
+                    {t("buyer.remaining")}
                   </p>
 
                   <p className="mt-1 text-3xl font-black text-[#173b2a]">
-                    {result.remainingQuantity} kg
+                    {result.remainingQuantity} {t("common.kg")}
                   </p>
                 </div>
               </div>
 
               <div className="mt-6 rounded-2xl border border-emerald-100 bg-emerald-50 p-5">
                 <p className="font-black text-emerald-900">
-                  Quality Priority
+                  {t("buyer.qualityPriority")}
                 </p>
 
                 <p className="mt-1 text-sm text-emerald-800">
@@ -1282,23 +1281,23 @@ export default function BuyerPage() {
 
             <section className="fade-up card-hover rounded-[2rem] border border-[#dce6dc] bg-white p-6 shadow-sm md:p-7">
               <p className="text-sm font-black uppercase tracking-wider text-emerald-600">
-                Step 04 · Smart Matching
+                Step 04 · {t("buyer.step4Title")}
               </p>
 
               <h3 className="mt-1 text-2xl font-black text-[#173b2a]">
-                Selected Inventory
+                {t("buyer.selectedInventory")}
               </h3>
 
               <div className="mt-6 overflow-x-auto">
                 <table className="w-full min-w-[700px] text-left">
                   <thead>
                     <tr className="border-b border-[#e4e9e3] text-sm text-[#718276]">
-                      <th className="pb-3">Farmer</th>
-                      <th className="pb-3">Produce</th>
-                      <th className="pb-3">Allocated</th>
-                      <th className="pb-3">Grade</th>
-                      <th className="pb-3">AI Score</th>
-                      <th className="pb-3">Location</th>
+                      <th className="pb-3">{t("farmer.title")}</th>
+                      <th className="pb-3">{t("buyer.cropRequired")}</th>
+                      <th className="pb-3">{t("buyer.thAllocated")}</th>
+                      <th className="pb-3">{t("common.grade")}</th>
+                      <th className="pb-3">{t("buyer.thScore")}</th>
+                      <th className="pb-3">{t("farmer.farmLocation")}</th>
                     </tr>
                   </thead>
 
@@ -1347,17 +1346,17 @@ export default function BuyerPage() {
             {route && (
               <section className="fade-up card-hover rounded-[2rem] border border-blue-100 bg-white p-6 shadow-sm md:p-7">
                 <p className="text-sm font-black uppercase tracking-wider text-blue-600">
-                  Step 05 · Logistics Intelligence
+                  Step 05 · {t("buyer.step5Title")}
                 </p>
 
                 <h3 className="mt-1 text-2xl font-black text-[#173b2a]">
-                  Optimized Pickup Route
+                  {t("buyer.optimizedRouteTitle")}
                 </h3>
 
                 <div className="mt-6 grid gap-4 md:grid-cols-4">
                   <div className="rounded-2xl bg-[#f5f7f3] p-4">
                     <p className="text-sm text-[#718276]">
-                      Pickup Points
+                      {t("buyer.pickupPoints")}
                     </p>
 
                     <p className="mt-1 text-2xl font-black">
@@ -1367,17 +1366,17 @@ export default function BuyerPage() {
 
                   <div className="rounded-2xl bg-[#f5f7f3] p-4">
                     <p className="text-sm text-[#718276]">
-                      Total Quantity
+                      {t("common.quantity")}
                     </p>
 
                     <p className="mt-1 text-2xl font-black">
-                      {route.totalQuantity} kg
+                      {route.totalQuantity} {t("common.kg")}
                     </p>
                   </div>
 
                   <div className="rounded-2xl bg-[#f5f7f3] p-4">
                     <p className="text-sm text-[#718276]">
-                      Distance
+                      {t("farmer.thDistance")}
                     </p>
 
                     <p className="mt-1 text-2xl font-black">
@@ -1387,7 +1386,7 @@ export default function BuyerPage() {
 
                   <div className="rounded-2xl bg-[#f5f7f3] p-4">
                     <p className="text-sm text-[#718276]">
-                      Route Time
+                      {t("buyer.routeTime")}
                     </p>
 
                     <p className="mt-1 text-2xl font-black">
@@ -1417,8 +1416,8 @@ export default function BuyerPage() {
 
                   <span>
                     {route.optimized
-                      ? "OSRM road-network routing optimized the pickup sequence."
-                      : "Route optimization was unavailable, so X-MILE used the fallback logistics plan."}
+                      ? t("buyer.routeOptimizedNote")
+                      : t("buyer.routeFallbackNote")}
                   </span>
                 </div>
               </section>
@@ -1432,16 +1431,15 @@ export default function BuyerPage() {
               <div className="relative flex flex-col justify-between gap-5 md:flex-row md:items-center">
                 <div>
                   <p className="text-sm font-black uppercase tracking-wider text-emerald-700">
-                    Step 06 · Procurement
+                    Step 06 · {t("buyer.step6Title")}
                   </p>
 
                   <h3 className="mt-1 text-2xl font-black text-[#173b2a]">
-                    Create X-MILE Order
+                    {t("buyer.createOrderTitle")}
                   </h3>
 
                   <p className="mt-1 max-w-2xl text-sm text-emerald-800">
-                    Selected inventory quantities will be
-                    attached to this order for reservation.
+                    {t("buyer.createOrderDesc")}
                   </p>
                 </div>
 
@@ -1469,15 +1467,15 @@ export default function BuyerPage() {
                   <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
                     <div>
                       <p className="text-sm font-black uppercase tracking-wider text-blue-600">
-                        Step 07 · Order Tracking
+                        Step 07 · {t("buyer.step7Title")}
                       </p>
 
                       <h3 className="mt-1 text-2xl font-black text-[#173b2a]">
-                        X-MILE Order Progress
+                        {t("buyer.orderProgressTitle")}
                       </h3>
 
                       <p className="mt-1 break-all text-sm text-[#718276]">
-                        Order ID: {order.id}
+                        {t("buyer.orderId")}: {order.id}
                       </p>
                     </div>
 
@@ -1507,13 +1505,13 @@ export default function BuyerPage() {
 
                   <div className="mt-8">
                     <p className="text-sm font-black uppercase tracking-wider text-[#718276]">
-                      Order Details
+                      {t("buyer.orderDetails")}
                     </p>
 
                     <div className="mt-4 grid gap-4 md:grid-cols-3">
                       <div className="card-hover rounded-2xl bg-[#f5f7f3] p-4">
                         <p className="text-sm text-[#718276]">
-                          Buyer
+                          {t("transaction.buyer")}
                         </p>
                         <p className="mt-1 font-black text-[#173b2a]">
                           {order.buyer_name}
@@ -1522,7 +1520,7 @@ export default function BuyerPage() {
 
                       <div className="card-hover rounded-2xl bg-[#f5f7f3] p-4">
                         <p className="text-sm text-[#718276]">
-                          Produce
+                          {t("buyer.cropRequired")}
                         </p>
                         <p className="mt-1 font-black text-[#173b2a]">
                           {order.produce}
@@ -1531,16 +1529,16 @@ export default function BuyerPage() {
 
                       <div className="card-hover rounded-2xl bg-[#f5f7f3] p-4">
                         <p className="text-sm text-[#718276]">
-                          Required Grade
+                          {t("common.grade")}
                         </p>
                         <p className="mt-1 font-black text-[#173b2a]">
-                          Grade {order.required_grade}
+                          {t("common.grade")} {order.required_grade}
                         </p>
                       </div>
 
                       <div className="card-hover rounded-2xl bg-[#f5f7f3] p-4">
                         <p className="text-sm text-[#718276]">
-                          Destination
+                          {t("common.destination")}
                         </p>
                         <p className="mt-1 font-black text-[#173b2a]">
                           {order.destination}
@@ -1549,7 +1547,7 @@ export default function BuyerPage() {
 
                       <div className="card-hover rounded-2xl bg-[#f5f7f3] p-4">
                         <p className="text-sm text-[#718276]">
-                          Created
+                          {t("farmer.thCreated")}
                         </p>
                         <p className="mt-1 font-black text-[#173b2a]">
                           {new Date(
@@ -1560,10 +1558,10 @@ export default function BuyerPage() {
 
                       <div className="card-hover rounded-2xl bg-[#f5f7f3] p-4">
                         <p className="text-sm text-[#718276]">
-                          Requested
+                          {t("buyer.requested")}
                         </p>
                         <p className="mt-1 font-black text-[#173b2a]">
-                          {order.requested_quantity_kg.toLocaleString()} kg
+                          {order.requested_quantity_kg.toLocaleString()} {t("common.kg")}
                         </p>
                       </div>
                     </div>
@@ -1574,25 +1572,25 @@ export default function BuyerPage() {
                   <div className="mt-8 grid gap-4 md:grid-cols-3">
                     <div className="rounded-2xl border border-[#e5ebe4] bg-white p-5">
                       <p className="text-sm text-[#718276]">
-                        Requested
+                        {t("buyer.requested")}
                       </p>
                       <p className="mt-1 text-2xl font-black">
-                        {order.requested_quantity_kg.toLocaleString()} kg
+                        {order.requested_quantity_kg.toLocaleString()} {t("common.kg")}
                       </p>
                     </div>
 
                     <div className="rounded-2xl border border-[#e5ebe4] bg-white p-5">
                       <p className="text-sm text-[#718276]">
-                        Fulfilled
+                        {t("buyer.fulfilled")}
                       </p>
                       <p className="mt-1 text-2xl font-black">
-                        {order.fulfilled_quantity_kg.toLocaleString()} kg
+                        {order.fulfilled_quantity_kg.toLocaleString()} {t("common.kg")}
                       </p>
                     </div>
 
                     <div className="rounded-2xl border border-[#e5ebe4] bg-white p-5">
                       <p className="text-sm text-[#718276]">
-                        Fulfillment
+                        {t("buyer.fulfillmentRate")}
                       </p>
                       <p className="mt-1 text-2xl font-black">
                         {order.fulfillment_percentage}%
@@ -1607,7 +1605,7 @@ export default function BuyerPage() {
                     <div className="mt-8">
                       <div className="mb-3 flex justify-between text-sm font-black text-[#607468]">
                         <span>
-                          Order Progress
+                          {t("buyer.orderProgressTitle")}
                         </span>
 
                         <span>
@@ -1636,23 +1634,22 @@ export default function BuyerPage() {
                   "Disputed" ? (
                     <div className="mt-8 rounded-2xl border border-red-200 bg-red-50 p-5">
                       <p className="font-black text-red-800">
-                        Order Disputed
+                        {t("common.disputed")}
                       </p>
 
                       <p className="mt-1 text-sm text-red-700">
-                        This order has been marked as disputed
-                        and requires attention.
+                        {t("buyer.statusDisputedDesc")}
                       </p>
                     </div>
                   ) : (
                     <div className="mt-8">
                       <div className="mb-6 flex items-center justify-between">
                         <p className="text-sm font-black uppercase tracking-wider text-[#718276]">
-                          Order Timeline
+                          {t("buyer.orderTimeline")}
                         </p>
 
                         <p className="text-xs font-semibold text-[#9aa79e]">
-                          Live updates every 10 seconds
+                          {t("buyer.liveUpdates10s")}
                         </p>
                       </div>
 
@@ -1776,15 +1773,15 @@ export default function BuyerPage() {
                       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
                         <div>
                           <p className="text-sm font-black uppercase tracking-wider text-blue-600">
-                            Step 08 · Live Logistics
+                            Step 08 · {t("buyer.step8Title")}
                           </p>
 
                           <h3 className="mt-1 text-2xl font-black text-[#173b2a]">
-                            Shipment Tracking
+                            {t("buyer.shipmentTracking")}
                           </h3>
 
                           <p className="mt-1 break-all text-sm text-[#718276]">
-                            Shipment ID: {shipment.id}
+                            {t("buyer.shipmentId")}: {shipment.id}
                           </p>
                         </div>
 
@@ -1820,7 +1817,7 @@ export default function BuyerPage() {
                         <div className="mt-8">
                           <div className="mb-3 flex justify-between text-sm font-black text-[#607468]">
                             <span>
-                              Shipment Progress
+                              {t("buyer.shipmentProgress")}
                             </span>
 
                             <span>
@@ -1848,11 +1845,11 @@ export default function BuyerPage() {
                       <div className="mt-8">
                         <div className="mb-6 flex items-center justify-between">
                           <p className="text-sm font-black uppercase tracking-wider text-[#718276]">
-                            Shipment Timeline
+                            {t("buyer.shipmentTimeline")}
                           </p>
 
                           <p className="text-xs font-semibold text-[#9aa79e]">
-                            Live updates every 10 seconds
+                            {t("buyer.liveUpdates10s")}
                           </p>
                         </div>
 
@@ -1908,7 +1905,7 @@ export default function BuyerPage() {
                                   {isCurrent && (
                                     <div className="mt-2 flex items-center gap-2 text-xs font-bold text-blue-600">
                                       <span className="h-2 w-2 animate-pulse rounded-full bg-blue-500" />
-                                      Current stage
+                                      {t("buyer.currentStage")}
                                     </div>
                                   )}
                                 </div>
@@ -1923,18 +1920,18 @@ export default function BuyerPage() {
                       <div className="mt-8 grid gap-4 md:grid-cols-2">
                         <div className="card-hover rounded-2xl bg-[#f5f7f3] p-5">
                           <p className="text-sm font-semibold text-[#718276]">
-                            Pickup
+                            {t("common.pickup")}
                           </p>
 
                           <p className="mt-1 text-xl font-black text-[#173b2a]">
                             {shipment.origin ||
-                              "Pickup location"}
+                              t("buyer.locationUnavailable")}
                           </p>
                         </div>
 
                         <div className="card-hover rounded-2xl bg-[#f5f7f3] p-5">
                           <p className="text-sm font-semibold text-[#718276]">
-                            Destination
+                            {t("common.destination")}
                           </p>
 
                           <p className="mt-1 text-xl font-black text-[#173b2a]">
@@ -1952,18 +1949,18 @@ export default function BuyerPage() {
                           </span>
 
                           <p className="text-sm font-black text-blue-700">
-                            Current Location
+                            {t("common.currentLocation")}
                           </p>
                         </div>
 
                         <p className="mt-1 text-lg font-black text-blue-950">
                           {shipment.current_location ||
                             shipment.origin ||
-                            "Location unavailable"}
+                            t("buyer.locationUnavailable")}
                         </p>
 
                         <p className="mt-1 text-xs text-blue-700">
-                          Last updated{" "}
+                          {t("common.lastUpdated")}{" "}
                           {new Date(
                             shipment.updated_at
                           ).toLocaleString()}
@@ -1975,17 +1972,17 @@ export default function BuyerPage() {
                       <div className="mt-6 grid gap-4 md:grid-cols-3">
                         <div className="rounded-2xl border border-[#e5ebe4] bg-white p-5">
                           <p className="text-sm text-[#718276]">
-                            Quantity
+                            {t("common.quantity")}
                           </p>
 
                           <p className="mt-1 text-2xl font-black text-[#173b2a]">
-                            {shipment.total_quantity_kg.toLocaleString()} kg
+                            {shipment.total_quantity_kg.toLocaleString()} {t("common.kg")}
                           </p>
                         </div>
 
                         <div className="rounded-2xl border border-[#e5ebe4] bg-white p-5">
                           <p className="text-sm text-[#718276]">
-                            Distance Remaining
+                            {t("buyer.distanceRemaining")}
                           </p>
 
                           <p className="mt-1 text-2xl font-black text-[#173b2a]">
@@ -2000,7 +1997,7 @@ export default function BuyerPage() {
 
                         <div className="rounded-2xl border border-[#e5ebe4] bg-white p-5">
                           <p className="text-sm text-[#718276]">
-                            Estimated Time
+                            {t("buyer.estimatedTime")}
                           </p>
 
                           <p className="mt-1 text-2xl font-black text-[#173b2a]">
@@ -2028,13 +2025,12 @@ export default function BuyerPage() {
 
                             <div>
                               <p className="font-black text-blue-950">
-                                Shipment moving toward{" "}
+                                {t("buyer.movingToward")}{" "}
                                 {shipment.destination}
                               </p>
 
                               <p className="mt-1 text-sm text-blue-800">
-                                X-MILE automatically advances
-                                shipment progress every 10 seconds.
+                                {t("buyer.autoAdvanceNote")}
                               </p>
                             </div>
                           </div>
@@ -2056,12 +2052,11 @@ export default function BuyerPage() {
                         "Delivered" && (
                         <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
                           <p className="font-black text-emerald-900">
-                            ✅ Shipment Delivered
+                            ✅ {t("buyer.shipmentDelivered")}
                           </p>
 
                           <p className="mt-1 text-sm text-emerald-800">
-                            The shipment has reached{" "}
-                            {shipment.destination} successfully.
+                            {t("buyer.reachedDestination")}
                           </p>
                         </div>
                       )}
@@ -2072,8 +2067,7 @@ export default function BuyerPage() {
                         <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-emerald-500" />
 
                         <p className="text-sm font-semibold text-[#607468]">
-                          Shipment data refreshes automatically
-                          every 10 seconds.
+                          {t("buyer.autoRefreshNote")}
                         </p>
                       </div>
                     </div>

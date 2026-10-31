@@ -239,11 +239,13 @@ export default function Chatbot({
   };
 
   const handleClearConversation = () => {
-    if (confirm("Clear conversation history?")) {
+    if (confirm(t("chatbot.confirmClear"))) {
       const resetMessages = [
         {
-          ...INITIAL_WELCOME_MESSAGE,
           id: `welcome-${Date.now()}`,
+          role: "assistant" as const,
+          content: t("chatbot.welcomeMessage"),
+          timestamp: "",
         },
       ];
       setMessages(resetMessages);
@@ -506,7 +508,7 @@ export default function Chatbot({
             {isLoading && (
               <div className="flex items-start gap-2">
                 <div className="flex items-center gap-1.5 rounded-2xl border border-[#d8e6db] bg-[#edf6ed] px-4 py-3 rounded-tl-xs text-xs text-[#2a5538]">
-                  <span className="font-semibold text-xs">X-MILE AI is thinking</span>
+                  <span className="font-semibold text-xs">{t("chatbot.thinking")}</span>
                   <span className="h-1.5 w-1.5 rounded-full bg-[#3c9656] animate-bounce" />
                   <span
                     className="h-1.5 w-1.5 rounded-full bg-[#3c9656] animate-bounce"
@@ -561,7 +563,7 @@ export default function Chatbot({
               <button
                 type="submit"
                 disabled={isLoading || !input.trim()}
-                aria-label="Send message"
+                aria-label={t("chatbot.sendMessage")}
                 className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#1f6b3b] text-white shadow-xs transition-colors hover:bg-[#18532e] disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <svg
@@ -581,7 +583,7 @@ export default function Chatbot({
             </form>
 
             <div className="mt-1.5 flex items-center justify-between text-[10px] text-gray-400 px-1">
-              <span>Press Enter to send, Shift+Enter for new line</span>
+              <span>{t("chatbot.inputHint")}</span>
               <span>OpenRouter AI</span>
             </div>
           </div>

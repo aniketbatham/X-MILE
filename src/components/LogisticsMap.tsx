@@ -11,6 +11,7 @@ import {
 
 import L from "leaflet";
 import { useEffect } from "react";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 type PickupPoint = {
   farmerId: string;
@@ -76,6 +77,8 @@ export default function LogisticsMap({
   routeCoordinates,
   destination,
 }: LogisticsMapProps) {
+  const { t } = useLanguage();
+
   if (routeCoordinates.length === 0) {
     return (
       <div className="flex h-[420px] items-center justify-center rounded-2xl bg-slate-100 text-center">
@@ -83,11 +86,11 @@ export default function LogisticsMap({
           <div className="text-4xl">🗺️</div>
 
           <p className="mt-3 font-semibold text-slate-700">
-            Route map unavailable
+            {t("map.mapUnavailable")}
           </p>
 
           <p className="mt-1 text-sm text-slate-500">
-            Generate a valid OSRM route to display the map.
+            {t("map.mapFallbackDesc")}
           </p>
         </div>
       </div>
@@ -139,7 +142,7 @@ export default function LogisticsMap({
               <Popup>
                 <div className="min-w-[180px]">
                   <p className="font-bold">
-                    Pickup #{index + 1}
+                    {t("map.pickupStop")} #{index + 1}
                   </p>
 
                   <p className="mt-1 font-semibold">
@@ -151,8 +154,8 @@ export default function LogisticsMap({
                   </p>
 
                   <p className="mt-1 text-sm">
-                    Quantity:{" "}
-                    <strong>{point.quantity} kg</strong>
+                    {t("common.quantity")}:{" "}
+                    <strong>{point.quantity} {t("common.kg")}</strong>
                   </p>
                 </div>
               </Popup>
@@ -168,11 +171,11 @@ export default function LogisticsMap({
           <Popup>
             <div>
               <p className="font-bold">
-                X-MILE Buyer
+                {t("map.buyerDestination")}
               </p>
 
               <p className="mt-1 text-sm">
-                Destination: {destination}
+                {t("common.destination")}: {destination}
               </p>
             </div>
           </Popup>

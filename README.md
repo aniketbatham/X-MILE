@@ -1,4 +1,25 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# X-MILE
+
+> **Every MILE Matters, Every FARMER Matters.**
+
+X-MILE is an intelligent, farmer-first agricultural marketplace and supply aggregation platform. It bridges smallholder farmers and bulk buyers through AI-assisted visual produce inspection, smart harvest pooling, optimized logistics routing, and transparent milestone tracking.
+
+## Core Features
+
+- **Farmer Portal**: List produce, join pooled regional inventory, and fulfill incoming buyer orders.
+- **Buyer Portal**: State procurement requirements, aggregate smallholder supplies automatically, and optimize multi-stop pickup routes.
+- **AI Quality Vision**: Visual quality estimation (Grade A/B/C, defect detection, confidence score) powered by Google Gemini.
+- **Smart Harvest Pool**: Algorithmic supply aggregation prioritizing quality, pickup proximity, and volume fulfillment.
+- **Demand Forecasting**: Predictive demand insights to guide regional procurement and inventory balancing.
+- **Milestone Escrow & Logistics**: End-to-end transparent order tracking from acceptance to dispatch and delivery.
+
+## Tech Stack
+
+- **Framework**: [Next.js](https://nextjs.org) (App Router, React 19, TypeScript)
+- **Styling**: Tailwind CSS v4
+- **Database**: Supabase
+- **AI / Computer Vision**: Google GenAI SDK (`@google/genai`)
+- **Mapping**: Leaflet / React Leaflet
 
 ## Getting Started
 
@@ -6,31 +27,16 @@ First, run the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) with your browser to experience X-MILE.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment Variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Configure the following environment variables in `.env.local`:
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```env
+NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-supabase-publishable-key
+GEMINI_API_KEY=your-gemini-api-key
+```

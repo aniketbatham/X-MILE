@@ -77,7 +77,7 @@ export default function TransactionPage() {
 
       if (!data.orders || data.orders.length === 0) {
         setError(
-          "No HARVEX order found. Create an order from the Buyer page first."
+          "No X-MILE order found. Create an order from the Buyer page first."
         );
         return;
       }
@@ -151,7 +151,7 @@ export default function TransactionPage() {
           <div className="text-4xl">⏳</div>
 
           <p className="mt-3 font-semibold">
-            Loading HARVEX transaction...
+            Loading X-MILE transaction...
           </p>
 
           <p className="mt-1 text-sm text-slate-500">
@@ -169,11 +169,11 @@ export default function TransactionPage() {
           <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
             <div>
               <h1 className="text-xl font-bold">
-                HARVEX
+                X-MILE
               </h1>
 
               <p className="text-xs text-slate-500">
-                Intelligent Agricultural Supply Network
+                Every MILE Matters, Every FARMER Matters
               </p>
             </div>
 
@@ -227,11 +227,11 @@ export default function TransactionPage() {
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
           <div>
             <h1 className="text-xl font-bold">
-              HARVEX
+              X-MILE
             </h1>
 
             <p className="text-xs text-slate-500">
-              Intelligent Agricultural Supply Network
+              Every MILE Matters, Every FARMER Matters
             </p>
           </div>
 
@@ -256,7 +256,7 @@ export default function TransactionPage() {
         </h2>
 
         <p className="mt-3 max-w-2xl text-slate-600">
-          Track the real HARVEX procurement order through
+          Track the real X-MILE procurement order through
           acceptance, dispatch and delivery.
         </p>
 
@@ -266,7 +266,7 @@ export default function TransactionPage() {
           <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                HARVEX Order
+                X-MILE Order
               </p>
 
               <h3 className="mt-1 break-all text-xl font-bold font-mono">
@@ -588,7 +588,7 @@ export default function TransactionPage() {
                 {order.status ===
                 "Disputed"
                   ? "The disputed amount would remain held until resolution."
-                  : "Milestone status is persisted in the HARVEX database."}
+                  : "Milestone status is persisted in the X-MILE database."}
               </p>
             </div>
           </div>

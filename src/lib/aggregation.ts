@@ -37,7 +37,7 @@ export type AggregationResult = {
   remainingQuantity: number;
   fulfillmentPercentage: number;
 
-  // Extra intelligence for the HARVEX demo
+  // Extra intelligence for the X-MILE demo
   selectionDetails: AggregationSelection[];
   eligibleFarmerCount: number;
   rejectedFarmerCount: number;
@@ -91,7 +91,7 @@ function getGradeScore(grade: Grade): number {
 /*
   Calculate a procurement score.
 
-  HARVEX prioritizes:
+  X-MILE prioritizes:
   1. Quality
   2. Shorter pickup distance
   3. Availability of useful quantity
@@ -250,18 +250,18 @@ export function aggregateSupply(
   /*
     STEP 4
     Generate an explanation suitable for the
-    HARVEX buyer dashboard and SIH demo.
+    X-MILE buyer dashboard and SIH demo.
   */
   let aggregationSummary = "";
 
   if (remaining <= 0) {
     aggregationSummary =
-      `HARVEX pooled ${selectedFarmers.length} farmer inventories ` +
+      `X-MILE pooled ${selectedFarmers.length} farmer inventories ` +
       `to fulfill the ${requirement.quantity} kg ${requirement.produce} ` +
       `requirement while prioritizing quality and efficient pickup.`;
   } else {
     aggregationSummary =
-      `HARVEX pooled ${selectedFarmers.length} eligible farmer inventories ` +
+      `X-MILE pooled ${selectedFarmers.length} eligible farmer inventories ` +
       `and fulfilled ${fulfillmentPercentage}% of the requested quantity. ` +
       `${remaining} kg remains unavailable at the required quality.`;
   }

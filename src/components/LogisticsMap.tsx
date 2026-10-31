@@ -168,7 +168,7 @@ export default function LogisticsMap({
           <Popup>
             <div>
               <p className="font-bold">
-                HARVEX Buyer
+                X-MILE Buyer
               </p>
 
               <p className="mt-1 text-sm">

@@ -269,11 +269,11 @@ export default function QualityPage() {
 
             <div>
               <div className="text-lg font-black tracking-tight">
-                HARVEX
+                X-MILE
               </div>
 
-              <div className="hidden text-[9px] font-semibold tracking-[0.18em] text-[#6a7c70] sm:block">
-                FARMER-FIRST AGRI NETWORK
+              <div className="hidden text-[9px] font-semibold tracking-[0.14em] text-[#6a7c70] sm:block">
+                Every MILE Matters, Every FARMER Matters.
               </div>
             </div>
           </a>
@@ -299,7 +299,7 @@ export default function QualityPage() {
         <div className="fade-up mx-auto max-w-3xl text-center">
           <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#cfe2d2] bg-white px-4 py-2 text-xs font-black tracking-[0.16em] text-[#327247] shadow-sm">
             <span className="blink h-2 w-2 rounded-full bg-[#3c9656]" />
-            HARVEX AI VISION
+            X-MILE AI VISION
           </div>
 
           <h1 className="text-4xl font-black tracking-[-0.04em] sm:text-5xl lg:text-6xl">
@@ -309,7 +309,7 @@ export default function QualityPage() {
           </h1>
 
           <p className="mx-auto mt-5 max-w-2xl text-base leading-7 text-[#66766c] sm:text-lg">
-            Upload a produce image and HARVEX AI Vision analyzes visible
+            Upload a produce image and X-MILE AI Vision analyzes visible
             characteristics to estimate quality, grade and suitability.
           </p>
         </div>
@@ -449,7 +449,7 @@ export default function QualityPage() {
               </label>
 
               <p className="mt-1 text-xs leading-5 text-[#7a887f]">
-                Select the crop so HARVEX evaluates the image in the correct
+                Select the crop so X-MILE evaluates the image in the correct
                 context.
               </p>
 
@@ -518,8 +518,8 @@ export default function QualityPage() {
               className="button-hover mt-4 w-full rounded-2xl bg-[#1f6b3b] px-6 py-4 font-black text-white disabled:cursor-not-allowed disabled:opacity-40"
             >
               {loading
-                ? `HARVEX AI IS SCANNING · ${scanProgress}%`
-                : "Analyze with HARVEX AI →"}
+                ? `X-MILE AI IS SCANNING · ${scanProgress}%`
+                : "Analyze with X-MILE AI →"}
             </button>
           </div>
 
@@ -542,7 +542,7 @@ export default function QualityPage() {
                 <VisionStep
                   number="02"
                   title="Scan"
-                  description="HARVEX analyzes visible characteristics."
+                  description="X-MILE analyzes visible characteristics."
                   active={loading}
                 />
 
@@ -572,7 +572,7 @@ export default function QualityPage() {
                     </div>
 
                     <div className="mt-2 text-xl font-black">
-                      HARVEX AI Assessment
+                      X-MILE AI Assessment
                     </div>
                   </div>
 
@@ -612,7 +612,7 @@ export default function QualityPage() {
 
                   <div>
                     <div className="text-xs font-black tracking-[0.16em] text-[#b6d9bb]">
-                      HARVEX INTELLIGENCE
+                      X-MILE INTELLIGENCE
                     </div>
 
                     <div className="mt-1 font-black">

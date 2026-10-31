@@ -88,10 +88,10 @@ export function forecastDemand(
 
   if (trend === "Increasing") {
     recommendation =
-      "Demand is rising. HARVEX should increase farmer sourcing and prepare pooled inventory.";
+      "Demand is rising. X-MILE should increase farmer sourcing and prepare pooled inventory.";
   } else if (trend === "Decreasing") {
     recommendation =
-      "Demand is declining. HARVEX should avoid unnecessary inventory buildup.";
+      "Demand is declining. X-MILE should avoid unnecessary inventory buildup.";
   } else {
     recommendation =
       "Demand is relatively stable. Maintain balanced inventory levels.";

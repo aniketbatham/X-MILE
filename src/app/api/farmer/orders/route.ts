@@ -44,7 +44,7 @@ export async function GET(request: Request) {
     );
 
     console.log(
-      "HARVEX FARMER IDS:",
+      "X-MILE FARMER IDS:",
       farmerIds
     );
 
@@ -81,7 +81,7 @@ export async function GET(request: Request) {
     );
 
     console.log(
-      "HARVEX FARMER INVENTORY IDS:",
+      "X-MILE FARMER INVENTORY IDS:",
       inventoryIds
     );
 
@@ -174,7 +174,7 @@ export async function GET(request: Request) {
     );
 
     console.log(
-      `HARVEX FARMER ORDERS: ${farmerName} → ${orders.length} incoming orders`
+      `X-MILE FARMER ORDERS: ${farmerName} → ${orders.length} incoming orders`
     );
 
     return Response.json({

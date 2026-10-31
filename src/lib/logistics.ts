@@ -21,7 +21,7 @@ type Coordinates = {
 };
 
 /*
-  Demo coordinates for HARVEX MVP.
+  Demo coordinates for X-MILE MVP.
 
   Production version:
   farmer onboarding will store precise farm coordinates

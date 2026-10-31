@@ -20,7 +20,7 @@ const modules = [
   },
   {
     title: "AI Quality",
-    description: "Use HARVEX AI Vision to evaluate produce quality.",
+    description: "Use X-MILE AI Vision to evaluate produce quality.",
     href: "/quality",
     icon: "🤖",
   },
@@ -336,10 +336,10 @@ export default function HomePage() {
 
             <div>
               <div className="text-lg font-black tracking-tight">
-                HARVEX
+                X-MILE
               </div>
-              <div className="hidden text-[9px] font-semibold tracking-[0.18em] text-[#6a7c70] sm:block">
-                FARMER-FIRST AGRI NETWORK
+              <div className="hidden text-[9px] font-semibold tracking-[0.14em] text-[#6a7c70] sm:block">
+                Every MILE Matters, Every FARMER Matters.
               </div>
             </div>
           </Link>
@@ -414,11 +414,11 @@ export default function HomePage() {
         <div className="grid items-center gap-14 lg:grid-cols-[1.05fr_0.95fr]">
           <div className="relative z-10">
             <div
-              className="animate-fade-up mb-6 inline-flex items-center gap-2 rounded-full border border-[#cfe2d2] bg-white px-4 py-2 text-xs font-bold tracking-[0.12em] text-[#327247]"
+              className="animate-fade-up mb-6 inline-flex items-center gap-2 rounded-full border border-[#cfe2d2] bg-white px-4 py-2 text-xs font-bold tracking-[0.1em] text-[#327247]"
               style={{ animationDelay: "0.1s" }}
             >
               <span className="h-2 w-2 rounded-full bg-[#3c9656] shadow-[0_0_10px_rgba(60,150,86,0.6)]" />
-              FARMER-FIRST DIGITAL AGRICULTURE
+              Every MILE Matters, Every FARMER Matters.
             </div>
 
             <h1
@@ -436,7 +436,7 @@ export default function HomePage() {
               className="animate-fade-up mt-7 max-w-xl text-lg leading-8 text-[#5d6f64] sm:text-xl"
               style={{ animationDelay: "0.4s" }}
             >
-              HARVEX connects farmers with trusted
+              X-MILE connects farmers with trusted
               buyers, AI-assisted quality insights,
               smarter matching and transparent
               delivery.
@@ -489,7 +489,7 @@ export default function HomePage() {
               <div className="mb-3 flex items-center justify-between px-2">
                 <div>
                   <div className="text-xs font-black tracking-[0.18em] text-[#277443]">
-                    HARVEX AI VISION
+                    X-MILE AI VISION
                   </div>
                   <div className="mt-1 text-sm text-[#728078]">
                     Computer vision quality analysis
@@ -635,7 +635,7 @@ export default function HomePage() {
             </h2>
 
             <p className="animate-fade-up mt-4 text-[#68776e]">
-              HARVEX connects every important step
+              X-MILE connects every important step
               into one simple agricultural workflow.
             </p>
           </div>
@@ -688,7 +688,7 @@ export default function HomePage() {
             icon="🤖"
             label="AI QUALITY"
             title="Computer vision for your harvest."
-            description="HARVEX AI Vision analyzes visual quality indicators and generates an easy-to-understand grade."
+            description="X-MILE AI Vision analyzes visual quality indicators and generates an easy-to-understand grade."
             href="/quality"
             delay="0s"
           />
@@ -735,7 +735,7 @@ export default function HomePage() {
                 </h2>
 
                 <p className="mt-5 max-w-md leading-7 text-[#627368]">
-                  HARVEX aggregates available supply
+                  X-MILE aggregates available supply
                   from multiple farmers so buyers can
                   fulfill larger requirements efficiently.
                 </p>
@@ -857,7 +857,7 @@ export default function HomePage() {
               </h2>
 
               <p className="mt-5 max-w-lg leading-7 text-[#69786e]">
-                Once an order is dispatched, HARVEX
+                Once an order is dispatched, X-MILE
                 provides a clear shipment status so both
                 sides can follow the journey.
               </p>
@@ -940,7 +940,7 @@ export default function HomePage() {
       <section className="mx-auto max-w-7xl px-5 py-20 lg:px-8">
         <div className="text-center">
           <div className="text-xs font-black tracking-[0.2em] text-[#34794a]">
-            EXPLORE HARVEX
+            EXPLORE X-MILE
           </div>
 
           <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
@@ -948,7 +948,7 @@ export default function HomePage() {
           </h2>
 
           <p className="mx-auto mt-4 max-w-2xl text-[#69786e]">
-            Use the actual HARVEX modules below to
+            Use the actual X-MILE modules below to
             explore the complete procurement workflow.
           </p>
         </div>
@@ -999,7 +999,7 @@ export default function HomePage() {
             </div>
 
             <p className="mx-auto mt-5 max-w-xl text-sm leading-6 text-white/65">
-              Experience the HARVEX procurement workflow
+              Experience the X-MILE procurement workflow
               through the working demo.
             </p>
 
@@ -1027,9 +1027,9 @@ export default function HomePage() {
         <div className="mx-auto flex max-w-7xl flex-col gap-4 px-5 py-8 text-sm text-[#75837a] sm:flex-row sm:items-center sm:justify-between lg:px-8">
           <div>
             <span className="font-black text-[#213a29]">
-              HARVEX
+              X-MILE
             </span>{" "}
-            — Farmer-first digital agriculture.
+            — Every MILE Matters, Every FARMER Matters.
           </div>
 
           <div className="text-xs">

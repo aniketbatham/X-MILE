@@ -162,7 +162,7 @@ export default function BuyerPage() {
         await getInventory();
 
       console.log(
-        "HARVEX INVENTORY BEFORE AGGREGATION:",
+        "X-MILE INVENTORY BEFORE AGGREGATION:",
         inventory
       );
 
@@ -186,7 +186,7 @@ export default function BuyerPage() {
         );
 
       console.log(
-        "HARVEX AGGREGATION RESULT:",
+        "X-MILE AGGREGATION RESULT:",
         aggregation
       );
 
@@ -289,12 +289,12 @@ export default function BuyerPage() {
       }
 
       console.log(
-        "HARVEX ORDER GRADE:",
+        "X-MILE ORDER GRADE:",
         orderGrade
       );
 
       console.log(
-        "HARVEX INVENTORY BEING RESERVED:",
+        "X-MILE INVENTORY BEING RESERVED:",
         selectedInventory
       );
 
@@ -336,14 +336,14 @@ export default function BuyerPage() {
         await response.json();
 
       console.log(
-        "HARVEX ORDER API RESPONSE:",
+        "X-MILE ORDER API RESPONSE:",
         data
       );
 
       if (!response.ok) {
         throw new Error(
           data.error ||
-            "Failed to create HARVEX order."
+            "Failed to create X-MILE order."
         );
       }
 
@@ -440,14 +440,14 @@ export default function BuyerPage() {
 
       if (!latestOrder) {
         console.warn(
-          "HARVEX order not found during refresh:",
+          "X-MILE order not found during refresh:",
           orderId
         );
         return;
       }
 
       console.log(
-        "HARVEX LIVE ORDER STATUS:",
+        "X-MILE LIVE ORDER STATUS:",
         latestOrder
       );
 
@@ -529,7 +529,7 @@ export default function BuyerPage() {
       }
 
       console.log(
-        "HARVEX LIVE SHIPMENT:",
+        "X-MILE LIVE SHIPMENT:",
         latestShipment
       );
 
@@ -615,7 +615,7 @@ export default function BuyerPage() {
 
       if (data.shipment) {
         console.log(
-          "HARVEX SHIPMENT MOVED:",
+          "X-MILE SHIPMENT MOVED:",
           data.shipment
         );
 
@@ -937,11 +937,11 @@ export default function BuyerPage() {
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <div>
             <h1 className="text-2xl font-black tracking-tight text-[#173b2a]">
-              HARVEX
+              X-MILE
             </h1>
 
             <p className="text-xs font-medium text-[#708477]">
-              Smart Agricultural Supply Network
+              Every MILE Matters, Every FARMER Matters
             </p>
           </div>
 
@@ -970,7 +970,7 @@ export default function BuyerPage() {
             <div className="fade-up">
               <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-bold tracking-wider text-emerald-200">
                 <span className="h-2 w-2 rounded-full bg-emerald-300 pulse-soft" />
-                HARVEX BUYER INTELLIGENCE
+                X-MILE BUYER INTELLIGENCE
               </div>
 
               <h2 className="max-w-3xl text-4xl font-black tracking-tight md:text-6xl">
@@ -1149,7 +1149,7 @@ export default function BuyerPage() {
               </h3>
 
               <p className="mt-1 max-w-2xl text-sm text-[#718276]">
-                HARVEX estimates upcoming demand using recent
+                X-MILE estimates upcoming demand using recent
                 sample demand history.
               </p>
 
@@ -1413,7 +1413,7 @@ export default function BuyerPage() {
                   <span>
                     {route.optimized
                       ? "OSRM road-network routing optimized the pickup sequence."
-                      : "Route optimization was unavailable, so HARVEX used the fallback logistics plan."}
+                      : "Route optimization was unavailable, so X-MILE used the fallback logistics plan."}
                   </span>
                 </div>
               </section>
@@ -1431,7 +1431,7 @@ export default function BuyerPage() {
                   </p>
 
                   <h3 className="mt-1 text-2xl font-black text-[#173b2a]">
-                    Create HARVEX Order
+                    Create X-MILE Order
                   </h3>
 
                   <p className="mt-1 max-w-2xl text-sm text-emerald-800">
@@ -1451,7 +1451,7 @@ export default function BuyerPage() {
                     ? "✓ Order Created"
                     : loading
                       ? "Processing..."
-                      : "Create HARVEX Order →"}
+                      : "Create X-MILE Order →"}
                 </button>
               </div>
             </section>
@@ -1468,7 +1468,7 @@ export default function BuyerPage() {
                       </p>
 
                       <h3 className="mt-1 text-2xl font-black text-[#173b2a]">
-                        HARVEX Order Progress
+                        X-MILE Order Progress
                       </h3>
 
                       <p className="mt-1 break-all text-sm text-[#718276]">
@@ -2028,7 +2028,7 @@ export default function BuyerPage() {
                               </p>
 
                               <p className="mt-1 text-sm text-blue-800">
-                                HARVEX automatically advances
+                                X-MILE automatically advances
                                 shipment progress every 10 seconds.
                               </p>
                             </div>
@@ -2085,9 +2085,9 @@ export default function BuyerPage() {
           <div className="flex flex-col justify-between gap-3 text-sm text-[#718276] md:flex-row">
             <p>
               <span className="font-black text-[#173b2a]">
-                HARVEX
+                X-MILE
               </span>{" "}
-              · Smart Agricultural Supply Network
+              · Every MILE Matters, Every FARMER Matters
             </p>
 
             <p>

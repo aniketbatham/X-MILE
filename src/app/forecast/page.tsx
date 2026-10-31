@@ -35,9 +35,9 @@ export default function ForecastPage() {
       <nav className="border-b bg-white px-6 py-5">
         <div className="mx-auto flex max-w-6xl items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold">HARVEX</h1>
+            <h1 className="text-xl font-bold">X-MILE</h1>
             <p className="text-xs text-slate-500">
-              Intelligent Agricultural Supply Network
+              Every MILE Matters, Every FARMER Matters
             </p>
           </div>
 
@@ -131,7 +131,7 @@ export default function ForecastPage() {
                   </h3>
 
                   <p className="mt-2 text-sm text-slate-500">
-                    Click the button to run the HARVEX demand
+                    Click the button to run the X-MILE demand
                     forecasting engine.
                   </p>
                 </div>
@@ -204,7 +204,7 @@ export default function ForecastPage() {
 
                 <div className="mt-6 rounded-xl bg-emerald-50 p-5">
                   <p className="text-xs font-semibold uppercase text-emerald-700">
-                    HARVEX Recommendation
+                    X-MILE Recommendation
                   </p>
 
                   <p className="mt-2 text-sm text-emerald-950">

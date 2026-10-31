@@ -215,7 +215,7 @@ export default function FarmerPage() {
       }
 
       alert(
-        "Produce successfully added to HARVEX pooled inventory."
+        "Produce successfully added to X-MILE pooled inventory."
       );
     } catch (err) {
       setError(
@@ -338,7 +338,7 @@ export default function FarmerPage() {
           }
 
           console.log(
-            "HARVEX SHIPMENT NOW IN TRANSIT:",
+            "X-MILE SHIPMENT NOW IN TRANSIT:",
             shipmentUpdateData
           );
         }
@@ -575,12 +575,12 @@ export default function FarmerPage() {
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#172019] text-sm font-black text-white shadow-sm">
-              H
+              X
             </div>
 
             <div>
               <p className="text-lg font-black tracking-tight">
-                HARVEX
+                X-MILE
               </p>
               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500">
                 Farmer Portal
@@ -612,7 +612,7 @@ export default function FarmerPage() {
           <div className="relative z-10 max-w-3xl">
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-xs font-bold tracking-wide text-emerald-200">
               <span className="pulse-dot h-2 w-2 rounded-full bg-emerald-300" />
-              FARMER-FIRST HARVEST MANAGEMENT
+              Every MILE Matters, Every FARMER Matters
             </div>
 
             <h1 className="text-4xl font-black tracking-tight md:text-5xl">
@@ -625,7 +625,7 @@ export default function FarmerPage() {
 
             <p className="mt-5 max-w-2xl text-sm leading-7 text-white/65 md:text-base">
               List your produce, verify its quality with
-              HARVEX AI, join the pooled inventory, and
+              X-MILE AI, join the pooled inventory, and
               manage buyer orders from one place.
             </p>
           </div>
@@ -717,7 +717,7 @@ export default function FarmerPage() {
               </h2>
 
               <p className="mt-2 max-w-xl text-sm leading-6 text-gray-500">
-                Add fresh produce to the HARVEX pooled
+                Add fresh produce to the X-MILE pooled
                 inventory and let AI help assess its
                 visible quality.
               </p>
@@ -725,7 +725,7 @@ export default function FarmerPage() {
 
             <div className="hidden text-right md:block">
               <p className="text-xs font-semibold text-gray-400">
-                HARVEX POOL
+                X-MILE POOL
               </p>
               <p className="mt-1 text-sm font-bold text-emerald-700">
                 Ready for buyer matching
@@ -861,7 +861,7 @@ export default function FarmerPage() {
                 </h3>
 
                 <p className="mt-2 max-w-lg text-sm leading-6 text-gray-500">
-                  HARVEX will examine visible
+                  X-MILE will examine visible
                   characteristics and return a quality
                   grade, score, confidence and
                   observations.
@@ -877,7 +877,7 @@ export default function FarmerPage() {
                 <div className="mb-2 flex items-center gap-2">
                   <span className="pulse-dot h-2 w-2 rounded-full bg-emerald-300" />
                   <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-300">
-                    HARVEX AI VISION
+                    X-MILE AI VISION
                   </span>
                 </div>
 
@@ -899,7 +899,7 @@ export default function FarmerPage() {
               >
                 {loading
                   ? "Scanning produce..."
-                  : "Analyze with HARVEX AI"}
+                  : "Analyze with X-MILE AI"}
               </button>
             </div>
 
@@ -1071,7 +1071,7 @@ export default function FarmerPage() {
               className="button-hover rounded-xl bg-emerald-600 px-6 py-3.5 text-sm font-black text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
             >
               {saving
-                ? "Saving to HARVEX..."
+                ? "Saving to X-MILE..."
                 : "Confirm & List Produce"}
             </button>
           </div>
@@ -1091,7 +1091,7 @@ export default function FarmerPage() {
 
               <p className="mt-2 text-sm text-gray-500">
                 Produce currently available in the
-                HARVEX pooled inventory.
+                X-MILE pooled inventory.
               </p>
             </div>
 
@@ -1356,7 +1356,7 @@ export default function FarmerPage() {
                 </p>
 
                 <p className="mt-1 text-xs leading-5 text-gray-500">
-                  HARVEX AI provides a visual estimate
+                  X-MILE AI provides a visual estimate
                   based on the uploaded image. It cannot
                   determine food safety, chemical
                   contamination, or internal quality from

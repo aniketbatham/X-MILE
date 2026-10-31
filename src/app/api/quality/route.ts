@@ -25,7 +25,7 @@ export async function POST(request: Request) {
     const apiKey = process.env.GEMINI_API_KEY;
 
     if (!apiKey) {
-      console.error("HARVEX: GEMINI_API_KEY is missing.");
+      console.error("X-MILE: GEMINI_API_KEY is missing.");
 
       return Response.json(
         { error: "Gemini API key is missing." },
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
     });
 
     const prompt = `
-You are HARVEX AI Quality Grading Engine.
+You are X-MILE AI Quality Grading Engine.
 
 The farmer has declared that the agricultural produce is:
 
@@ -128,7 +128,7 @@ The declared crop is "${produce}".
 
     if (!resultText) {
       console.error(
-        "HARVEX: Gemini returned an empty response."
+        "X-MILE: Gemini returned an empty response."
       );
 
       return Response.json(
@@ -162,7 +162,7 @@ The declared crop is "${produce}".
       parsedResult = JSON.parse(resultText);
     } catch {
       console.error(
-        "HARVEX: Invalid Gemini JSON:",
+        "X-MILE: Invalid Gemini JSON:",
         resultText
       );
 
@@ -196,7 +196,7 @@ The declared crop is "${produce}".
       )
     ) {
       console.error(
-        "HARVEX: Invalid quality structure:",
+        "X-MILE: Invalid quality structure:",
         parsedResult
       );
 
@@ -234,7 +234,7 @@ The declared crop is "${produce}".
     });
   } catch (error) {
     console.error(
-      "HARVEX AI quality error:",
+      "X-MILE AI quality error:",
       error
     );
 

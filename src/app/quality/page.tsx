@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useLanguage } from "@/i18n/LanguageContext";
+import LanguageSelector from "@/components/LanguageSelector";
 
 type QualityResult = {
   grade: string;
@@ -12,6 +14,7 @@ type QualityResult = {
 };
 
 export default function QualityPage() {
+  const { t, formatNumber } = useLanguage();
   const [image, setImage] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [result, setResult] = useState<QualityResult | null>(null);
@@ -279,15 +282,17 @@ export default function QualityPage() {
           </a>
 
           <div className="flex items-center gap-3">
+            <LanguageSelector />
+
             <a
               href="/"
               className="rounded-full px-4 py-2 text-sm font-semibold text-[#52655a] transition hover:bg-white hover:text-[#1f6b3b]"
             >
-              ← Home
+              ← {t("common.home")}
             </a>
 
             <div className="hidden rounded-full border border-[#dce7df] bg-white px-4 py-2 text-xs font-bold text-[#347247] sm:block">
-              🤖 AI QUALITY
+              {t("nav.quality")}
             </div>
           </div>
         </div>
@@ -303,14 +308,11 @@ export default function QualityPage() {
           </div>
 
           <h1 className="text-4xl font-black tracking-[-0.04em] sm:text-5xl lg:text-6xl">
-            See the quality.
-            <br />
-            <span className="text-[#277443]">Before you sell.</span>
+            {t("quality.title")}
           </h1>
 
           <p className="mx-auto mt-5 max-w-2xl text-base leading-7 text-[#66766c] sm:text-lg">
-            Upload a produce image and X-MILE AI Vision analyzes visible
-            characteristics to estimate quality, grade and suitability.
+            {t("quality.subtitle")}
           </p>
         </div>
 
@@ -445,12 +447,11 @@ export default function QualityPage() {
                 htmlFor="produce"
                 className="block text-sm font-black text-[#294432]"
               >
-                What produce is this?
+                {t("quality.selectProduce")}
               </label>
 
               <p className="mt-1 text-xs leading-5 text-[#7a887f]">
-                Select the crop so X-MILE evaluates the image in the correct
-                context.
+                {t("quality.step1Desc")}
               </p>
 
               <select
@@ -464,13 +465,13 @@ export default function QualityPage() {
                 disabled={loading}
                 className="mt-4 w-full rounded-xl border border-[#cbdccd] bg-white px-4 py-3 text-sm font-semibold text-[#294432] outline-none transition focus:border-[#3f8b51] focus:ring-2 focus:ring-[#dcebdd] disabled:cursor-not-allowed disabled:opacity-60"
               >
-                <option value="Tomato">Tomato</option>
-                <option value="Onion">Onion</option>
-                <option value="Potato">Potato</option>
-                <option value="Carrot">Carrot</option>
-                <option value="Cabbage">Cabbage</option>
-                <option value="Brinjal">Brinjal</option>
-                <option value="Chilli">Chilli</option>
+                <option value="Tomato">{t("quality.produceTypes.tomato")}</option>
+                <option value="Onion">{t("quality.produceTypes.onion")}</option>
+                <option value="Potato">{t("quality.produceTypes.potato")}</option>
+                <option value="Carrot">{t("quality.produceTypes.carrot")}</option>
+                <option value="Cabbage">{t("quality.produceTypes.cabbage")}</option>
+                <option value="Brinjal">{t("quality.produceTypes.brinjal")}</option>
+                <option value="Chilli">{t("quality.produceTypes.chilli")}</option>
                 <option value="Other">Other</option>
               </select>
             </div>
@@ -479,11 +480,11 @@ export default function QualityPage() {
             <div className="mt-5 rounded-2xl border border-dashed border-[#cbdccd] bg-[#f8fbf8] p-5">
               <label className="block cursor-pointer">
                 <div className="text-sm font-black text-[#294432]">
-                  Upload harvest image
+                  {t("quality.uploadInstructions")}
                 </div>
 
                 <div className="mt-1 text-xs leading-5 text-[#7a887f]">
-                  JPG, PNG or other supported image format.
+                  {t("quality.supportsFormats")}
                 </div>
 
                 <input
@@ -518,8 +519,8 @@ export default function QualityPage() {
               className="button-hover mt-4 w-full rounded-2xl bg-[#1f6b3b] px-6 py-4 font-black text-white disabled:cursor-not-allowed disabled:opacity-40"
             >
               {loading
-                ? `X-MILE AI IS SCANNING · ${scanProgress}%`
-                : "Analyze with X-MILE AI →"}
+                ? `${t("quality.analyzingButton")} · ${scanProgress}%`
+                : `${t("quality.analyzeButton")} →`}
             </button>
           </div>
 
@@ -583,19 +584,19 @@ export default function QualityPage() {
 
                 <div className="mt-6 grid grid-cols-2 gap-3">
                   <Metric
-                    label="QUALITY SCORE"
+                    label={t("quality.scoreLabel").toUpperCase()}
                     value={`${result.score}/100`}
                   />
 
                   <Metric
-                    label="CONFIDENCE"
+                    label={t("quality.confidenceLabel").toUpperCase()}
                     value={`${result.confidence}%`}
                   />
                 </div>
 
                 <div className="mt-3 rounded-xl bg-white p-4">
                   <div className="text-[9px] font-black tracking-[0.15em] text-[#849188]">
-                    SUITABILITY
+                    {t("quality.suitabilityLabel").toUpperCase()}
                   </div>
 
                   <div className="mt-1 text-sm font-bold text-[#294432]">
@@ -657,7 +658,7 @@ export default function QualityPage() {
                 </div>
 
                 <div>
-                  <h2 className="font-black">AI Observations</h2>
+                  <h2 className="font-black">{t("quality.observationsTitle")}</h2>
 
                   <p className="text-xs text-[#819087]">
                     Visual indicators detected
@@ -685,7 +686,7 @@ export default function QualityPage() {
                 </div>
 
                 <div>
-                  <h2 className="font-black">Visible Defects</h2>
+                  <h2 className="font-black">{t("quality.defectsTitle")}</h2>
 
                   <p className="text-xs text-[#819087]">
                     AI-detected visual concerns
@@ -706,7 +707,7 @@ export default function QualityPage() {
                 </ul>
               ) : (
                 <div className="mt-5 rounded-xl bg-[#f1f8f1] p-4 text-sm font-semibold text-[#3e7349]">
-                  ✓ No obvious visible defects detected.
+                  ✓ {t("quality.noDefects")}
                 </div>
               )}
             </div>
@@ -715,9 +716,8 @@ export default function QualityPage() {
 
         {/* DISCLAIMER */}
         <div className="mt-8 rounded-2xl border border-[#e4e8e4] bg-white p-5 text-xs leading-6 text-[#7b867f]">
-          <span className="font-black text-[#56645b]">⚠️ Important:</span>{" "}
-          This is a visual AI estimate. It cannot determine food safety,
-          chemical contamination, or internal quality from an image alone.
+          <span className="font-black text-[#56645b]">⚠️ {t("quality.disclaimerTitle")}:</span>{" "}
+          {t("quality.disclaimerText")}
         </div>
       </div>
     </main>

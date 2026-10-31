@@ -2,6 +2,8 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
+import { useLanguage } from "@/i18n/LanguageContext";
+import LanguageSelector from "@/components/LanguageSelector";
 
 import {
   aggregateSupply,
@@ -71,6 +73,7 @@ type BuyerShipment = {
 };
 
 export default function BuyerPage() {
+  const { t, formatNumber, formatCurrency, formatDate } = useLanguage();
   const [produce, setProduce] =
     useState("Tomato");
 
@@ -935,23 +938,30 @@ export default function BuyerPage() {
 
       <nav className="sticky top-0 z-50 border-b border-[#dce6dc] bg-[#f7f4ec]/90 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-          <div>
-            <h1 className="text-2xl font-black tracking-tight text-[#173b2a]">
-              X-MILE
-            </h1>
+          <div className="flex items-center gap-3">
+            <a href="/" className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#173b2a] text-sm font-black text-white shadow-sm">
+              X
+            </a>
+            <div>
+              <h1 className="text-2xl font-black tracking-tight text-[#173b2a]">
+                X-MILE
+              </h1>
 
-            <p className="text-xs font-medium text-[#708477]">
-              Every MILE Matters, Every FARMER Matters
-            </p>
+              <p className="text-xs font-medium text-[#708477]">
+                Every MILE Matters, Every FARMER Matters
+              </p>
+            </div>
           </div>
 
           <div className="flex items-center gap-3">
+            <LanguageSelector />
+
             <div className="hidden rounded-full border border-[#dce6dc] bg-white px-4 py-2 text-xs font-bold text-[#547060] sm:block">
-              PROCUREMENT INTELLIGENCE
+              {t("buyer.modeBadge")}
             </div>
 
             <div className="rounded-full bg-[#dff4e8] px-4 py-2 text-sm font-bold text-[#087443]">
-              Buyer Portal
+              {t("common.buyerPortal")}
             </div>
           </div>
         </div>
@@ -970,20 +980,15 @@ export default function BuyerPage() {
             <div className="fade-up">
               <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-bold tracking-wider text-emerald-200">
                 <span className="h-2 w-2 rounded-full bg-emerald-300 pulse-soft" />
-                X-MILE BUYER INTELLIGENCE
+                {t("buyer.modeBadge")}
               </div>
 
               <h2 className="max-w-3xl text-4xl font-black tracking-tight md:text-6xl">
-                Turn demand into
-                <span className="text-emerald-300">
-                  {" "}smart supply.
-                </span>
+                {t("buyer.title")}
               </h2>
 
               <p className="mt-5 max-w-2xl text-base leading-7 text-emerald-50/75 md:text-lg">
-                Forecast demand, discover fragmented farmer inventory,
-                aggregate the right supply, and move it through an
-                optimized logistics network.
+                {t("buyer.subtitle")}
               </p>
             </div>
 
@@ -1015,15 +1020,15 @@ export default function BuyerPage() {
           <div className="flex flex-col justify-between gap-3 md:flex-row md:items-end">
             <div>
               <p className="text-sm font-black uppercase tracking-wider text-emerald-600">
-                Step 01 · Buyer Demand
+                Step 01 · {t("buyer.reqTitle")}
               </p>
 
               <h3 className="mt-1 text-2xl font-black text-[#173b2a]">
-                Buyer Requirement
+                {t("buyer.reqTitle")}
               </h3>
 
               <p className="mt-1 text-sm text-[#718276]">
-                Define exactly what the market needs.
+                {t("buyer.reqSubtitle")}
               </p>
             </div>
 
@@ -1035,7 +1040,7 @@ export default function BuyerPage() {
           <div className="mt-6 grid gap-5 md:grid-cols-4">
             <div>
               <label className="text-sm font-bold text-[#385443]">
-                Produce
+                {t("buyer.cropRequired")}
               </label>
 
               <select
@@ -1047,15 +1052,15 @@ export default function BuyerPage() {
                 }
                 className="input-focus mt-2 w-full rounded-2xl border border-[#d7e1d8] bg-[#fbfcfa] px-4 py-3 text-[#173b2a]"
               >
-                <option>Tomato</option>
-                <option>Potato</option>
-                <option>Onion</option>
+                <option value="Tomato">{t("quality.produceTypes.tomato")}</option>
+                <option value="Potato">{t("quality.produceTypes.potato")}</option>
+                <option value="Onion">{t("quality.produceTypes.onion")}</option>
               </select>
             </div>
 
             <div>
               <label className="text-sm font-bold text-[#385443]">
-                Quantity (kg)
+                {t("buyer.quantityRequired")}
               </label>
 
               <input
@@ -1072,7 +1077,7 @@ export default function BuyerPage() {
 
             <div>
               <label className="text-sm font-bold text-[#385443]">
-                Required Grade
+                {t("buyer.gradeTarget")}
               </label>
 
               <select
@@ -1103,7 +1108,7 @@ export default function BuyerPage() {
 
             <div>
               <label className="text-sm font-bold text-[#385443]">
-                Destination
+                {t("buyer.destinationCity")}
               </label>
 
               <select
@@ -1130,8 +1135,8 @@ export default function BuyerPage() {
             className="button-hover mt-6 rounded-2xl bg-[#087443] px-7 py-3.5 font-black text-white disabled:cursor-not-allowed disabled:opacity-50"
           >
             {loading
-              ? "Finding Supply..."
-              : "Find Supply →"}
+              ? t("buyer.matchingSupply")
+              : t("buyer.matchSupply")}
           </button>
         </section>
 
@@ -1448,10 +1453,10 @@ export default function BuyerPage() {
                   className="button-hover shrink-0 rounded-2xl bg-[#087443] px-7 py-3.5 font-black text-white disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {order
-                    ? "✓ Order Created"
+                    ? "✓ " + t("buyer.reservationPlaced")
                     : loading
-                      ? "Processing..."
-                      : "Create X-MILE Order →"}
+                      ? t("buyer.matchingSupply")
+                      : t("buyer.placeReservation")}
                 </button>
               </div>
             </section>

@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import QuickActionLauncher from "@/components/QuickActionLauncher";
+import { LanguageProvider } from "@/i18n/LanguageContext";
+import FirstVisitModal from "@/components/FirstVisitModal";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,9 +27,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
-        {children}
-        <QuickActionLauncher />
+      <body className="min-h-full flex flex-col font-sans">
+        <LanguageProvider>
+          {children}
+          <QuickActionLauncher />
+          <FirstVisitModal />
+        </LanguageProvider>
       </body>
     </html>
   );

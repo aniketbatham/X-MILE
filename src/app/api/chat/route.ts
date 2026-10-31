@@ -106,7 +106,12 @@ export async function POST(request: NextRequest) {
     }
 
     // 3. Parse and validate body
-    let body: { messages?: unknown };
+    let body: {
+      messages?: unknown;
+      locale?: string;
+      languageName?: string;
+      nativeLanguageName?: string;
+    };
     try {
       body = await request.json();
     } catch {
@@ -178,13 +183,26 @@ export async function POST(request: NextRequest) {
     // Keep context within max turns limit
     const contextMessages = sanitizedMessages.slice(-MAX_CONTEXT_TURNS);
 
-    // 5. Build prompt payload for OpenRouter
+    // 5. Build prompt payload for OpenRouter with multilingual directive
+    const userLocale = typeof body.locale === "string" ? body.locale.trim() : "en";
+    const userLang =
+      typeof body.languageName === "string" ? body.languageName.trim() : "English";
+    const nativeLang =
+      typeof body.nativeLanguageName === "string"
+        ? body.nativeLanguageName.trim()
+        : userLang;
+
+    const languageDirective =
+      userLocale !== "en"
+        ? `\n\nActive Language Configuration:\nThe user's interface language is set to ${userLang} (${nativeLang}, locale: '${userLocale}'). You MUST respond in ${userLang} (${nativeLang}) using natural, helpful, farmer-friendly terminology. If the user writes in any of the 22 Eighth Schedule Indian languages (Hindi, Bengali, Telugu, Marathi, Tamil, Gujarati, Kannada, Malayalam, Odia, Punjabi, Assamese, Urdu, Sanskrit, Kashmiri, Konkani, Maithili, Santali, Sindhi, Dogri, Bodo, Nepali, Manipuri) or English, seamlessly converse in that language.`
+        : `\n\nActive Language Configuration:\nDefault language is English. If the user asks or writes in any of the 22 Indian regional languages, seamlessly understand and respond in that language.`;
+
     const openRouterPayload = {
       model,
       messages: [
         {
           role: "system",
-          content: SYSTEM_INSTRUCTION,
+          content: `${SYSTEM_INSTRUCTION}${languageDirective}`,
         },
         ...contextMessages,
       ],

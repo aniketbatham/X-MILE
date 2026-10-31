@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useLanguage } from "@/i18n/LanguageContext";
+import LanguageSelector from "@/components/LanguageSelector";
 
 type TransactionStatus =
   | "Accepted"
@@ -43,6 +45,7 @@ const milestones = [
 ];
 
 export default function TransactionPage() {
+  const { t, formatNumber, formatDate } = useLanguage();
   const [order, setOrder] = useState<Order | null>(null);
 
   const [loading, setLoading] = useState(true);
@@ -167,22 +170,31 @@ export default function TransactionPage() {
       <main className="min-h-screen bg-slate-50 text-slate-900">
         <nav className="border-b border-slate-200 bg-white">
           <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
-            <div>
-              <h1 className="text-xl font-bold">
-                X-MILE
-              </h1>
+            <div className="flex items-center gap-3">
+              <a href="/" className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#172019] text-sm font-black text-white shadow-sm">
+                X
+              </a>
+              <div>
+                <h1 className="text-xl font-bold">
+                  X-MILE
+                </h1>
 
-              <p className="text-xs text-slate-500">
-                Every MILE Matters, Every FARMER Matters
-              </p>
+                <p className="text-xs text-slate-500">
+                  Every MILE Matters, Every FARMER Matters
+                </p>
+              </div>
             </div>
 
-            <a
-              href="/buyer"
-              className="rounded-lg border px-4 py-2 text-sm hover:bg-slate-50"
-            >
-              ← Buyer
-            </a>
+            <div className="flex items-center gap-3">
+              <LanguageSelector />
+
+              <a
+                href="/buyer"
+                className="rounded-lg border px-4 py-2 text-sm hover:bg-slate-50"
+              >
+                ← {t("common.buyerPortal")}
+              </a>
+            </div>
           </div>
         </nav>
 
@@ -191,7 +203,7 @@ export default function TransactionPage() {
             <div className="text-5xl">📦</div>
 
             <h2 className="mt-4 text-2xl font-bold">
-              No Transaction Found
+              {t("transaction.title")}
             </h2>
 
             <p className="mt-2 text-sm text-amber-900">
@@ -202,7 +214,7 @@ export default function TransactionPage() {
               href="/buyer"
               className="mt-6 inline-block rounded-xl bg-slate-900 px-5 py-3 font-semibold text-white"
             >
-              Create Buyer Order →
+              ← {t("common.buyerPortal")}
             </a>
           </div>
         </section>
@@ -225,22 +237,31 @@ export default function TransactionPage() {
 
       <nav className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
-          <div>
-            <h1 className="text-xl font-bold">
-              X-MILE
-            </h1>
+          <div className="flex items-center gap-3">
+            <a href="/" className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#172019] text-sm font-black text-white shadow-sm">
+              X
+            </a>
+            <div>
+              <h1 className="text-xl font-bold">
+                X-MILE
+              </h1>
 
-            <p className="text-xs text-slate-500">
-              Every MILE Matters, Every FARMER Matters
-            </p>
+              <p className="text-xs text-slate-500">
+                Every MILE Matters, Every FARMER Matters
+              </p>
+            </div>
           </div>
 
-          <a
-            href="/buyer"
-            className="rounded-lg border px-4 py-2 text-sm hover:bg-slate-50"
-          >
-            ← Buyer
-          </a>
+          <div className="flex items-center gap-3">
+            <LanguageSelector />
+
+            <a
+              href="/buyer"
+              className="rounded-lg border px-4 py-2 text-sm hover:bg-slate-50"
+            >
+              ← {t("common.buyerPortal")}
+            </a>
+          </div>
         </div>
       </nav>
 
@@ -248,16 +269,15 @@ export default function TransactionPage() {
         {/* HEADER */}
 
         <p className="text-sm font-semibold uppercase tracking-widest text-emerald-700">
-          Trust & Transactions
+          {t("nav.transaction")}
         </p>
 
         <h2 className="mt-2 text-4xl font-bold">
-          Milestone Escrow
+          {t("transaction.title")}
         </h2>
 
         <p className="mt-3 max-w-2xl text-slate-600">
-          Track the real X-MILE procurement order through
-          acceptance, dispatch and delivery.
+          {t("transaction.subtitle")}
         </p>
 
         {/* ORDER CARD */}
@@ -294,7 +314,7 @@ export default function TransactionPage() {
           <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
             <div className="rounded-2xl bg-slate-50 p-4">
               <p className="text-xs text-slate-500">
-                Buyer
+                {t("transaction.buyer")}
               </p>
 
               <p className="mt-1 font-semibold">
@@ -304,7 +324,7 @@ export default function TransactionPage() {
 
             <div className="rounded-2xl bg-slate-50 p-4">
               <p className="text-xs text-slate-500">
-                Produce
+                {t("transaction.crop")}
               </p>
 
               <p className="mt-1 font-semibold">
@@ -314,7 +334,7 @@ export default function TransactionPage() {
 
             <div className="rounded-2xl bg-slate-50 p-4">
               <p className="text-xs text-slate-500">
-                Quantity
+                {t("farmer.quantityLabel")}
               </p>
 
               <p className="mt-1 font-semibold">
@@ -327,7 +347,7 @@ export default function TransactionPage() {
 
             <div className="rounded-2xl bg-slate-50 p-4">
               <p className="text-xs text-slate-500">
-                Quality
+                {t("quality.gradeLabel")}
               </p>
 
               <p className="mt-1 font-semibold">
@@ -337,7 +357,7 @@ export default function TransactionPage() {
 
             <div className="rounded-2xl bg-slate-50 p-4">
               <p className="text-xs text-slate-500">
-                Destination
+                {t("buyer.destinationCity")}
               </p>
 
               <p className="mt-1 font-semibold">
@@ -421,7 +441,11 @@ export default function TransactionPage() {
                     <div className="flex-1">
                       <div className="flex justify-between gap-4">
                         <h4 className="font-semibold">
-                          {milestone.name}
+                          {index === 0
+                            ? t("transaction.stepOrderPlaced")
+                            : index === 1
+                              ? t("transaction.stepDispatched")
+                              : t("transaction.stepDelivered")}
                         </h4>
 
                         <span className="font-bold text-emerald-700">
@@ -478,8 +502,8 @@ export default function TransactionPage() {
                     ? "Updating..."
                     : order.status ===
                         "Accepted"
-                      ? "Verify Dispatch →"
-                      : "Confirm Delivery →"}
+                      ? `${t("transaction.stepDispatched")} →`
+                      : `${t("transaction.deliveryConfirmed")} →`}
                 </button>
               )}
 

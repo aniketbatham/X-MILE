@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { forecastDemand } from "../../lib/forecast";
+import { useLanguage } from "@/i18n/LanguageContext";
+import LanguageSelector from "@/components/LanguageSelector";
 
 const demandData = [
   { date: "Sep 1", quantity: 3200 },
@@ -13,6 +15,7 @@ const demandData = [
 ];
 
 export default function ForecastPage() {
+  const { t, formatNumber } = useLanguage();
   const [produce, setProduce] = useState("Tomato");
   const [result, setResult] = useState<ReturnType<
     typeof forecastDemand
@@ -34,45 +37,53 @@ export default function ForecastPage() {
     <main className="min-h-screen bg-slate-50 text-slate-900">
       <nav className="border-b bg-white px-6 py-5">
         <div className="mx-auto flex max-w-6xl items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold">X-MILE</h1>
-            <p className="text-xs text-slate-500">
-              Every MILE Matters, Every FARMER Matters
-            </p>
+          <div className="flex items-center gap-3">
+            <a href="/" className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#172019] text-sm font-black text-white shadow-sm">
+              X
+            </a>
+            <div>
+              <h1 className="text-xl font-bold">X-MILE</h1>
+              <p className="text-xs text-slate-500">
+                Every MILE Matters, Every FARMER Matters
+              </p>
+            </div>
           </div>
 
-          <a
-            href="/"
-            className="rounded-lg border px-4 py-2 text-sm hover:bg-slate-50"
-          >
-            ← Home
-          </a>
+          <div className="flex items-center gap-3">
+            <LanguageSelector />
+
+            <a
+              href="/"
+              className="rounded-lg border px-4 py-2 text-sm hover:bg-slate-50"
+            >
+              ← {t("common.home")}
+            </a>
+          </div>
         </div>
       </nav>
 
       <section className="mx-auto max-w-6xl px-6 py-10">
         <p className="text-sm font-semibold uppercase tracking-widest text-emerald-700">
-          AI Demand Intelligence
+          {t("nav.forecast")}
         </p>
 
         <h2 className="mt-2 text-4xl font-bold">
-          Demand Forecasting
+          {t("forecast.title")}
         </h2>
 
         <p className="mt-3 max-w-2xl text-slate-600">
-          Predict upcoming agricultural demand using historical
-          demand patterns.
+          {t("forecast.subtitle")}
         </p>
 
         <div className="mt-8 grid gap-6 lg:grid-cols-2">
           {/* INPUT */}
           <div className="rounded-2xl border bg-white p-6 shadow-sm">
             <h3 className="text-lg font-semibold">
-              Forecast Input
+              {t("forecast.demandTrendTitle")}
             </h3>
 
             <label className="mt-6 block text-sm font-medium">
-              Produce
+              {t("farmer.cropLabel")}
             </label>
 
             <select
@@ -82,10 +93,10 @@ export default function ForecastPage() {
               }
               className="mt-2 w-full rounded-lg border px-4 py-3"
             >
-              <option>Tomato</option>
-              <option>Potato</option>
-              <option>Onion</option>
-              <option>Carrot</option>
+              <option value="Tomato">{t("quality.produceTypes.tomato")}</option>
+              <option value="Potato">{t("quality.produceTypes.potato")}</option>
+              <option value="Onion">{t("quality.produceTypes.onion")}</option>
+              <option value="Carrot">{t("quality.produceTypes.carrot")}</option>
             </select>
 
             <button

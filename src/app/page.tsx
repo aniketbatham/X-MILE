@@ -2,51 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-
-const languages = ["English", "ಕನ್ನಡ", "हिन्दी", "தமிழ்"];
-
-const modules = [
-  {
-    title: "Farmer Portal",
-    description: "Add harvest, manage inventory and respond to buyer orders.",
-    href: "/farmer",
-    icon: "🌾",
-  },
-  {
-    title: "Buyer Portal",
-    description: "Create requirements, match supply and track orders.",
-    href: "/buyer",
-    icon: "🛒",
-  },
-  {
-    title: "AI Quality",
-    description: "Use X-MILE AI Vision to evaluate produce quality.",
-    href: "/quality",
-    icon: "🤖",
-  },
-  {
-    title: "Demand Forecast",
-    description: "Understand demand before making procurement decisions.",
-    href: "/forecast",
-    icon: "📈",
-  },
-  {
-    title: "Transactions",
-    description: "View transparent procurement and transaction activity.",
-    href: "/transaction",
-    icon: "💳",
-  },
-];
-
-const processSteps = [
-  { number: "01", title: "Farmer", icon: "👨‍🌾" },
-  { number: "02", title: "Add Harvest", icon: "🌾" },
-  { number: "03", title: "AI Vision", icon: "🤖" },
-  { number: "04", title: "Buyer", icon: "🏪" },
-  { number: "05", title: "Smart Match", icon: "🔗" },
-  { number: "06", title: "Order", icon: "📦" },
-  { number: "07", title: "Delivery", icon: "🚚" },
-];
+import { useLanguage } from "@/i18n/LanguageContext";
+import LanguageSelector from "@/components/LanguageSelector";
 
 const farmers = [
   { name: "Farmer A", quantity: 1500 },
@@ -56,10 +13,52 @@ const farmers = [
 ];
 
 export default function HomePage() {
-  const [language, setLanguage] = useState("English");
-  const [showLanguages, setShowLanguages] = useState(false);
+  const { t, formatNumber } = useLanguage();
   const [scanComplete, setScanComplete] = useState(false);
   const [poolQuantity, setPoolQuantity] = useState(0);
+
+  const processSteps = [
+    { number: "01", title: t("home.step1"), icon: "👨‍🌾" },
+    { number: "02", title: t("home.step2"), icon: "🌾" },
+    { number: "03", title: t("home.step3"), icon: "🤖" },
+    { number: "04", title: t("home.step4"), icon: "🏪" },
+    { number: "05", title: t("home.step5"), icon: "🔗" },
+    { number: "06", title: t("home.step6"), icon: "📦" },
+    { number: "07", title: t("home.step7"), icon: "🚚" },
+  ];
+
+  const modules = [
+    {
+      title: t("common.farmerPortal"),
+      description: t("home.farmerDesc"),
+      href: "/farmer",
+      icon: "🌾",
+    },
+    {
+      title: t("common.buyerPortal"),
+      description: t("home.buyerDesc"),
+      href: "/buyer",
+      icon: "🛒",
+    },
+    {
+      title: t("common.aiQuality"),
+      description: t("home.qualityDesc"),
+      href: "/quality",
+      icon: "🤖",
+    },
+    {
+      title: t("common.forecast"),
+      description: t("home.forecastDesc"),
+      href: "/forecast",
+      icon: "📈",
+    },
+    {
+      title: t("common.transaction"),
+      description: t("home.transactionDesc"),
+      href: "/transaction",
+      icon: "💳",
+    },
+  ];
 
   useEffect(() => {
     const scanTimer = setTimeout(() => {
@@ -368,39 +367,13 @@ export default function HomePage() {
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="relative">
-              <button
-                onClick={() =>
-                  setShowLanguages(!showLanguages)
-                }
-                className="rounded-full border border-[#dce7df] bg-white px-4 py-2 text-sm font-medium text-[#3e5146] transition-all hover:border-[#a9c6b1]"
-              >
-                🌐 {language}
-              </button>
-
-              {showLanguages && (
-                <div className="absolute right-0 top-12 z-50 w-36 overflow-hidden rounded-2xl border border-[#dfe9e1] bg-white p-1 shadow-xl">
-                  {languages.map((item) => (
-                    <button
-                      key={item}
-                      onClick={() => {
-                        setLanguage(item);
-                        setShowLanguages(false);
-                      }}
-                      className="w-full rounded-xl px-3 py-2 text-left text-sm transition-colors hover:bg-[#f0f7f1]"
-                    >
-                      {item}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+            <LanguageSelector />
 
             <Link
               href="/buyer"
               className="button-hover hidden rounded-full bg-[#1f6b3b] px-5 py-2.5 text-sm font-bold text-white sm:block"
             >
-              Explore Demo →
+              {t("home.buyerCta")}
             </Link>
           </div>
         </div>
@@ -418,28 +391,25 @@ export default function HomePage() {
               style={{ animationDelay: "0.1s" }}
             >
               <span className="h-2 w-2 rounded-full bg-[#3c9656] shadow-[0_0_10px_rgba(60,150,86,0.6)]" />
-              Every MILE Matters, Every FARMER Matters.
+              {t("common.tagline")}
             </div>
 
             <h1
-              className="animate-fade-up max-w-3xl text-5xl font-black leading-[0.98] tracking-[-0.05em] sm:text-6xl lg:text-7xl"
+              className="animate-fade-up max-w-3xl text-4xl font-black leading-[1.08] tracking-[-0.03em] sm:text-5xl lg:text-6xl"
               style={{ animationDelay: "0.25s" }}
             >
-              Your Harvest.
+              {t("home.heroTitlePart1")}
               <br />
               <span className="text-[#277443]">
-                Your Value.
+                {t("home.heroTitlePart2")}
               </span>
             </h1>
 
             <p
-              className="animate-fade-up mt-7 max-w-xl text-lg leading-8 text-[#5d6f64] sm:text-xl"
+              className="animate-fade-up mt-7 max-w-xl text-base leading-relaxed text-[#5d6f64] sm:text-lg"
               style={{ animationDelay: "0.4s" }}
             >
-              X-MILE connects farmers with trusted
-              buyers, AI-assisted quality insights,
-              smarter matching and transparent
-              delivery.
+              {t("home.heroSubtitle")}
             </p>
 
             <div
@@ -450,14 +420,14 @@ export default function HomePage() {
                 href="/farmer"
                 className="button-hover rounded-2xl bg-[#1f6b3b] px-7 py-4 text-center font-bold text-white shadow-lg shadow-[#1f6b3b]/15"
               >
-                I&apos;m a Farmer →
+                {t("home.farmerCta")}
               </Link>
 
               <Link
                 href="/buyer"
                 className="button-hover rounded-2xl border border-[#cadbce] bg-white px-7 py-4 text-center font-bold text-[#244b31]"
               >
-                I&apos;m a Buyer →
+                {t("home.buyerCta")}
               </Link>
             </div>
 
@@ -465,9 +435,9 @@ export default function HomePage() {
               className="animate-fade-up mt-9 flex flex-wrap gap-x-6 gap-y-3 text-sm font-medium text-[#718178]"
               style={{ animationDelay: "0.7s" }}
             >
-              <span>✓ Verified participants</span>
-              <span>✓ AI-assisted quality</span>
-              <span>✓ Organized logistics</span>
+              <span>✓ {t("home.verifiedQuality")}</span>
+              <span>✓ {t("home.organizedLogistics")}</span>
+              <span>✓ {t("home.fairPricing")}</span>
             </div>
           </div>
 
@@ -627,16 +597,15 @@ export default function HomePage() {
         <div className="mx-auto max-w-7xl px-5 py-20 lg:px-8">
           <div className="mx-auto max-w-2xl text-center">
             <div className="animate-fade-up text-xs font-black tracking-[0.2em] text-[#34794a]">
-              ONE CONNECTED JOURNEY
+              {t("home.heroBadge")}
             </div>
 
             <h2 className="animate-fade-up mt-3 text-3xl font-black tracking-tight sm:text-4xl">
-              From harvest to opportunity.
+              {t("home.processTitle")}
             </h2>
 
             <p className="animate-fade-up mt-4 text-[#68776e]">
-              X-MILE connects every important step
-              into one simple agricultural workflow.
+              {t("home.processSubtitle")}
             </p>
           </div>
 
@@ -725,27 +694,25 @@ export default function HomePage() {
 
               <div className="relative">
                 <div className="text-xs font-black tracking-[0.18em] text-[#36764a]">
-                  SMART HARVEST POOL
+                  {t("home.poolingTitle")}
                 </div>
 
                 <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
-                  One requirement.
+                  {t("home.heroTitlePart1")}
                   <br />
-                  Multiple farmers.
+                  {t("home.heroTitlePart2")}
                 </h2>
 
                 <p className="mt-5 max-w-md leading-7 text-[#627368]">
-                  X-MILE aggregates available supply
-                  from multiple farmers so buyers can
-                  fulfill larger requirements efficiently.
+                  {t("home.poolingSubtitle")}
                 </p>
 
                 <div className="mt-8 flex items-end gap-2">
                   <span className="text-4xl font-black text-[#1f6b3b]">
-                    {poolQuantity.toLocaleString()}
+                    {formatNumber(poolQuantity)}
                   </span>
                   <span className="pb-1 text-sm font-bold text-[#6b7b70]">
-                    / 5,000 kg
+                    / {formatNumber(5000)} {t("common.kg")}
                   </span>
                 </div>
 
@@ -765,7 +732,7 @@ export default function HomePage() {
                   <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white">
                     ✓
                   </span>
-                  Requirement Fulfilled
+                  {t("home.poolingStatSub")}
                 </div>
               </div>
             </div>
@@ -1008,14 +975,14 @@ export default function HomePage() {
                 href="/farmer"
                 className="button-hover rounded-xl bg-white px-6 py-3 font-bold text-[#173c25]"
               >
-                Enter Farmer Portal
+                {t("home.farmerCta")}
               </Link>
 
               <Link
                 href="/buyer"
                 className="button-hover rounded-xl border border-white/20 bg-white/10 px-6 py-3 font-bold text-white backdrop-blur"
               >
-                Enter Buyer Portal
+                {t("home.buyerCta")}
               </Link>
             </div>
           </div>
@@ -1029,11 +996,11 @@ export default function HomePage() {
             <span className="font-black text-[#213a29]">
               X-MILE
             </span>{" "}
-            — Every MILE Matters, Every FARMER Matters.
+            — {t("common.tagline")}
           </div>
 
-          <div className="text-xs">
-            College Demo • AI • Smart Matching • Logistics
+          <div className="text-xs font-medium text-[#75837a]">
+            {t("common.allRightsReserved")}
           </div>
         </div>
       </footer>

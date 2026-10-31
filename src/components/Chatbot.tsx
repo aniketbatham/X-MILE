@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 type Message = {
   id: string;
@@ -36,6 +37,7 @@ export default function Chatbot({
   onClose,
   showStandaloneToggle = true,
 }: ChatbotProps = {}) {
+  const { locale, currentLanguage, t } = useLanguage();
   const [internalIsOpen, setInternalIsOpen] = useState(false);
   const isOpen = typeof controlledIsOpen === "boolean" ? controlledIsOpen : internalIsOpen;
 
@@ -56,13 +58,35 @@ export default function Chatbot({
       setInternalIsOpen((prev) => !prev);
     }
   };
-  const [messages, setMessages] = useState<Message[]>([INITIAL_WELCOME_MESSAGE]);
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: "welcome-msg",
+      role: "assistant",
+      content: t("chatbot.welcomeMessage"),
+      timestamp: "",
+    },
+  ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  // When locale changes, update welcome message if only 1 message exists
+  useEffect(() => {
+    setMessages((prev) => {
+      if (prev.length === 1 && prev[0].role === "assistant") {
+        return [
+          {
+            ...prev[0],
+            content: t("chatbot.welcomeMessage"),
+          },
+        ];
+      }
+      return prev;
+    });
+  }, [locale, t]);
 
   // Restore conversation and open state from sessionStorage on mount
   useEffect(() => {
@@ -167,6 +191,9 @@ export default function Chatbot({
         },
         body: JSON.stringify({
           messages: payloadMessages,
+          locale,
+          languageName: currentLanguage.name,
+          nativeLanguageName: currentLanguage.nativeName,
         }),
       });
 
@@ -325,11 +352,11 @@ export default function Chatbot({
               </div>
               <div>
                 <div id="chatbot-title" className="text-sm font-black tracking-tight">
-                  X-MILE AI Assistant
+                  {t("chatbot.assistantName")}
                 </div>
                 <div className="flex items-center gap-1.5 text-[10px] font-medium text-emerald-200/90">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  <span>Every MILE Matters</span>
+                  <span>{t("chatbot.tagline")}</span>
                 </div>
               </div>
             </div>
@@ -382,35 +409,35 @@ export default function Chatbot({
           {/* Quick Platform Navigation Links */}
           <div className="flex items-center gap-2 overflow-x-auto border-b border-[#eef4ef] bg-[#f8fbf8] px-3 py-1.5 text-[11px] font-semibold text-[#3b6647] scrollbar-none">
             <span className="text-[10px] uppercase tracking-wider text-gray-400 shrink-0">
-              Go to:
+              {t("common.details")}:
             </span>
             <Link
               href="/farmer"
               onClick={() => {}}
               className="rounded-md bg-white px-2 py-0.5 border border-[#dce8df] hover:bg-[#edf6ee] transition-colors shrink-0"
             >
-              🌾 Farmer
+              {t("chatbot.quickFarmer")}
             </Link>
             <Link
               href="/buyer"
               onClick={() => {}}
               className="rounded-md bg-white px-2 py-0.5 border border-[#dce8df] hover:bg-[#edf6ee] transition-colors shrink-0"
             >
-              🛒 Buyer
+              {t("chatbot.quickBuyer")}
             </Link>
             <Link
               href="/quality"
               onClick={() => {}}
               className="rounded-md bg-white px-2 py-0.5 border border-[#dce8df] hover:bg-[#edf6ee] transition-colors shrink-0"
             >
-              🤖 Quality
+              {t("chatbot.quickQuality")}
             </Link>
             <Link
               href="/forecast"
               onClick={() => {}}
               className="rounded-md bg-white px-2 py-0.5 border border-[#dce8df] hover:bg-[#edf6ee] transition-colors shrink-0"
             >
-              📈 Forecast
+              {t("chatbot.quickForecast")}
             </Link>
           </div>
 
@@ -454,10 +481,15 @@ export default function Chatbot({
             {messages.length <= 1 && !isLoading && (
               <div className="mt-4 pt-2">
                 <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-2">
-                  Suggested topics:
+                  {t("firstVisit.popularTitle")}:
                 </p>
                 <div className="flex flex-col gap-1.5">
-                  {STARTER_QUESTIONS.map((question, i) => (
+                  {[
+                    t("chatbot.starter1"),
+                    t("chatbot.starter2"),
+                    t("chatbot.starter3"),
+                    t("chatbot.starter4"),
+                  ].map((question, i) => (
                     <button
                       key={i}
                       onClick={() => handleSendMessage(question)}
@@ -521,7 +553,7 @@ export default function Chatbot({
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 rows={1}
-                placeholder="Ask about X-MILE, produce quality, orders..."
+                placeholder={t("chatbot.placeholder")}
                 disabled={isLoading}
                 className="max-h-28 flex-1 resize-none rounded-xl border border-[#dce8df] bg-[#fbfdfb] px-3.5 py-2.5 text-xs text-[#173b2a] placeholder:text-gray-400 focus:border-[#277443] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#cfe2d2] disabled:opacity-60"
               />

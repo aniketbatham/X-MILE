@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { addInventoryItem, getInventory } from "@/lib/inventory";
 import type { Farmer } from "@/lib/aggregation";
+import { useLanguage } from "@/i18n/LanguageContext";
+import LanguageSelector from "@/components/LanguageSelector";
 
 type QualityResult = {
   grade: "A" | "B" | "C";
@@ -20,6 +22,7 @@ type OrderStatus =
   | "Disputed";
 
 export default function FarmerPage() {
+  const { t, formatNumber, formatDate } = useLanguage();
   const [produce, setProduce] = useState("Tomato");
   const [quantity, setQuantity] = useState("");
   const [location, setLocation] = useState("Tumakuru");
@@ -583,21 +586,23 @@ export default function FarmerPage() {
                 X-MILE
               </p>
               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500">
-                Farmer Portal
+                {t("common.farmerPortal")}
               </p>
             </div>
           </div>
 
-          <div className="hidden items-center gap-3 sm:flex">
-            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-xs font-bold text-emerald-700">
-              ● FARMER MODE
+          <div className="flex items-center gap-3">
+            <LanguageSelector />
+
+            <span className="hidden sm:inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-xs font-bold text-emerald-700">
+              {t("farmer.modeBadge")}
             </span>
 
             <a
               href="/"
               className="rounded-xl border border-black/10 bg-white px-4 py-2 text-xs font-bold transition hover:bg-gray-50"
             >
-              Home
+              {t("common.home")}
             </a>
           </div>
         </div>
@@ -616,17 +621,11 @@ export default function FarmerPage() {
             </div>
 
             <h1 className="text-4xl font-black tracking-tight md:text-5xl">
-              Your harvest.
-              <br />
-              <span className="text-emerald-300">
-                Your value.
-              </span>
+              {t("farmer.title")}
             </h1>
 
             <p className="mt-5 max-w-2xl text-sm leading-7 text-white/65 md:text-base">
-              List your produce, verify its quality with
-              X-MILE AI, join the pooled inventory, and
-              manage buyer orders from one place.
+              {t("farmer.subtitle")}
             </p>
           </div>
 
@@ -709,17 +708,15 @@ export default function FarmerPage() {
           <div className="mb-8 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
               <div className="mb-2 inline-flex rounded-full bg-emerald-50 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-emerald-700">
-                01 · Add Harvest
+                01 · {t("farmer.addProduceTitle")}
               </div>
 
               <h2 className="text-2xl font-black tracking-tight">
-                List your produce
+                {t("farmer.addProduceTitle")}
               </h2>
 
               <p className="mt-2 max-w-xl text-sm leading-6 text-gray-500">
-                Add fresh produce to the X-MILE pooled
-                inventory and let AI help assess its
-                visible quality.
+                {t("farmer.addProduceSubtitle")}
               </p>
             </div>
 
@@ -737,7 +734,7 @@ export default function FarmerPage() {
             {/* PRODUCE */}
             <div>
               <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-gray-500">
-                Produce
+                {t("farmer.cropLabel")}
               </label>
 
               <select
@@ -747,19 +744,19 @@ export default function FarmerPage() {
                 }
                 className="w-full rounded-xl border border-black/10 bg-[#fafbf8] px-4 py-3.5 text-sm font-semibold outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
               >
-                <option value="Tomato">Tomato</option>
-                <option value="Onion">Onion</option>
-                <option value="Potato">Potato</option>
-                <option value="Carrot">Carrot</option>
-                <option value="Cabbage">Cabbage</option>
-                <option value="Chilli">Chilli</option>
+                <option value="Tomato">{t("quality.produceTypes.tomato")}</option>
+                <option value="Onion">{t("quality.produceTypes.onion")}</option>
+                <option value="Potato">{t("quality.produceTypes.potato")}</option>
+                <option value="Carrot">{t("quality.produceTypes.carrot")}</option>
+                <option value="Cabbage">{t("quality.produceTypes.cabbage")}</option>
+                <option value="Chilli">{t("quality.produceTypes.chilli")}</option>
               </select>
             </div>
 
             {/* QUANTITY */}
             <div>
               <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-gray-500">
-                Quantity (kg)
+                {t("farmer.quantityLabel")}
               </label>
 
               <input
@@ -898,8 +895,8 @@ export default function FarmerPage() {
                 className="button-hover rounded-xl bg-emerald-400 px-5 py-3 text-sm font-black text-[#172019] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {loading
-                  ? "Scanning produce..."
-                  : "Analyze with X-MILE AI"}
+                  ? t("quality.analyzingButton")
+                  : t("quality.analyzeButton")}
               </button>
             </div>
 
@@ -1071,8 +1068,8 @@ export default function FarmerPage() {
               className="button-hover rounded-xl bg-emerald-600 px-6 py-3.5 text-sm font-black text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
             >
               {saving
-                ? "Saving to X-MILE..."
-                : "Confirm & List Produce"}
+                ? t("farmer.addingToPool")
+                : t("farmer.joinPool")}
             </button>
           </div>
         </section>
@@ -1082,11 +1079,11 @@ export default function FarmerPage() {
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
               <div className="mb-2 inline-flex rounded-full bg-lime-50 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-lime-700">
-                02 · Harvest Pool
+                02 · {t("farmer.myListingsTitle")}
               </div>
 
               <h2 className="text-2xl font-black tracking-tight">
-                Inventory dashboard
+                {t("farmer.myListingsTitle")}
               </h2>
 
               <p className="mt-2 text-sm text-gray-500">
@@ -1182,11 +1179,11 @@ export default function FarmerPage() {
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
               <div className="mb-2 inline-flex rounded-full bg-orange-50 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-orange-700">
-                03 · Buyer Orders
+                03 · {t("farmer.activeOrdersTitle")}
               </div>
 
               <h2 className="text-2xl font-black tracking-tight">
-                Incoming orders
+                {t("farmer.activeOrdersTitle")}
               </h2>
 
               <p className="mt-2 text-sm text-gray-500">
@@ -1352,15 +1349,11 @@ export default function FarmerPage() {
 
               <div>
                 <p className="text-xs font-black uppercase tracking-wider text-gray-500">
-                  AI quality note
+                  {t("quality.disclaimerTitle")}
                 </p>
 
                 <p className="mt-1 text-xs leading-5 text-gray-500">
-                  X-MILE AI provides a visual estimate
-                  based on the uploaded image. It cannot
-                  determine food safety, chemical
-                  contamination, or internal quality from
-                  an image alone.
+                  {t("quality.disclaimerText")}
                 </p>
               </div>
             </div>

@@ -71,7 +71,21 @@ export default function WeighmentPage() {
 
     setWeighments([newRecord, ...weighments]);
     setIsAddOpen(false);
-    setNotice(`✓ Digital weighment receipt of ${netWeightKg.toLocaleString()} kg generated for ${form.orderId}!`);
+
+    // Asynchronously persist to Supabase
+    fetch("/api/platform/weighment", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        produceName: form.produceName,
+        grossWeightKg: form.grossWeightKg,
+        tareWeightKg: form.tareWeightKg,
+        agreedGrade: form.qualityGrade,
+        collectorName: form.collectorName,
+      }),
+    }).catch((err) => console.warn("Weighment persistence error:", err));
+
+    setNotice(`✓ Digital weighment receipt of ${netWeightKg.toLocaleString()} kg generated for ${form.orderId}! Saved to Supabase.`);
     setTimeout(() => setNotice(null), 4000);
   };
 

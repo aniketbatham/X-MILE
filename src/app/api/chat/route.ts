@@ -94,16 +94,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const model = process.env.OPENROUTER_MODEL?.trim();
-    if (!model) {
-      return Response.json(
-        {
-          error:
-            "OPENROUTER_MODEL environment variable is not configured. Please specify a model (e.g. 'openrouter/free' or 'google/gemma-4-31b-it:free') in your environment.",
-        },
-        { status: 500 }
-      );
-    }
+    const model = process.env.OPENROUTER_MODEL?.trim() || "openrouter/free";
 
     // 3. Parse and validate body
     let body: {

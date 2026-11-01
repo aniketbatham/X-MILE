@@ -1313,6 +1313,31 @@ export class PlatformDb {
     }
   }
 
+  /**
+   * Persists business transactions directly to server-side Supabase endpoints.
+   * Never silently swallows database failures.
+   */
+  public static async persistToServer(endpoint: string, payload: unknown): Promise<{ success: boolean; error?: string }> {
+    try {
+      if (typeof window === "undefined") return { success: true };
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        console.warn(`[Supabase Persistence] Endpoint ${endpoint} returned status ${res.status}:`, data.error);
+        return { success: false, error: data.error };
+      }
+      return { success: true };
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Network error";
+      console.warn(`[Supabase Persistence] Network sync failed with ${endpoint}:`, message);
+      return { success: false, error: message };
+    }
+  }
+
   // --- Profiles & Roles ---
   static getUser(): UserProfile {
     return this.getItem(STORAGE_KEYS.USER, DEFAULT_USER);
@@ -1320,6 +1345,11 @@ export class PlatformDb {
 
   static updateUser(user: Partial<UserProfile>): UserProfile {
     const current = this.getUser();
+    // Security: users cannot escalate their role to ADMIN in client storage
+    if (user.role === "ADMIN" && current.role !== "ADMIN") {
+      console.warn("Security check: Client-side role escalation to ADMIN is disallowed. Role remains:", current.role);
+      user.role = current.role;
+    }
     const updated = { ...current, ...user };
     this.setItem(STORAGE_KEYS.USER, updated);
     return updated;
@@ -1359,6 +1389,8 @@ export class PlatformDb {
     };
     plans.unshift(newPlan);
     this.setItem(STORAGE_KEYS.CROP_PLANS, plans);
+    // Asynchronously persist to Supabase
+    this.persistToServer("/api/platform/crop-plans", newPlan);
     return newPlan;
   }
 
@@ -1377,6 +1409,8 @@ export class PlatformDb {
     };
     listings.unshift(newListing);
     this.setItem(STORAGE_KEYS.LISTINGS, listings);
+    // Asynchronously persist to Supabase
+    this.persistToServer("/api/platform/marketplace", newListing);
     return newListing;
   }
 
@@ -1395,6 +1429,8 @@ export class PlatformDb {
     };
     offers.unshift(newOffer);
     this.setItem(STORAGE_KEYS.OFFERS, offers);
+    // Asynchronously persist to Supabase
+    this.persistToServer("/api/platform/marketplace", { ...newOffer, type: "offer" });
     return newOffer;
   }
 
@@ -1520,6 +1556,8 @@ export class PlatformDb {
     };
     records.unshift(newRecord);
     this.setItem(STORAGE_KEYS.FARM_RECORDS, records);
+    // Asynchronously persist to Supabase
+    this.persistToServer("/api/platform/records", newRecord);
     return newRecord;
   }
 

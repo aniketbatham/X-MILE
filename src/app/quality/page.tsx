@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { useLanguage } from "@/i18n/LanguageContext";
 import LanguageSelector from "@/components/LanguageSelector";
+import PlatformHeader from "@/components/PlatformHeader";
+import ConnectedFarmerJourney from "@/components/ConnectedFarmerJourney";
 
 type QualityResult = {
   grade: string;
@@ -263,43 +265,13 @@ export default function QualityPage() {
       `}</style>
 
       {/* NAVBAR */}
-      <header className="sticky top-0 z-50 border-b border-[#dfe9e1]/80 bg-[#f7faf7]/90 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 lg:px-8">
-          <a href="/" className="group flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#1f6b3b] text-lg transition-transform duration-300 group-hover:rotate-6">
-              🌱
-            </div>
-
-            <div>
-              <div className="text-lg font-black tracking-tight">
-                X-MILE
-              </div>
-
-              <div className="hidden text-[9px] font-semibold tracking-[0.14em] text-[#6a7c70] sm:block">
-                Every MILE Matters, Every FARMER Matters.
-              </div>
-            </div>
-          </a>
-
-          <div className="flex items-center gap-3">
-            <LanguageSelector />
-
-            <a
-              href="/"
-              className="rounded-full px-4 py-2 text-sm font-semibold text-[#52655a] transition hover:bg-white hover:text-[#1f6b3b]"
-            >
-              ← {t("common.home")}
-            </a>
-
-            <div className="hidden rounded-full border border-[#dce7df] bg-white px-4 py-2 text-xs font-bold text-[#347247] sm:block">
-              {t("nav.quality")}
-            </div>
-          </div>
-        </div>
-      </header>
+      <PlatformHeader />
 
       {/* PAGE */}
-      <div className="mx-auto max-w-7xl px-5 py-12 lg:px-8 lg:py-16">
+      <div className="mx-auto max-w-7xl px-5 py-8 lg:px-8">
+        <div className="mb-8">
+          <ConnectedFarmerJourney currentStep="harvest" />
+        </div>
         {/* INTRO */}
         <div className="fade-up mx-auto max-w-3xl text-center">
           <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#cfe2d2] bg-white px-4 py-2 text-xs font-black tracking-[0.16em] text-[#327247] shadow-sm">

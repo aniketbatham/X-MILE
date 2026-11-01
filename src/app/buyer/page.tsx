@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { useLanguage } from "@/i18n/LanguageContext";
 import LanguageSelector from "@/components/LanguageSelector";
+import PlatformHeader from "@/components/PlatformHeader";
 
 import {
   aggregateSupply,
@@ -935,37 +936,7 @@ export default function BuyerPage() {
       `}</style>
 
       {/* NAVBAR */}
-
-      <nav className="sticky top-0 z-50 border-b border-[#dce6dc] bg-[#f7f4ec]/90 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-3">
-            <a href="/" className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#173b2a] text-sm font-black text-white shadow-sm">
-              X
-            </a>
-            <div>
-              <h1 className="text-2xl font-black tracking-tight text-[#173b2a]">
-                X-MILE
-              </h1>
-
-              <p className="text-xs font-medium text-[#708477]">
-                Every MILE Matters, Every FARMER Matters
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <LanguageSelector />
-
-            <div className="hidden rounded-full border border-[#dce6dc] bg-white px-4 py-2 text-xs font-bold text-[#547060] sm:block">
-              {t("buyer.modeBadge")}
-            </div>
-
-            <div className="rounded-full bg-[#dff4e8] px-4 py-2 text-sm font-bold text-[#087443]">
-              {t("common.buyerPortal")}
-            </div>
-          </div>
-        </div>
-      </nav>
+      <PlatformHeader />
 
       <div className="mx-auto max-w-7xl space-y-8 px-6 py-8">
 

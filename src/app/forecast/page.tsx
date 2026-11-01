@@ -4,6 +4,8 @@ import { useState } from "react";
 import { forecastDemand } from "../../lib/forecast";
 import { useLanguage } from "@/i18n/LanguageContext";
 import LanguageSelector from "@/components/LanguageSelector";
+import PlatformHeader from "@/components/PlatformHeader";
+import ConnectedFarmerJourney from "@/components/ConnectedFarmerJourney";
 
 const demandData = [
   { date: "Sep 1", quantity: 3200 },
@@ -35,34 +37,12 @@ export default function ForecastPage() {
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
-      <nav className="border-b bg-white px-6 py-5">
-        <div className="mx-auto flex max-w-6xl items-center justify-between">
-          <div className="flex items-center gap-3">
-            <a href="/" className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#172019] text-sm font-black text-white shadow-sm">
-              X
-            </a>
-            <div>
-              <h1 className="text-xl font-bold">X-MILE</h1>
-              <p className="text-xs text-slate-500">
-                Every MILE Matters, Every FARMER Matters
-              </p>
-            </div>
-          </div>
+      <PlatformHeader />
 
-          <div className="flex items-center gap-3">
-            <LanguageSelector />
-
-            <a
-              href="/"
-              className="rounded-lg border px-4 py-2 text-sm hover:bg-slate-50"
-            >
-              ← {t("common.home")}
-            </a>
-          </div>
+      <section className="mx-auto max-w-6xl px-6 py-8">
+        <div className="mb-8">
+          <ConnectedFarmerJourney currentStep="plan" />
         </div>
-      </nav>
-
-      <section className="mx-auto max-w-6xl px-6 py-10">
         <p className="text-sm font-semibold uppercase tracking-widest text-emerald-700">
           {t("nav.forecast")}
         </p>

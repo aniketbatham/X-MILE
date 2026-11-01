@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useLanguage } from "@/i18n/LanguageContext";
 import LanguageSelector from "@/components/LanguageSelector";
+import ConnectedFarmerJourney from "@/components/ConnectedFarmerJourney";
 
 const farmers = [
   { name: "Farmer A", quantity: 1500 },
@@ -41,6 +42,102 @@ export default function HomePage() {
       icon: "🛒",
     },
     {
+      title: "Live Marketplace",
+      description: "Standard harvests and surplus produce exchange with instant procurement offers.",
+      href: "/marketplace",
+      icon: "🏪",
+    },
+    {
+      title: "Crop Planning Assistant",
+      description: "ICAR-aligned season, soil, and regional yield planner for smallholders.",
+      href: "/crop-planner",
+      icon: "🌱",
+    },
+    {
+      title: "Farm Profit Calculator",
+      description: "Interactive unit economics, break-even price/yield, and scenario stress testing.",
+      href: "/profit-calculator",
+      icon: "📊",
+    },
+    {
+      title: "FPO Aggregation & Tenders",
+      description: "Farmer group bulk aggregation, traceable lot contribution, and institutional tenders.",
+      href: "/fpo",
+      icon: "👥",
+    },
+    {
+      title: "Machinery & Drone Hire",
+      description: "Book tractors, drone sprayers, harvesters, and levelers with transparent tariffs.",
+      href: "/machinery",
+      icon: "🚜",
+    },
+    {
+      title: "AgriCycle Residue Exchange",
+      description: "Monetize paddy straw, sugarcane bagasse, and stalks while eliminating crop burning.",
+      href: "/agricycle",
+      icon: "♻️",
+    },
+    {
+      title: "Soil Health & KVK Advisory",
+      description: "12-parameter soil test records, organic carbon tracking, and direct scientist consults.",
+      href: "/soil-health",
+      icon: "🧪",
+    },
+    {
+      title: "Logistics & Cold Fleet",
+      description: "Optimized multi-stop farm pickup, live temperature monitoring, and transparent freight.",
+      href: "/logistics",
+      icon: "🚚",
+    },
+    {
+      title: "Government Schemes Hub",
+      description: "Fast-track eligibility checklists for PM-KISAN, PMFBY insurance, and PM-KUSUM.",
+      href: "/schemes",
+      icon: "🏛️",
+    },
+    {
+      title: "Farm Financial Ledger",
+      description: "Track seeds, fertilizer, labor costs, sale proceeds, and export audited statements.",
+      href: "/farm-records",
+      icon: "📒",
+    },
+    {
+      title: "Storage & Warehouses",
+      description: "WDRA-verified cold rooms and dry godowns to avoid distress distress sales.",
+      href: "/storage",
+      icon: "🏭",
+    },
+    {
+      title: "Certified Agri-Inputs",
+      description: "Transparent pricing on certified seeds, bio-fertilizers, and micro-irrigation kits.",
+      href: "/inputs",
+      icon: "📦",
+    },
+    {
+      title: "Crop Health Triage",
+      description: "Photo-based pest/disease triage, hygienic field interventions, and KVK referrals.",
+      href: "/crop-triage",
+      icon: "🔬",
+    },
+    {
+      title: "Irrigation Water Planner",
+      description: "Track borewell pump runtimes, seasonal water quotas, and soil moisture levels.",
+      href: "/water-planner",
+      icon: "💧",
+    },
+    {
+      title: "Electronic Weighbridge",
+      description: "Digital tare/gross receipts with dual-party approval to eliminate gate cheating.",
+      href: "/weighment",
+      icon: "⚖️",
+    },
+    {
+      title: "Agricultural Learning Hub",
+      description: "Field-tested agronomic practices and post-harvest management modules.",
+      href: "/learning",
+      icon: "📚",
+    },
+    {
       title: t("common.aiQuality"),
       description: t("home.qualityDesc"),
       href: "/quality",
@@ -57,6 +154,12 @@ export default function HomePage() {
       description: t("home.transactionDesc"),
       href: "/transaction",
       icon: "💳",
+    },
+    {
+      title: "Admin Integrity Console",
+      description: "Participant KYC verification, weighbridge tolerance checks, and escrow oversight.",
+      href: "/admin",
+      icon: "🛡️",
     },
   ];
 
@@ -586,6 +689,26 @@ export default function HomePage() {
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* CONNECTED 9-STEP FARMER JOURNEY */}
+      <section className="mx-auto max-w-7xl px-5 pb-12 lg:px-8">
+        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-sm">
+          <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full">
+                Unified Agricultural Lifecycle
+              </span>
+              <h2 className="text-xl sm:text-2xl font-black text-stone-900 mt-1">
+                The 9-Step Connected Farmer Journey
+              </h2>
+            </div>
+            <p className="text-xs text-stone-500 max-w-md">
+              Every phase from pre-season soil tests to milestone escrow payouts is connected with complete data continuity.
+            </p>
+          </div>
+          <ConnectedFarmerJourney currentStep="plan" />
         </div>
       </section>
 

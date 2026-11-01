@@ -5,6 +5,8 @@ import { addInventoryItem, getInventory } from "@/lib/inventory";
 import type { Farmer } from "@/lib/aggregation";
 import { useLanguage } from "@/i18n/LanguageContext";
 import LanguageSelector from "@/components/LanguageSelector";
+import PlatformHeader from "@/components/PlatformHeader";
+import ConnectedFarmerJourney from "@/components/ConnectedFarmerJourney";
 
 type QualityResult = {
   grade: "A" | "B" | "C";
@@ -574,41 +576,13 @@ export default function FarmerPage() {
       `}</style>
 
       {/* HEADER */}
-      <header className="sticky top-0 z-40 border-b border-black/5 bg-[#f7f8f5]/90 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#172019] text-sm font-black text-white shadow-sm">
-              X
-            </div>
+      <PlatformHeader />
 
-            <div>
-              <p className="text-lg font-black tracking-tight">
-                X-MILE
-              </p>
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500">
-                {t("common.farmerPortal")}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <LanguageSelector />
-
-            <span className="hidden sm:inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-xs font-bold text-emerald-700">
-              {t("farmer.modeBadge")}
-            </span>
-
-            <a
-              href="/"
-              className="rounded-xl border border-black/10 bg-white px-4 py-2 text-xs font-bold transition hover:bg-gray-50"
-            >
-              {t("common.home")}
-            </a>
-          </div>
+      <div className="mx-auto max-w-7xl px-6 py-8">
+        {/* CONNECTED FARMER 9-STEP JOURNEY */}
+        <div className="mb-8">
+          <ConnectedFarmerJourney currentStep="sell" />
         </div>
-      </header>
-
-      <div className="mx-auto max-w-7xl px-6 py-10">
         {/* HERO */}
         <section className="animate-fade-up relative mb-10 overflow-hidden rounded-[2rem] bg-[#172019] px-7 py-10 text-white shadow-xl md:px-10 md:py-12">
           <div className="absolute -right-20 -top-24 h-64 w-64 rounded-full bg-emerald-400/10 blur-3xl" />

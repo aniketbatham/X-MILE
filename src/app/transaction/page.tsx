@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { useLanguage } from "@/i18n/LanguageContext";
 import LanguageSelector from "@/components/LanguageSelector";
+import PlatformHeader from "@/components/PlatformHeader";
+import ConnectedFarmerJourney from "@/components/ConnectedFarmerJourney";
 
 type TransactionStatus =
   | "Accepted"
@@ -165,35 +167,7 @@ export default function TransactionPage() {
   if (!order) {
     return (
       <main className="min-h-screen bg-slate-50 text-slate-900">
-        <nav className="border-b border-slate-200 bg-white">
-          <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
-            <div className="flex items-center gap-3">
-              <a href="/" className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#172019] text-sm font-black text-white shadow-sm">
-                X
-              </a>
-              <div>
-                <h1 className="text-xl font-bold">
-                  X-MILE
-                </h1>
-
-                <p className="text-xs text-slate-500">
-                  Every MILE Matters, Every FARMER Matters
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <LanguageSelector />
-
-              <a
-                href="/buyer"
-                className="rounded-lg border px-4 py-2 text-sm hover:bg-slate-50"
-              >
-                ← {t("common.buyerPortal")}
-              </a>
-            </div>
-          </div>
-        </nav>
+        <PlatformHeader />
 
         <section className="mx-auto max-w-3xl px-6 py-20">
           <div className="rounded-3xl border border-amber-200 bg-amber-50 p-8 text-center">
@@ -231,38 +205,12 @@ export default function TransactionPage() {
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
       {/* NAVBAR */}
+      <PlatformHeader />
 
-      <nav className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
-          <div className="flex items-center gap-3">
-            <a href="/" className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#172019] text-sm font-black text-white shadow-sm">
-              X
-            </a>
-            <div>
-              <h1 className="text-xl font-bold">
-                X-MILE
-              </h1>
-
-              <p className="text-xs text-slate-500">
-                Every MILE Matters, Every FARMER Matters
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <LanguageSelector />
-
-            <a
-              href="/buyer"
-              className="rounded-lg border px-4 py-2 text-sm hover:bg-slate-50"
-            >
-              ← {t("common.buyerPortal")}
-            </a>
-          </div>
+      <section className="mx-auto max-w-6xl px-6 py-8">
+        <div className="mb-8">
+          <ConnectedFarmerJourney currentStep="recover" />
         </div>
-      </nav>
-
-      <section className="mx-auto max-w-6xl px-6 py-10">
         {/* HEADER */}
 
         <p className="text-sm font-semibold uppercase tracking-widest text-emerald-700">

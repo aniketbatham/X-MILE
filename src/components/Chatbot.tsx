@@ -58,6 +58,112 @@ export default function Chatbot({
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
+  // Module 17: Voice Assistant capabilities (Speech-to-Text & Text-to-Speech)
+  const [isListening, setIsListening] = useState(false);
+  const [isSpeakingId, setIsSpeakingId] = useState<string | null>(null);
+  const recognitionRef = useRef<any>(null);
+
+  // Map app locale to BCP-47 locale code for Web Speech recognition & synthesis
+  const getSpeechLocale = (appLocale: string): string => {
+    const map: Record<string, string> = {
+      en: "en-IN",
+      hi: "hi-IN",
+      kn: "kn-IN",
+      ta: "ta-IN",
+      te: "te-IN",
+      mr: "mr-IN",
+      bn: "bn-IN",
+      gu: "gu-IN",
+      pa: "pa-IN",
+      ml: "ml-IN",
+      ur: "ur-IN",
+      or: "or-IN",
+      as: "as-IN",
+    };
+    return map[appLocale] || "en-IN";
+  };
+
+  // Speak assistant message aloud
+  const handleSpeak = (messageId: string, text: string) => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+      setErrorMessage("Text-to-speech is not supported by your browser.");
+      return;
+    }
+
+    if (isSpeakingId === messageId) {
+      window.speechSynthesis.cancel();
+      setIsSpeakingId(null);
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+    const cleanText = text.replace(/[*_#`]/g, "");
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    utterance.lang = getSpeechLocale(locale);
+    utterance.rate = 0.95;
+
+    utterance.onend = () => setIsSpeakingId(null);
+    utterance.onerror = () => setIsSpeakingId(null);
+
+    setIsSpeakingId(messageId);
+    window.speechSynthesis.speak(utterance);
+  };
+
+  // Toggle voice recognition for input
+  const handleToggleVoiceInput = () => {
+    if (typeof window === "undefined") return;
+
+    const SpeechRecognition =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      setErrorMessage("Voice recognition is not supported in this browser. Please type your query.");
+      return;
+    }
+
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.lang = getSpeechLocale(locale);
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      recognition.onstart = () => {
+        setIsListening(true);
+        setErrorMessage(null);
+      };
+
+      recognition.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        if (transcript) {
+          setInput((prev) => (prev ? `${prev} ${transcript}` : transcript));
+        }
+      };
+
+      recognition.onerror = (event: any) => {
+        setIsListening(false);
+        if (event.error !== "no-speech") {
+          setErrorMessage(`Microphone error: ${event.error}`);
+        }
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+      };
+
+      recognitionRef.current = recognition;
+      recognition.start();
+    } catch (err: any) {
+      setIsListening(false);
+      setErrorMessage("Could not initialize microphone.");
+    }
+  };
+
   // When locale changes, update welcome message if only 1 message exists
   useEffect(() => {
     setMessages((prev) => {
@@ -455,11 +561,32 @@ export default function Chatbot({
                     )}
                   </div>
 
-                  {message.timestamp && (
-                    <span className="mt-1 text-[10px] text-gray-400 px-1">
-                      {message.timestamp}
-                    </span>
-                  )}
+                  <div className="flex items-center gap-2 mt-1 px-1">
+                    {message.timestamp && (
+                      <span className="text-[10px] text-gray-400">
+                        {message.timestamp}
+                      </span>
+                    )}
+
+                    {!isUser && (
+                      <button
+                        type="button"
+                        onClick={() => handleSpeak(message.id, message.content)}
+                        title={
+                          isSpeakingId === message.id
+                            ? "Stop reading"
+                            : "Read aloud (Voice Assistant)"
+                        }
+                        className={`text-[10px] flex items-center gap-1 px-1.5 py-0.5 rounded transition ${
+                          isSpeakingId === message.id
+                            ? "text-emerald-800 bg-emerald-100 font-bold animate-pulse"
+                            : "text-stone-400 hover:text-stone-700 hover:bg-stone-100"
+                        }`}
+                      >
+                        {isSpeakingId === message.id ? "🔊 Speaking..." : "🔈 Read aloud"}
+                      </button>
+                    )}
+                  </div>
                 </div>
               );
             })}
@@ -544,6 +671,41 @@ export default function Chatbot({
                 disabled={isLoading}
                 className="max-h-28 flex-1 resize-none rounded-xl border border-[#dce8df] bg-[#fbfdfb] px-3.5 py-2.5 text-xs text-[#173b2a] placeholder:text-gray-400 focus:border-[#277443] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#cfe2d2] disabled:opacity-60"
               />
+
+              <button
+                type="button"
+                onClick={handleToggleVoiceInput}
+                disabled={isLoading}
+                aria-label={isListening ? "Listening... click to stop" : "Voice input"}
+                title={
+                  isListening
+                    ? "Listening... click to stop"
+                    : "Speak your question (Voice Assistant)"
+                }
+                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-all ${
+                  isListening
+                    ? "bg-red-500 text-white animate-pulse ring-4 ring-red-200"
+                    : "bg-stone-100 text-stone-700 hover:bg-stone-200"
+                }`}
+              >
+                {isListening ? (
+                  <span className="text-xs">⏹️</span>
+                ) : (
+                  <svg
+                    className="h-4 w-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
+                    />
+                  </svg>
+                )}
+              </button>
 
               <button
                 type="submit"

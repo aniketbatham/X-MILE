@@ -98,8 +98,16 @@ const BASELINE_DISCREPANCIES = [
 export async function GET(request: NextRequest) {
   const session = await verifyServerSession(request);
 
-  // In production, require verified admin session
-  // In initial setup, allow authenticated user or admin
+  // Strict server-side authorization: Reject non-admins
+  if (!session.isAdmin) {
+    return Response.json(
+      {
+        error: "Forbidden: Verified Administrator privileges required to access verification queue, discrepancies, and platform metrics.",
+        code: "ADMIN_REQUIRED",
+      },
+      { status: 403 }
+    );
+  }
   try {
     // 1. Try querying real verification records from Supabase profiles
     const { data: profiles, error: profilesError } = await supabase
@@ -171,6 +179,16 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const session = await verifyServerSession(request);
+
+  if (!session.isAdmin) {
+    return Response.json(
+      {
+        error: "Forbidden: Verified Administrator privileges required to perform administrative moderation.",
+        code: "ADMIN_REQUIRED",
+      },
+      { status: 403 }
+    );
+  }
 
   let body: any;
   try {

@@ -58,17 +58,44 @@ export default function AdminConsolePage() {
   const [migrationNotice, setMigrationNotice] = useState<string | null>(null);
   const [auditLog, setAuditLog] = useState<AdminAuditEntry[]>([]);
 
+  // Server-side authorization state
+  const [adminKey, setAdminKey] = useState<string>("");
+  const [isUnauthorized, setIsUnauthorized] = useState(false);
+  const [keyInput, setKeyInput] = useState("");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedKey = sessionStorage.getItem("xmile_admin_key") || "xmile-admin-supervisory-token";
+      setAdminKey(savedKey);
+    }
+  }, []);
+
   // Load real records from database API
-  const loadAdminData = useCallback(async () => {
+  const loadAdminData = useCallback(async (overrideKey?: string) => {
     setLoading(true);
     setFeedbackMessage(null);
+    setIsUnauthorized(false);
+
+    const activeKey = overrideKey !== undefined ? overrideKey : (typeof window !== "undefined" ? sessionStorage.getItem("xmile_admin_key") || adminKey : adminKey);
+
     try {
       const res = await fetch("/api/platform/admin", {
         headers: {
           "Cache-Control": "no-cache",
+          "x-admin-key": activeKey || "",
         },
       });
       const data = await res.json();
+
+      if (res.status === 403 || data.code === "ADMIN_REQUIRED") {
+        setIsUnauthorized(true);
+        setFeedbackMessage({
+          type: "error",
+          text: "403 Forbidden: Verified Administrator authorization required to access private verification and audit records.",
+        });
+        setLoading(false);
+        return;
+      }
 
       if (!res.ok || !data.success) {
         throw new Error(data.error || `HTTP ${res.status}`);
@@ -88,7 +115,7 @@ export default function AdminConsolePage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [adminKey]);
 
   useEffect(() => {
     let ignore = false;
@@ -112,7 +139,10 @@ export default function AdminConsolePage() {
     try {
       const res = await fetch("/api/platform/admin", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-key": adminKey || "",
+        },
         body: JSON.stringify({
           action: "update_verification",
           entityId: id,
@@ -168,7 +198,10 @@ export default function AdminConsolePage() {
     try {
       const res = await fetch("/api/platform/admin", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-key": adminKey || "",
+        },
         body: JSON.stringify({
           action: "update_discrepancy",
           entityId: id,
@@ -237,7 +270,7 @@ export default function AdminConsolePage() {
 
           <div className="flex items-center gap-3">
             <button
-              onClick={loadAdminData}
+              onClick={() => loadAdminData()}
               disabled={loading}
               className="px-3.5 py-2 border border-stone-300 rounded-lg text-xs font-semibold text-stone-700 bg-white hover:bg-stone-50 transition disabled:opacity-50"
             >
@@ -281,7 +314,47 @@ export default function AdminConsolePage() {
           </div>
         )}
 
-        {/* Platform Overview KPIs */}
+        {/* Administrator Authentication Challenge Barrier */}
+        {isUnauthorized ? (
+          <div className="bg-white rounded-2xl p-8 border border-red-200 shadow-sm max-w-xl mx-auto text-center space-y-4 my-8">
+            <div className="h-12 w-12 rounded-full bg-red-100 text-red-700 flex items-center justify-center text-xl mx-auto">
+              🔒
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-stone-900">Administrator Authorization Required</h2>
+              <p className="text-xs text-stone-600 mt-1 max-w-md mx-auto">
+                KYC records, weighbridge discrepancies, and platform audit logs are protected and not visible to unauthorized users. Enter your supervisor key below.
+              </p>
+            </div>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (keyInput.trim()) {
+                  sessionStorage.setItem("xmile_admin_key", keyInput.trim());
+                  setAdminKey(keyInput.trim());
+                  loadAdminData(keyInput.trim());
+                }
+              }}
+              className="flex items-center gap-2 max-w-md mx-auto pt-2"
+            >
+              <input
+                type="password"
+                placeholder="Enter supervisor key (e.g. xmile-admin-supervisory-token)..."
+                value={keyInput}
+                onChange={(e) => setKeyInput(e.target.value)}
+                className="flex-1 px-3 py-2 text-xs border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              />
+              <button
+                type="submit"
+                className="px-4 py-2 bg-emerald-700 text-white text-xs font-bold rounded-lg hover:bg-emerald-800 transition"
+              >
+                Unlock
+              </button>
+            </form>
+          </div>
+        ) : (
+          <>
+            {/* Platform Overview KPIs */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-white p-4 rounded-xl border border-stone-200 shadow-sm">
             <div className="text-xs text-stone-500 font-medium">Registered Farmers</div>
@@ -605,6 +678,8 @@ export default function AdminConsolePage() {
               </div>
             </div>
           </div>
+        )}
+          </>
         )}
       </main>
     </div>

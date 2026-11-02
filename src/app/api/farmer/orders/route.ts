@@ -1,33 +1,95 @@
-import { supabase } from "@/lib/supabase";
+import { NextRequest } from "next/server";
+import { verifyServerSession } from "@/lib/server-auth";
+import { getServiceSupabase } from "@/lib/supabase-server";
 
-export async function GET(request: Request) {
+/**
+ * GET /api/farmer/orders
+ * Secure retrieval of incoming orders for an authorized farmer.
+ *
+ * Security Model:
+ * 1. Cryptographic Authentication: Verified server session or Supabase JWT is strictly required.
+ * 2. Role-Based Access Control: Restricted to FARMER and ADMIN roles.
+ * 3. Identity Derivation: Caller's farmer identity is derived from verified session (profiles.id / auth.uid),
+ *    NEVER trusted from client-supplied query parameters or headers.
+ * 4. Authorization Enforcement:
+ *    - FARMER callers may ONLY access orders for their own linked farmer records.
+ *      If a farmerName filter is supplied that does not match their verified identity, returns 403 Forbidden.
+ *    - ADMIN callers retain legitimate access to inspect all farmer orders or filter by a specific farmerName.
+ */
+export async function GET(request: Request | NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const farmerName = searchParams.get("farmerName");
+    // 1. Cryptographic Authentication Gate
+    const session = await verifyServerSession(request);
 
-    if (!farmerName) {
+    if (!session.isAuthenticated || !session.userId) {
       return Response.json(
-        { error: "Farmer name is required." },
-        { status: 400 }
+        {
+          error: "Authentication required. Please sign in to view farmer orders.",
+          code: "UNAUTHORIZED",
+        },
+        { status: 401 }
       );
     }
 
-    // Find ALL farmers with this name.
-    // Demo Farmer exists more than once in the database.
-    const { data: farmers, error: farmerError } =
-      await supabase
-        .from("farmers")
-        .select("id, name, location")
-        .eq("name", farmerName);
+    // 2. Role-Based Access Control Gate
+    if (session.role !== "ADMIN" && session.role !== "FARMER") {
+      return Response.json(
+        {
+          error: "Forbidden: Access restricted to authorized farmers and platform administrators.",
+          code: "FORBIDDEN",
+        },
+        { status: 403 }
+      );
+    }
+
+    const { searchParams } = new URL(request.url);
+    const filterFarmerName = searchParams.get("farmerName");
+
+    // 3. Ownership & Authorization Check
+    // If a non-admin supplies a farmerName, verify it matches caller's verified name.
+    // Callers are NEVER allowed to probe or read another farmer's orders.
+    if (!session.isAdmin && filterFarmerName) {
+      const normalizedFilter = filterFarmerName.trim().toLowerCase();
+      const normalizedCaller = (session.name || "").trim().toLowerCase();
+
+      if (normalizedFilter !== normalizedCaller) {
+        return Response.json(
+          {
+            error: "Forbidden: You are not authorized to view orders belonging to another farmer.",
+            code: "FORBIDDEN",
+          },
+          { status: 403 }
+        );
+      }
+    }
+
+    const dbClient = getServiceSupabase();
+
+    // 4. Derive Farmer Records
+    let farmerQuery = dbClient
+      .from("farmers")
+      .select("id, name, location, profile_id");
+
+    if (session.isAdmin) {
+      // Administrator: Filter by specific name if requested, otherwise view all
+      if (filterFarmerName) {
+        farmerQuery = farmerQuery.eq("name", filterFarmerName.trim());
+      }
+    } else {
+      // Farmer: Derive identity strictly from verified session
+      // Match by profile_id linked to the authenticated user ID
+      // or by verified name for legacy farmer rows
+      farmerQuery = farmerQuery.or(
+        `profile_id.eq.${session.userId},name.eq.${session.name}`
+      );
+    }
+
+    const { data: farmers, error: farmerError } = await farmerQuery;
 
     if (farmerError) {
-      console.error(
-        "Farmer lookup failed:",
-        farmerError
-      );
-
+      console.error("Farmer lookup failed:", farmerError);
       return Response.json(
-        { error: farmerError.message },
+        { error: "Failed to resolve farmer profile.", code: "DATABASE_ERROR" },
         { status: 500 }
       );
     }
@@ -39,51 +101,31 @@ export async function GET(request: Request) {
       });
     }
 
-    const farmerIds = farmers.map(
-      (farmer) => farmer.id
-    );
+    const farmerIds = farmers.map((farmer) => farmer.id);
 
-    console.log(
-      "X-MILE FARMER IDS:",
-      farmerIds
-    );
-
-    // Find all inventory belonging to any farmer
-    // with this farmer name.
-    const { data: inventory, error: inventoryError } =
-      await supabase
-        .from("inventory")
-        .select(`
-          id,
-          farmer_id,
-          produce,
-          quantity_kg,
-          quality_grade,
-          status,
-          reserved_quantity_kg
-        `)
-        .in("farmer_id", farmerIds);
+    // 5. Find inventory belonging to the verified farmer
+    const { data: inventory, error: inventoryError } = await dbClient
+      .from("inventory")
+      .select(`
+        id,
+        farmer_id,
+        produce,
+        quantity_kg,
+        quality_grade,
+        status,
+        reserved_quantity_kg
+      `)
+      .in("farmer_id", farmerIds);
 
     if (inventoryError) {
-      console.error(
-        "Farmer inventory lookup failed:",
-        inventoryError
-      );
-
+      console.error("Farmer inventory lookup failed:", inventoryError);
       return Response.json(
-        { error: inventoryError.message },
+        { error: "Failed to resolve farmer inventory lots.", code: "DATABASE_ERROR" },
         { status: 500 }
       );
     }
 
-    const inventoryIds = (inventory ?? []).map(
-      (item) => item.id
-    );
-
-    console.log(
-      "X-MILE FARMER INVENTORY IDS:",
-      inventoryIds
-    );
+    const inventoryIds = (inventory ?? []).map((item) => item.id);
 
     if (inventoryIds.length === 0) {
       return Response.json({
@@ -92,11 +134,8 @@ export async function GET(request: Request) {
       });
     }
 
-    // Find order items connected to this farmer's inventory.
-    const {
-      data: orderItems,
-      error: orderItemsError,
-    } = await supabase
+    // 6. Find order items connected to this farmer's inventory
+    const { data: orderItems, error: orderItemsError } = await dbClient
       .from("order_items")
       .select(`
         id,
@@ -119,30 +158,15 @@ export async function GET(request: Request) {
       .order("id", { ascending: false });
 
     if (orderItemsError) {
-      console.error(
-        "Failed to load farmer order items:",
-        orderItemsError
-      );
-
+      console.error("Failed to load farmer order items:", orderItemsError);
       return Response.json(
-        { error: orderItemsError.message },
+        { error: "Failed to load order items.", code: "DATABASE_ERROR" },
         { status: 500 }
       );
     }
 
-    const inventoryMap = new Map(
-      (inventory ?? []).map((item) => [
-        item.id,
-        item,
-      ])
-    );
-
-    const farmerMap = new Map(
-      farmers.map((farmer) => [
-        farmer.id,
-        farmer,
-      ])
-    );
+    const inventoryMap = new Map((inventory ?? []).map((item) => [item.id, item]));
+    const farmerMap = new Map(farmers.map((farmer) => [farmer.id, farmer]));
 
     interface OrderItemJoined {
       id: string;
@@ -151,55 +175,36 @@ export async function GET(request: Request) {
       orders: unknown;
     }
 
-    const orders = (orderItems as unknown as OrderItemJoined[] ?? []).map(
-      (item) => {
-        const inventoryItem =
-          inventoryMap.get(item.inventory_id);
+    const orders = ((orderItems as unknown as OrderItemJoined[]) ?? []).map((item) => {
+      const inventoryItem = inventoryMap.get(item.inventory_id);
+      const farmer = inventoryItem ? farmerMap.get(inventoryItem.farmer_id) : null;
 
-        const farmer =
-          inventoryItem
-            ? farmerMap.get(
-                inventoryItem.farmer_id
-              )
-            : null;
-
-        return {
-          id: item.id,
-          quantity_kg: item.quantity_kg,
-          inventory_id: item.inventory_id,
-          orders: item.orders,
-          inventory: inventoryItem ?? null,
-          farmer: farmer
-            ? {
-                id: farmer.id,
-                name: farmer.name,
-                location: farmer.location,
-              }
-            : null,
-        };
-      }
-    );
-
-    console.log(
-      `X-MILE FARMER ORDERS: ${farmerName} → ${orders.length} incoming orders`
-    );
+      return {
+        id: item.id,
+        quantity_kg: item.quantity_kg,
+        inventory_id: item.inventory_id,
+        orders: item.orders,
+        inventory: inventoryItem ?? null,
+        farmer: farmer
+          ? {
+              id: farmer.id,
+              name: farmer.name,
+              location: farmer.location,
+            }
+          : null,
+      };
+    });
 
     return Response.json({
       success: true,
       orders,
     });
   } catch (error) {
-    console.error(
-      "Farmer orders API error:",
-      error
-    );
-
+    console.error("Farmer orders API error:", error);
     return Response.json(
       {
-        error:
-          error instanceof Error
-            ? error.message
-            : String(error),
+        error: error instanceof Error ? error.message : "Internal server error.",
+        code: "INTERNAL_ERROR",
       },
       { status: 500 }
     );

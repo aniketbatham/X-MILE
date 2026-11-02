@@ -178,22 +178,7 @@ export default function FarmerPage() {
     } finally {
       setOffersLoading(false);
     }
-  }, [token, user?.id]);
-
-  useEffect(() => {
-    let active = true;
-    void Promise.resolve().then(() => {
-      if (!active) return;
-      loadInventory();
-      loadIncomingOrders();
-      if (token) {
-        loadAuthoritativeFarmerData();
-      }
-    });
-    return () => {
-      active = false;
-    };
-  }, [token, loadAuthoritativeFarmerData]);
+  }, [token, user]);
 
   useEffect(() => {
     if (!image) {
@@ -215,23 +200,26 @@ export default function FarmerPage() {
     setInventory(data);
   }
 
-  async function loadIncomingOrders() {
+  const loadIncomingOrders = useCallback(async () => {
+    if (!token) {
+      setIncomingOrders([]);
+      return;
+    }
     setOrdersLoading(true);
 
     try {
-      const response = await fetch(
-        "/api/farmer/orders?farmerName=Demo%20Farmer",
-        {
-          cache: "no-store",
-        }
-      );
+      const response = await fetch("/api/farmer/orders", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        cache: "no-store",
+      });
 
       const data = await response.json();
 
       if (!response.ok) {
         throw new Error(
-          data.error ||
-            "Failed to load incoming orders."
+          data.error || "Failed to load incoming orders."
         );
       }
 
@@ -244,7 +232,22 @@ export default function FarmerPage() {
     } finally {
       setOrdersLoading(false);
     }
-  }
+  }, [token]);
+
+  useEffect(() => {
+    let active = true;
+    void Promise.resolve().then(() => {
+      if (!active) return;
+      loadInventory();
+      if (token) {
+        loadIncomingOrders();
+        loadAuthoritativeFarmerData();
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, [token, loadIncomingOrders, loadAuthoritativeFarmerData]);
 
   async function analyzeQuality() {
     setError("");

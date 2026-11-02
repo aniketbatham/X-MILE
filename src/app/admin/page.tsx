@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import PlatformHeader from "@/components/PlatformHeader";
+import RoleGuard from "@/components/RoleGuard";
 import { useAuth } from "@/context/AuthContext";
 
 interface VerificationItem {
@@ -252,10 +253,11 @@ export default function AdminConsolePage() {
   };
 
   return (
-    <div className="min-h-screen bg-stone-50 flex flex-col">
-      <PlatformHeader />
+    <RoleGuard allowedRoles={["ADMIN"]} portalName="Platform Administration Console">
+      <div className="min-h-screen bg-stone-50 flex flex-col">
+        <PlatformHeader />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         {/* Navigation & Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-stone-200 pb-5">
           <div>
@@ -698,5 +700,6 @@ export default function AdminConsolePage() {
         )}
       </main>
     </div>
+    </RoleGuard>
   );
 }

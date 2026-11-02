@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import PlatformHeader from "@/components/PlatformHeader";
-import ConnectedFarmerJourney from "@/components/ConnectedFarmerJourney";
+import RoleGuard from "@/components/RoleGuard";
 import { useAuth } from "@/context/AuthContext";
 
 interface TransportJob {
@@ -193,13 +193,11 @@ export default function LogisticsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f7faf7] text-[#142319] flex flex-col">
-      <PlatformHeader />
+    <RoleGuard allowedRoles={["TRANSPORT_PROVIDER", "ADMIN"]} portalName="Rural Logistics Hub">
+      <div className="min-h-screen bg-[#f7faf7] text-[#142319] flex flex-col">
+        <PlatformHeader />
 
-      <main className="flex-1 mx-auto max-w-7xl px-4 py-8 sm:px-6 w-full">
-        <div className="mb-6">
-          <ConnectedFarmerJourney currentStep="move" />
-        </div>
+        <main className="flex-1 mx-auto max-w-7xl px-4 py-8 sm:px-6 w-full">
 
         {/* Title Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 pb-5">
@@ -596,5 +594,6 @@ export default function LogisticsPage() {
         )}
       </main>
     </div>
+    </RoleGuard>
   );
 }

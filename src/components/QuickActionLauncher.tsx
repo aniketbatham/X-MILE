@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import Chatbot from "./Chatbot";
 import { useLanguage } from "@/i18n/LanguageContext";
 
@@ -9,6 +10,7 @@ import { useLanguage } from "@/i18n/LanguageContext";
 const SUPPORT_PHONE = process.env.NEXT_PUBLIC_SUPPORT_PHONE || "";
 
 export default function QuickActionLauncher() {
+  const pathname = usePathname();
   const { t } = useLanguage();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -62,6 +64,10 @@ export default function QuickActionLauncher() {
     }
     setIsMenuOpen(false);
   };
+
+  if (pathname === "/") {
+    return null;
+  }
 
   return (
     <>

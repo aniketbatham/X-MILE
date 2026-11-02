@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import PlatformHeader from "@/components/PlatformHeader";
+import RoleGuard from "@/components/RoleGuard";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -560,29 +561,12 @@ export default function FarmerPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#f7faf7] text-stone-900 flex flex-col">
-      <PlatformHeader />
+    <RoleGuard allowedRoles={["FARMER", "ADMIN"]} portalName="Farmer Portal">
+      <div className="min-h-screen bg-[#f7faf7] text-stone-900 flex flex-col">
+        <PlatformHeader />
 
-      <main className="flex-1 mx-auto w-full max-w-5xl px-3 sm:px-6 py-4 sm:py-8">
-        {/* Role Guard Warning if signed in as another role */}
-        {isAuthenticated && user && user.role !== "FARMER" && (
-          <div className="mb-4 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-xs text-amber-900 shadow-2xs">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div>
-                <span className="font-bold">⚠️ Notice:</span> You are signed in with the role{" "}
-                <span className="font-extrabold uppercase">{user.role}</span>. You can test farmer actions here or open your authorized role portal.
-              </div>
-              <Link
-                href={user.role === "BUYER" ? "/buyer" : user.role === "ADMIN" ? "/admin" : "/logistics"}
-                className="inline-flex items-center gap-1 rounded-xl bg-amber-700 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-amber-800 transition"
-              >
-                Go to {user.role} Portal →
-              </Link>
-            </div>
-          </div>
-        )}
-
-        {/* Global Notification Banner */}
+        <main className="flex-1 mx-auto w-full max-w-5xl px-3 sm:px-6 py-4 sm:py-8">
+          {/* Global Notification Banner */}
         {notification && (
           <div className="mb-4 rounded-2xl border border-emerald-300 bg-emerald-100/90 p-4 text-sm font-bold text-emerald-950 shadow-sm animate-in fade-in">
             {notification}
@@ -1316,5 +1300,6 @@ export default function FarmerPage() {
         )}
       </main>
     </div>
+    </RoleGuard>
   );
 }

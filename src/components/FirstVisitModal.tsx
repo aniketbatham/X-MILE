@@ -13,16 +13,29 @@ export default function FirstVisitModal() {
   const [search, setSearch] = useState("");
 
   useEffect(() => {
+    function handleOpenEvent() {
+      setSelected(locale);
+      setIsOpen(true);
+    }
+    window.addEventListener("open-language-modal", handleOpenEvent);
+
     try {
       const hasVisited = localStorage.getItem(VISITED_KEY);
       if (!hasVisited) {
         const timer = setTimeout(() => setIsOpen(true), 0);
-        return () => clearTimeout(timer);
+        return () => {
+          clearTimeout(timer);
+          window.removeEventListener("open-language-modal", handleOpenEvent);
+        };
       }
     } catch {
       // storage unavailable
     }
-  }, []);
+
+    return () => {
+      window.removeEventListener("open-language-modal", handleOpenEvent);
+    };
+  }, [locale]);
 
   const handleConfirm = () => {
     setLocale(selected);
@@ -52,6 +65,14 @@ export default function FirstVisitModal() {
       <div className="relative w-full max-w-2xl overflow-hidden rounded-3xl bg-white shadow-2xl border border-gray-100 max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="border-b border-gray-100 bg-gradient-to-br from-[#172019] to-[#25382b] p-6 text-white text-center relative">
+          <button
+            type="button"
+            onClick={() => setIsOpen(false)}
+            className="absolute top-4 right-4 h-8 w-8 rounded-full bg-white/10 hover:bg-white/20 text-white/80 hover:text-white flex items-center justify-center text-sm font-bold transition"
+            aria-label="Close"
+          >
+            ✕
+          </button>
           <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/20 border border-emerald-400/30 text-2xl">
             🌱
           </div>

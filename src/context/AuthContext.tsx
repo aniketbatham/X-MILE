@@ -36,8 +36,16 @@ interface AuthContextType {
   token: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<{ success: boolean; targetPortal: string; error?: string }>;
-  register: (payload: RegisterPayload) => Promise<{ success: boolean; targetPortal: string; error?: string }>;
+  login: (email: string, password: string) => Promise<{ success: boolean; targetPortal: string; error?: string; code?: string }>;
+  register: (payload: RegisterPayload) => Promise<{
+    success: boolean;
+    targetPortal: string;
+    error?: string;
+    code?: string;
+    emailConfirmationRequired?: boolean;
+    message?: string;
+    email?: string;
+  }>;
   logout: () => Promise<void>;
   recoverPassword: (email: string) => Promise<{ success: boolean; message?: string; error?: string }>;
   resetPassword: (newPassword: string) => Promise<{ success: boolean; message?: string; error?: string }>;
@@ -185,10 +193,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const data = await res.json();
       if (!res.ok || !data.success) {
-        return { success: false, targetPortal: "/farmer", error: data.error || "Registration failed." };
+        return {
+          success: false,
+          targetPortal: "/farmer",
+          error: data.error || "Registration failed.",
+          code: data.code,
+        };
       }
 
-      // If password was provided, attempt direct login
+      // If email confirmation is required, do NOT attempt immediate login or auto-redirect to protected portal
+      if (data.emailConfirmationRequired) {
+        return {
+          success: true,
+          emailConfirmationRequired: true,
+          email: payload.email,
+          message: data.message,
+          targetPortal: "/login",
+        };
+      }
+
+      // If password was provided and confirmation is NOT required, attempt direct login
       if (payload.password) {
         const loginRes = await login(payload.email, payload.password);
         if (loginRes.success) {

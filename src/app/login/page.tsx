@@ -106,8 +106,17 @@ export default function LoginPage() {
           )}
 
           {errorMessage && (
-            <div className="mb-4 rounded-2xl bg-red-50 border border-red-200 p-3.5 text-xs text-red-800 font-medium">
-              ⚠️ {errorMessage}
+            <div
+              className={`mb-4 rounded-2xl p-3.5 text-xs font-medium border leading-relaxed ${
+                errorMessage.toLowerCase().includes("verify your email")
+                  ? "bg-amber-50 border-amber-300 text-amber-900"
+                  : "bg-red-50 border-red-200 text-red-800"
+              }`}
+            >
+              <div className="flex items-start gap-2">
+                <span>{errorMessage.toLowerCase().includes("verify your email") ? "✉️" : "⚠️"}</span>
+                <div>{errorMessage}</div>
+              </div>
             </div>
           )}
 

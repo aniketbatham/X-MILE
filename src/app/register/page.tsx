@@ -31,7 +31,10 @@ export default function RegisterPage() {
   const [adminInvitationToken, setAdminInvitationToken] = useState("");
 
   const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [errorCode, setErrorCode] = useState<string | null>(null);
+  const [registeredEmail, setRegisteredEmail] = useState<string | null>(null);
 
   const openLanguageModal = () => {
     if (typeof window !== "undefined") {
@@ -41,7 +44,10 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLoading || isSubmitting) return;
+
     setErrorMessage(null);
+    setErrorCode(null);
 
     if (password.length < 6) {
       setErrorMessage("Password must be at least 6 characters long.");
@@ -53,26 +59,35 @@ export default function RegisterPage() {
       return;
     }
 
+    setIsSubmitting(true);
     setIsLoading(true);
 
-    const res = await register({
-      fullName,
-      email,
-      password,
-      phone: phone || undefined,
-      role,
-      preferredLanguage,
-      state,
-      district,
-      adminInvitationToken: role === "ADMIN" ? adminInvitationToken.trim() : undefined,
-    });
+    try {
+      const res = await register({
+        fullName,
+        email,
+        password,
+        phone: phone || undefined,
+        role,
+        preferredLanguage,
+        state,
+        district,
+        adminInvitationToken: role === "ADMIN" ? adminInvitationToken.trim() : undefined,
+      });
 
-    setIsLoading(false);
-
-    if (res.success) {
-      router.push(res.targetPortal);
-    } else {
-      setErrorMessage(res.error || "Registration failed.");
+      if (res.success) {
+        if (res.emailConfirmationRequired) {
+          setRegisteredEmail(res.email || email);
+        } else {
+          router.push(res.targetPortal);
+        }
+      } else {
+        setErrorMessage(res.error || "Registration failed.");
+        setErrorCode(res.code || null);
+      }
+    } finally {
+      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -104,20 +119,114 @@ export default function RegisterPage() {
             </button>
           </div>
 
-          <div className="text-center mb-6">
-            <h1 className="text-2xl font-black tracking-tight text-[#172019]">Join X-MILE Platform</h1>
-            <p className="text-xs text-[#6a7c70] mt-1 font-semibold">
-              Every MILE Matters, Every FARMER Matters.
-            </p>
-          </div>
+          {registeredEmail ? (
+            /* Email Verification Sent View */
+            <div className="text-center py-4">
+              <div className="h-16 w-16 mx-auto rounded-3xl bg-emerald-100 text-emerald-800 flex items-center justify-center text-3xl mb-4 shadow-sm border border-emerald-200">
+                ✉️
+              </div>
+              <h2 className="text-2xl font-black text-stone-900 tracking-tight">
+                Verify Your Email
+              </h2>
+              <p className="text-xs text-stone-600 mt-2 max-w-md mx-auto leading-relaxed">
+                We have sent an activation link to:
+              </p>
+              <div className="my-3 inline-block px-4 py-2 rounded-xl bg-stone-100 font-mono text-xs font-bold text-stone-900 border border-stone-200">
+                {registeredEmail}
+              </div>
+              <p className="text-xs text-stone-600 max-w-md mx-auto leading-relaxed">
+                Please click the link inside the email to verify your address. Once verified, you can immediately sign in to your role dashboard.
+              </p>
 
-          {errorMessage && (
-            <div className="mb-4 rounded-2xl bg-red-50 border border-red-200 p-3.5 text-xs text-red-800 font-medium">
-              ⚠️ {errorMessage}
+              <div className="mt-6 p-4 rounded-2xl bg-amber-50 border border-amber-200 text-left max-w-md mx-auto">
+                <div className="flex items-start gap-2.5">
+                  <span className="text-base">💡</span>
+                  <div className="text-[11px] text-amber-900 leading-normal">
+                    <p className="font-bold mb-0.5">Check Your Spam or Updates Folder</p>
+                    <p>
+                      Verification emails can occasionally land in your Spam or Junk folder. If you don&apos;t see it within 2 minutes, check there.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+                <Link
+                  href="/login"
+                  className="w-full sm:w-auto px-6 py-3 rounded-xl bg-[#172019] text-white text-xs font-bold hover:bg-black transition shadow-md"
+                >
+                  Proceed to Sign In →
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRegisteredEmail(null);
+                    setErrorMessage(null);
+                    setErrorCode(null);
+                  }}
+                  className="w-full sm:w-auto px-4 py-3 rounded-xl border border-stone-200 text-stone-700 text-xs font-semibold hover:bg-stone-50 transition"
+                >
+                  Register Another Account
+                </button>
+              </div>
             </div>
-          )}
+          ) : (
+            <>
+              <div className="text-center mb-6">
+                <h1 className="text-2xl font-black tracking-tight text-[#172019]">Join X-MILE Platform</h1>
+                <p className="text-xs text-[#6a7c70] mt-1 font-semibold">
+                  Every MILE Matters, Every FARMER Matters.
+                </p>
+              </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+              {errorMessage && (
+                <div
+                  className={`mb-5 rounded-2xl p-4 text-xs font-medium border ${
+                    errorCode === "EMAIL_RATE_LIMIT_EXCEEDED"
+                      ? "bg-amber-50 border-amber-300 text-amber-900"
+                      : errorCode === "USER_ALREADY_EXISTS"
+                      ? "bg-blue-50 border-blue-200 text-blue-900"
+                      : "bg-red-50 border-red-200 text-red-800"
+                  }`}
+                >
+                  <div className="flex items-start gap-2.5">
+                    <span className="text-base">
+                      {errorCode === "EMAIL_RATE_LIMIT_EXCEEDED"
+                        ? "⏳"
+                        : errorCode === "USER_ALREADY_EXISTS"
+                        ? "ℹ️"
+                        : "⚠️"}
+                    </span>
+                    <div className="flex-1">
+                      <div className="font-bold mb-0.5">
+                        {errorCode === "EMAIL_RATE_LIMIT_EXCEEDED"
+                          ? "Email Service Rate Limit"
+                          : errorCode === "USER_ALREADY_EXISTS"
+                          ? "Account Already Exists"
+                          : "Registration Notice"}
+                      </div>
+                      <div className="leading-relaxed">{errorMessage}</div>
+                      {errorCode === "USER_ALREADY_EXISTS" && (
+                        <div className="mt-2.5">
+                          <Link href="/login" className="font-bold underline text-blue-950 inline-flex items-center gap-1">
+                            Click here to Sign In →
+                          </Link>
+                        </div>
+                      )}
+                      {errorCode === "EMAIL_RATE_LIMIT_EXCEEDED" && (
+                        <div className="mt-2.5 text-[11px] text-amber-800">
+                          If you already submitted this registration, please check your inbox (including spam) for your verification link. You can also{" "}
+                          <Link href="/login" className="font-bold underline">
+                            proceed directly to Sign In
+                          </Link>.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <form onSubmit={handleSubmit} className="space-y-4">
             {/* Account Type Selection */}
             <div>
               <label className="block text-xs font-bold text-gray-700 mb-1.5">
@@ -296,10 +405,10 @@ export default function RegisterPage() {
 
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || isSubmitting}
               className="w-full rounded-xl bg-[#172019] px-4 py-3 text-xs font-black uppercase tracking-wider text-white shadow-md hover:bg-black transition disabled:opacity-50 mt-2"
             >
-              {isLoading ? "Creating Account..." : "Complete Registration →"}
+              {isLoading || isSubmitting ? "Creating Account..." : "Complete Registration →"}
             </button>
           </form>
 
@@ -309,6 +418,8 @@ export default function RegisterPage() {
               Sign in
             </Link>
           </div>
+            </>
+          )}
         </div>
       </main>
     </div>

@@ -1,6 +1,5 @@
 import { NextRequest } from "next/server";
 import { supabase } from "@/lib/supabase";
-import { getServiceSupabase } from "@/lib/supabase-server";
 import crypto from "crypto";
 
 const PUBLIC_ALLOWED_ROLES = new Set([
@@ -125,6 +124,7 @@ export async function POST(request: NextRequest) {
   // 2. Register User in Supabase Auth if password provided
   let authUserId: string | null = null;
   let userSessionToken: string | null = null;
+  let emailConfirmationRequired = false;
 
   if (password && password.length >= 6) {
     const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -142,46 +142,62 @@ export async function POST(request: NextRequest) {
     });
 
     if (authError) {
-      // Check if Supabase project hit email send rate limit or has email confirmations disabled.
-      // Fall back safely to server-side user provisioning via getServiceSupabase() RPC.
-      if (
-        authError.message?.toLowerCase().includes("rate limit") ||
-        authError.status === 429
-      ) {
-        try {
-          const serviceDb = getServiceSupabase();
-          const { data: createdUserId, error: rpcError } = await serviceDb.rpc(
-            "admin_create_verified_user",
-            {
-              p_email: email,
-              p_password: password,
-              p_full_name: fullName,
-              p_phone: body.phone || null,
-              p_role: assignedRole,
-              p_state: state,
-              p_district: district,
-              p_preferred_language: preferredLanguage,
-            }
-          );
+      const errorMsg = (authError.message || "").toLowerCase();
+      const isRateLimit =
+        authError.status === 429 ||
+        errorMsg.includes("rate limit") ||
+        errorMsg.includes("over_email_send_rate_limit") ||
+        errorMsg.includes("for security purposes, you can only request this");
 
-          if (rpcError) {
-            return Response.json(
-              { error: rpcError.message || "Registration failed during server provisioning." },
-              { status: 400 }
-            );
-          }
-
-          authUserId = createdUserId as string;
-        } catch {
-          return Response.json({ error: authError.message }, { status: 400 });
-        }
-      } else {
-        return Response.json({ error: authError.message }, { status: 400 });
+      if (isRateLimit) {
+        return Response.json(
+          {
+            success: false,
+            error:
+              "The email verification service has temporarily reached its sending limit. If you already registered or requested a link, please check your inbox (and spam folder). Otherwise, please wait a minute before trying again.",
+            code: "EMAIL_RATE_LIMIT_EXCEEDED",
+          },
+          { status: 429 }
+        );
       }
-    } else {
-      authUserId = authData.user?.id || null;
-      userSessionToken = authData.session?.access_token || null;
+
+      const isAlreadyExists =
+        authError.status === 422 ||
+        errorMsg.includes("already registered") ||
+        errorMsg.includes("already exists") ||
+        errorMsg.includes("user already exists");
+
+      if (isAlreadyExists) {
+        return Response.json(
+          {
+            success: false,
+            error: "An account with this email address already exists. Please sign in instead.",
+            code: "USER_ALREADY_EXISTS",
+          },
+          { status: 409 }
+        );
+      }
+
+      return Response.json({ success: false, error: authError.message }, { status: 400 });
     }
+
+    // Modern Supabase user enumeration prevention:
+    // If user already exists, signUp returns an empty identities array with no error
+    if (authData.user && authData.user.identities && authData.user.identities.length === 0) {
+      return Response.json(
+        {
+          success: false,
+          error: "An account with this email address already exists. Please sign in instead.",
+          code: "USER_ALREADY_EXISTS",
+        },
+        { status: 409 }
+      );
+    }
+
+    authUserId = authData.user?.id || null;
+    userSessionToken = authData.session?.access_token || null;
+    // When email verification is required by Supabase Auth, session is null
+    emailConfirmationRequired = !authData.session;
   }
 
   const profileId = authUserId || crypto.randomUUID();
@@ -262,7 +278,10 @@ export async function POST(request: NextRequest) {
 
   return Response.json({
     success: true,
-    message: `Account created successfully with role ${assignedRole}.`,
+    emailConfirmationRequired,
+    message: emailConfirmationRequired
+      ? `A verification email has been sent to ${email}. Please check your inbox and verify your email before signing in.`
+      : `Account created successfully with role ${assignedRole}.`,
     user: {
       id: profileId,
       email,

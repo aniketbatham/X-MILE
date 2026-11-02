@@ -28,6 +28,30 @@ export async function POST(request: NextRequest) {
     });
 
     if (authError || !authData.user) {
+      const errorMsg = (authError?.message || "").toLowerCase();
+      const isEmailNotConfirmed = errorMsg.includes("email not confirmed");
+      const isRateLimit = authError?.status === 429 || errorMsg.includes("rate limit");
+
+      if (isEmailNotConfirmed) {
+        return Response.json(
+          {
+            error: "Please verify your email address before signing in. Check your inbox (and spam folder) for the confirmation link sent by X-MILE.",
+            code: "EMAIL_NOT_CONFIRMED",
+          },
+          { status: 401 }
+        );
+      }
+
+      if (isRateLimit) {
+        return Response.json(
+          {
+            error: "Too many sign-in attempts. Please wait a moment before trying again.",
+            code: "RATE_LIMIT_EXCEEDED",
+          },
+          { status: 429 }
+        );
+      }
+
       return Response.json(
         { error: authError?.message || "Invalid email or password." },
         { status: 401 }

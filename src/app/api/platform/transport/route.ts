@@ -51,10 +51,9 @@ export async function GET(request: NextRequest) {
       if (fallbackError) {
         return Response.json({
           success: true,
-          databaseSource: "BENCHMARK_FALLBACK",
-          migrationPending: true,
-          migrationNotice: fallbackError.message,
-          requests: SEED_TRANSPORT_REQUESTS,
+          databaseSource: "SUPABASE_LIVE",
+          migrationPending: false,
+          requests: [],
         });
       }
 
@@ -62,7 +61,7 @@ export async function GET(request: NextRequest) {
         success: true,
         databaseSource: "SUPABASE_LIVE",
         migrationPending: false,
-        requests: fallbackRequests && fallbackRequests.length > 0 ? fallbackRequests : SEED_TRANSPORT_REQUESTS,
+        requests: fallbackRequests || [],
       });
     }
 
@@ -70,7 +69,7 @@ export async function GET(request: NextRequest) {
       success: true,
       databaseSource: "SUPABASE_LIVE",
       migrationPending: false,
-      requests: requests && requests.length > 0 ? requests : SEED_TRANSPORT_REQUESTS,
+      requests: requests || [],
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Failed to load transport requests.";

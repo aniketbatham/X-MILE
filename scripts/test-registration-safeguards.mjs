@@ -57,7 +57,7 @@ async function runTests() {
   console.log(`   - Initial signup status: Error=${initError?.message || "none"}, User=${initData?.user?.id}`);
 
   console.log("   - Immediately re-submitting identical signup (within cooldown window)...");
-  const { data: retryData, error: retryError } = await supabase.auth.signUp({
+  const { data: _retryData, error: retryError } = await supabase.auth.signUp({
     email: tempEmail,
     password: "TestPassword123!",
   });

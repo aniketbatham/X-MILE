@@ -2,23 +2,6 @@ import { NextRequest } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { verifyServerSession, getAuthenticatedClient } from "@/lib/server-auth";
 
-const SEED_TRANSPORT_REQUESTS = [
-  {
-    id: "tr-01",
-    order_id: "ORD-8821",
-    pickup_location: "Kunigal APMC Gate 2",
-    destination_location: "Bengaluru KR Market Yard",
-    produce_type: "Tomato (Grade A)",
-    quantity_kg: 3500,
-    required_vehicle_type: "Canter (5 Ton Capacity)",
-    pickup_date: "2026-11-02",
-    quoted_amount: 3200,
-    transporter_name: "Kisan Express Multi-Axle Logistics",
-    status: "CONFIRMED",
-    isSampleData: true,
-  },
-];
-
 interface TransportRequestBody {
   orderId?: string;
   pickupLocation?: string;

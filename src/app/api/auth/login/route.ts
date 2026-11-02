@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
     const userId = authData.user.id;
 
     // 2. Fetch authoritative profile from database (1:1 Unified Identity: id = auth.users.id)
-    const { data: profile, error: profileError } = await supabase
+    const { data: profile, error: _profileError } = await supabase
       .from("profiles")
       .select("id, full_name, email, phone, role, preferred_language, state, district, village, is_verified")
       .eq("id", userId)

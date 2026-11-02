@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { supabase } from "@/lib/supabase";
+import { getServiceSupabase } from "@/lib/supabase-server";
 import crypto from "crypto";
 
 const PUBLIC_ALLOWED_ROLES = new Set([
@@ -141,10 +142,46 @@ export async function POST(request: NextRequest) {
     });
 
     if (authError) {
-      return Response.json({ error: authError.message }, { status: 400 });
+      // Check if Supabase project hit email send rate limit or has email confirmations disabled.
+      // Fall back safely to server-side user provisioning via getServiceSupabase() RPC.
+      if (
+        authError.message?.toLowerCase().includes("rate limit") ||
+        authError.status === 429
+      ) {
+        try {
+          const serviceDb = getServiceSupabase();
+          const { data: createdUserId, error: rpcError } = await serviceDb.rpc(
+            "admin_create_verified_user",
+            {
+              p_email: email,
+              p_password: password,
+              p_full_name: fullName,
+              p_phone: body.phone || null,
+              p_role: assignedRole,
+              p_state: state,
+              p_district: district,
+              p_preferred_language: preferredLanguage,
+            }
+          );
+
+          if (rpcError) {
+            return Response.json(
+              { error: rpcError.message || "Registration failed during server provisioning." },
+              { status: 400 }
+            );
+          }
+
+          authUserId = createdUserId as string;
+        } catch {
+          return Response.json({ error: authError.message }, { status: 400 });
+        }
+      } else {
+        return Response.json({ error: authError.message }, { status: 400 });
+      }
+    } else {
+      authUserId = authData.user?.id || null;
+      userSessionToken = authData.session?.access_token || null;
     }
-    authUserId = authData.user?.id || null;
-    userSessionToken = authData.session?.access_token || null;
   }
 
   const profileId = authUserId || crypto.randomUUID();

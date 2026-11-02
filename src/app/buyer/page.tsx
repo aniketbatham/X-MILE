@@ -1,10 +1,12 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+import Link from "next/link";
 import { useLanguage } from "@/i18n/LanguageContext";
 import LanguageSelector from "@/components/LanguageSelector";
 import PlatformHeader from "@/components/PlatformHeader";
+import { useAuth } from "@/context/AuthContext";
 
 import {
   aggregateSupply,
@@ -73,8 +75,25 @@ type BuyerShipment = {
   updated_at: string;
 };
 
+interface BuyerOfferItem {
+  id: string;
+  produce_listings?: { crop_name?: string } | null;
+  offered_quantity_kg: number | string;
+  offered_price_per_kg: number | string;
+  destination_city: string;
+  payment_terms: string;
+  status: string;
+  created_at: string;
+}
+
 export default function BuyerPage() {
   const { t, formatNumber, formatCurrency, formatDate } = useLanguage();
+  const { user, token, isAuthenticated } = useAuth();
+  const [buyerOffers, setBuyerOffers] = useState<BuyerOfferItem[]>([]);
+  const [featuredListings, setFeaturedListings] = useState<Record<string, unknown>[]>([]);
+  const [offersLoading, setOffersLoading] = useState(false);
+  const [cancelNotice, setCancelNotice] = useState<string | null>(null);
+
   const [produce, setProduce] =
     useState("Tomato");
 
@@ -104,6 +123,73 @@ export default function BuyerPage() {
 
   const [error, setError] =
     useState("");
+
+  const loadBuyerMarketData = useCallback(async () => {
+    if (!token) return;
+    setOffersLoading(true);
+    try {
+      const offersRes = await fetch("/api/platform/marketplace/offers?viewAs=buyer", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (offersRes.ok) {
+        const data = await offersRes.json();
+        if (data.success && Array.isArray(data.offers)) {
+          setBuyerOffers(data.offers);
+        }
+      }
+
+      const listRes = await fetch("/api/platform/marketplace?sort=date_desc", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (listRes.ok) {
+        const listData = await listRes.json();
+        if (listData.success && Array.isArray(listData.listings)) {
+          setFeaturedListings(listData.listings.slice(0, 6));
+        }
+      }
+    } catch {
+      // Ignore
+    } finally {
+      setOffersLoading(false);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    let active = true;
+    if (token) {
+      void Promise.resolve().then(() => {
+        if (active) {
+          loadBuyerMarketData();
+        }
+      });
+    }
+    return () => {
+      active = false;
+    };
+  }, [token, loadBuyerMarketData]);
+
+  const handleCancelOffer = async (offerId: string) => {
+    if (!token) return;
+    try {
+      const res = await fetch("/api/platform/marketplace/offers", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ offerId, action: "CANCEL" }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Failed to cancel offer.");
+      }
+      setCancelNotice("✓ Procurement offer cancelled.");
+      setTimeout(() => setCancelNotice(null), 4000);
+      await loadBuyerMarketData();
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : "Failed to cancel offer.");
+    }
+  };
 
   /*
     DEMO DEMAND FORECAST
@@ -553,98 +639,11 @@ export default function BuyerPage() {
   }
 
   /*
-    ADVANCE SHIPMENT
-
-    Every polling cycle, an In Transit
-    shipment moves forward by 10%.
-
-    IMPORTANT:
-    This uses PATCH, not POST.
-  */
-
-  async function advanceShipment(
-    currentShipment: BuyerShipment
-  ) {
-    try {
-      const currentProgress =
-        Number(
-          currentShipment.progress_percentage ??
-            0
-        );
-
-      const nextProgress =
-        Math.min(
-          100,
-          currentProgress + 10
-        );
-
-      const nextStatus =
-        nextProgress >= 100
-          ? "Delivered"
-          : "In Transit";
-
-      const response =
-        await fetch(
-          "/api/shipments",
-          {
-            method: "PATCH",
-            headers: {
-              "Content-Type":
-                "application/json",
-            },
-            body: JSON.stringify({
-              id: currentShipment.id,
-              status: nextStatus,
-              currentLocation:
-                nextProgress >= 100
-                  ? currentShipment.destination
-                  : currentShipment.current_location ??
-                    currentShipment.origin,
-              progressPercentage:
-                nextProgress,
-            }),
-          }
-        );
-
-      const data =
-        await response.json();
-
-      if (!response.ok) {
-        console.error(
-          "Failed to advance shipment:",
-          data.error
-        );
-        return;
-      }
-
-      if (data.shipment) {
-        console.log(
-          "X-MILE SHIPMENT MOVED:",
-          data.shipment
-        );
-
-        setShipment(
-          data.shipment
-        );
-      }
-    } catch (err) {
-      console.error(
-        "Automatic shipment movement failed:",
-        err
-      );
-    }
-  }
-
-  /*
     LIVE ORDER + SHIPMENT POLLING
 
     Refresh immediately and then every
-    10 seconds.
-
-    We deliberately do NOT put shipment.status
-    in the dependency array because that would
-    recreate the interval whenever the shipment
-    changes.
+    10 seconds. Real data is persisted and authoritative;
+    no simulated client-side movement is performed.
   */
 
   useEffect(() => {
@@ -657,32 +656,17 @@ export default function BuyerPage() {
     let active = true;
 
     async function updateLiveTracking() {
-      await refreshOrderStatus(
-        orderId
-      );
-
-      const latestShipment =
-        await refreshShipment(
-          orderId
-        );
-
-      if (
-        active &&
-        latestShipment?.status ===
-          "In Transit"
-      ) {
-        await advanceShipment(
-          latestShipment
-        );
-      }
+      if (!active) return;
+      await refreshOrderStatus(orderId);
+      if (!active) return;
+      await refreshShipment(orderId);
     }
 
     updateLiveTracking();
 
-    const interval =
-      setInterval(() => {
-        updateLiveTracking();
-      }, 10000);
+    const interval = setInterval(() => {
+      updateLiveTracking();
+    }, 10000);
 
     return () => {
       active = false;
@@ -961,6 +945,30 @@ export default function BuyerPage() {
               <p className="mt-5 max-w-2xl text-base leading-7 text-emerald-50/75 md:text-lg">
                 {t("buyer.subtitle")}
               </p>
+
+              {/* Authoritative Profile Badge */}
+              <div className="mt-6 flex flex-wrap items-center gap-3 border-t border-white/10 pt-4 text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-emerald-400" />
+                  <span className="font-bold text-white">{user?.fullName || "Verified Bulk Buyer"}</span>
+                  <span className="rounded-md bg-white/10 px-2 py-0.5 text-[10px] font-bold text-emerald-200">
+                    {user?.role || "BUYER"}
+                  </span>
+                </div>
+                <span className="text-white/40">•</span>
+                <span className="text-white/70">{user?.district || "Bengaluru"}, {user?.state || "Karnataka"}</span>
+                <span className="text-white/40">•</span>
+                <span className="text-emerald-300 font-semibold">{user?.isVerified ? "✓ Verified Procurement Account" : "Staging Account"}</span>
+              </div>
+
+              <div className="mt-6 flex flex-wrap gap-3">
+                <Link
+                  href="/marketplace"
+                  className="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-500 transition"
+                >
+                  Browse Produce Marketplace →
+                </Link>
+              </div>
             </div>
 
             <div className="float hidden lg:block">
@@ -983,6 +991,128 @@ export default function BuyerPage() {
               </div>
             </div>
           </div>
+        </section>
+
+        {/* SUBMITTED PROCUREMENT OFFERS (PHASE 2 & 3) */}
+        <section className="fade-up card-hover rounded-[2rem] border border-[#dce6dc] bg-white p-6 shadow-sm md:p-7">
+          <div className="flex flex-col justify-between gap-3 md:flex-row md:items-end">
+            <div>
+              <p className="text-sm font-black uppercase tracking-wider text-emerald-600">
+                Authoritative Procure Hub
+              </p>
+              <h3 className="mt-1 text-2xl font-black text-[#173b2a]">
+                My Submitted Offers & Bids ({buyerOffers.length})
+              </h3>
+              <p className="mt-1 text-sm text-[#718276]">
+                Track binding procurement bids submitted to verified farmers under Escrow protection.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <Link
+                href="/marketplace"
+                className="rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-xs font-bold text-gray-700 hover:bg-gray-50"
+              >
+                + Place New Offer
+              </Link>
+            </div>
+          </div>
+
+          {cancelNotice && (
+            <div className="mt-4 rounded-xl border border-emerald-300 bg-emerald-50 p-3 text-xs font-bold text-emerald-950">
+              {cancelNotice}
+            </div>
+          )}
+
+          {offersLoading ? (
+            <div className="mt-8 text-center py-10">
+              <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-emerald-600 border-r-transparent" />
+              <p className="mt-2 text-xs text-gray-400">Loading your procurement offers...</p>
+            </div>
+          ) : buyerOffers.length === 0 ? (
+            <div className="mt-6 rounded-2xl border border-dashed border-black/10 bg-[#f7f8f5] p-8 text-center">
+              <span className="text-2xl">🛒</span>
+              <p className="mt-3 text-sm font-bold text-gray-800">No active offers submitted yet</p>
+              <p className="mt-1 text-xs text-gray-500">
+                Browse our live produce marketplace to bid on verified harvest lots directly from local farmers.
+              </p>
+              <Link
+                href="/marketplace"
+                className="mt-4 inline-block rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-700"
+              >
+                Go to Marketplace
+              </Link>
+            </div>
+          ) : (
+            <div className="mt-6 overflow-x-auto">
+              <table className="w-full min-w-[800px] text-left text-xs">
+                <thead>
+                  <tr className="border-b border-black/10 text-[10px] font-black uppercase tracking-widest text-gray-400">
+                    <th className="pb-3 pr-4">Produce Lot</th>
+                    <th className="pb-3 pr-4">Offered Volume</th>
+                    <th className="pb-3 pr-4">Offered Price</th>
+                    <th className="pb-3 pr-4">Destination</th>
+                    <th className="pb-3 pr-4">Payment Terms</th>
+                    <th className="pb-3 pr-4">Status</th>
+                    <th className="pb-3 pr-4">Action</th>
+                    <th className="pb-3">Submitted</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {buyerOffers.map((off) => (
+                    <tr key={off.id} className="border-b border-black/5 hover:bg-gray-50/50 transition">
+                      <td className="py-3.5 pr-4 font-bold text-gray-900">
+                        {off.produce_listings?.crop_name || "Produce"}
+                      </td>
+                      <td className="py-3.5 pr-4 font-semibold text-gray-900">
+                        {Number(off.offered_quantity_kg).toLocaleString()} kg
+                      </td>
+                      <td className="py-3.5 pr-4 font-bold text-emerald-700">
+                        ₹{off.offered_price_per_kg}/kg
+                      </td>
+                      <td className="py-3.5 pr-4 text-gray-600">
+                        {off.destination_city}
+                      </td>
+                      <td className="py-3.5 pr-4 text-[10px] text-gray-500">
+                        {off.payment_terms}
+                      </td>
+                      <td className="py-3.5 pr-4">
+                        <span className={`rounded-full px-2.5 py-0.5 text-[9px] font-bold ${
+                          off.status === "ACCEPTED"
+                            ? "bg-emerald-100 text-emerald-800"
+                            : off.status === "REJECTED"
+                            ? "bg-red-100 text-red-800"
+                            : off.status === "CANCELLED"
+                            ? "bg-gray-100 text-gray-600"
+                            : "bg-amber-100 text-amber-800"
+                        }`}>
+                          {off.status}
+                        </span>
+                      </td>
+                      <td className="py-3.5 pr-4">
+                        {off.status === "PENDING" ? (
+                          <button
+                            type="button"
+                            onClick={() => handleCancelOffer(off.id)}
+                            className="rounded-lg border border-red-200 px-2.5 py-1 text-[11px] font-semibold text-red-600 hover:bg-red-50 transition"
+                          >
+                            Cancel Offer
+                          </button>
+                        ) : off.status === "ACCEPTED" ? (
+                          <span className="text-[11px] font-bold text-emerald-700">Escrow Ready ✓</span>
+                        ) : (
+                          <span className="text-gray-400">—</span>
+                        )}
+                      </td>
+                      <td className="py-3.5 text-xs text-gray-400">
+                        {off.created_at ? new Date(off.created_at).toLocaleDateString() : "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </section>
 
         {/* BUYER REQUIREMENT */}

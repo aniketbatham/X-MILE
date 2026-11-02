@@ -1,6 +1,23 @@
 import { supabase } from "./supabase";
 import type { Farmer, Grade } from "./aggregation";
 
+interface RawInventoryRow {
+  id: string;
+  produce: string;
+  quantity_kg: number;
+  quality_grade: string;
+  quality_score: number | null;
+  quality_confidence: number | null;
+  quality_observations: string[] | null;
+  status: string;
+  reserved_quantity_kg: number | null;
+  farmers: {
+    id: string;
+    name: string;
+    location: string;
+  } | null;
+}
+
 export async function getInventory(): Promise<Farmer[]> {
   const { data, error } = await supabase
     .from("inventory")
@@ -27,7 +44,7 @@ export async function getInventory(): Promise<Farmer[]> {
     return [];
   }
 
-  return (data ?? []).map((item: any) => ({
+  return ((data as unknown as RawInventoryRow[]) ?? []).map((item: RawInventoryRow) => ({
     id: item.id,
     name: item.farmers?.name ?? "Unknown Farmer",
     produce: item.produce,

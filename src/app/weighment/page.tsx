@@ -298,7 +298,7 @@ export default function WeighmentPage() {
                     <label className="block font-bold text-gray-700 mb-1">Agreed Grade</label>
                     <select
                       value={form.qualityGrade}
-                      onChange={(e) => setForm({ ...form, qualityGrade: e.target.value as any })}
+                      onChange={(e) => setForm({ ...form, qualityGrade: e.target.value as "A" | "B" | "C" })}
                       className="w-full rounded-xl border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:border-emerald-500 focus:outline-none"
                     >
                       <option value="A">Grade A (Premium)</option>

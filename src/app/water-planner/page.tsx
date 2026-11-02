@@ -29,7 +29,6 @@ const SEED_WATER_LOGS: WaterLog[] = [
 export default function WaterPlannerPage() {
   const farm = PlatformDb.getFarm();
   const [logs, setLogs] = useState<WaterLog[]>(SEED_WATER_LOGS);
-  const [selectedPlot, setSelectedPlot] = useState(farm.plots[0]?.code || "PLOT-NORTH");
   const [isLogOpen, setIsLogOpen] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -204,7 +203,7 @@ export default function WaterPlannerPage() {
                     <label className="block font-bold text-gray-700 mb-1">Irrigation Method</label>
                     <select
                       value={form.source}
-                      onChange={(e) => setForm({ ...form, source: e.target.value as any })}
+                      onChange={(e) => setForm({ ...form, source: e.target.value as WaterLog["source"] })}
                       className="w-full rounded-xl border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:border-emerald-500 focus:outline-none"
                     >
                       <option value="Drip">Drip Irrigation</option>

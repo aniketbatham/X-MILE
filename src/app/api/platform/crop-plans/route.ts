@@ -2,6 +2,20 @@ import { NextRequest } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { verifyServerSession } from "@/lib/server-auth";
 
+interface CropPlanBody {
+  cropName?: string;
+  variety?: string;
+  season?: string;
+  durationDays?: number;
+  expectedYieldKg?: number;
+  targetSellingPricePerKg?: number;
+  estimatedCost?: number;
+  estimatedRevenue?: number;
+  breakEvenPricePerKg?: number;
+  breakEvenYieldKg?: number;
+  assumptions?: Record<string, unknown> | null;
+}
+
 const SEED_BENCHMARK_PLANS = [
   {
     id: "PLAN-BENCHMARK-01",
@@ -62,8 +76,9 @@ export async function GET(request: NextRequest) {
       migrationPending: false,
       plans: plans && plans.length > 0 ? plans : SEED_BENCHMARK_PLANS,
     });
-  } catch (err: any) {
-    return Response.json({ success: false, error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Internal error";
+    return Response.json({ success: false, error: message }, { status: 500 });
   }
 }
 
@@ -71,7 +86,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await verifyServerSession(request);
 
-    let body: any;
+    let body: CropPlanBody;
     try {
       body = await request.json();
     } catch {
@@ -145,7 +160,8 @@ export async function POST(request: NextRequest) {
       message: "Crop plan successfully persisted to Supabase.",
       plan: newPlan,
     });
-  } catch (err: any) {
-    return Response.json({ success: false, error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Internal error";
+    return Response.json({ success: false, error: message }, { status: 500 });
   }
 }

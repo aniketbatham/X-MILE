@@ -2,6 +2,13 @@ import { NextRequest } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { verifyServerSession } from "@/lib/server-auth";
 
+interface AdminActionBody {
+  action?: string;
+  entityId?: string;
+  newStatus?: string;
+  reason?: string;
+}
+
 // Baseline benchmark reference dataset (clearly labeled when database tables are awaiting migration)
 const BASELINE_VERIFICATION_RECORDS = [
   {
@@ -166,11 +173,12 @@ export async function GET(request: NextRequest) {
         isDemonstrationKpi: !isDatabaseMigrated,
       },
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Failed to load admin console data.";
     return Response.json(
       {
         success: false,
-        error: err.message || "Failed to load admin console data.",
+        error: message,
       },
       { status: 500 }
     );
@@ -190,7 +198,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  let body: any;
+  let body: AdminActionBody;
   try {
     body = await request.json();
   } catch {
@@ -245,11 +253,12 @@ export async function POST(request: NextRequest) {
       auditTrailRecorded: true,
       auditRecord,
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Database persistence failed.";
     return Response.json(
       {
         success: false,
-        error: err.message || "Database persistence failed.",
+        error: message,
       },
       { status: 500 }
     );

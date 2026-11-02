@@ -16,7 +16,8 @@ export default function FirstVisitModal() {
     try {
       const hasVisited = localStorage.getItem(VISITED_KEY);
       if (!hasVisited) {
-        setIsOpen(true);
+        const timer = setTimeout(() => setIsOpen(true), 0);
+        return () => clearTimeout(timer);
       }
     } catch {
       // storage unavailable

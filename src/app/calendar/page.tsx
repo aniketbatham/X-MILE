@@ -210,7 +210,7 @@ export default function CalendarPage() {
                     <label className="block font-bold text-gray-700 mb-1">Event Type</label>
                     <select
                       value={form.type}
-                      onChange={(e) => setForm({ ...form, type: e.target.value as any })}
+                      onChange={(e) => setForm({ ...form, type: e.target.value as CalendarEvent["type"] })}
                       className="w-full rounded-xl border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:border-emerald-500 focus:outline-none"
                     >
                       <option value="HARVEST">Harvest Window</option>

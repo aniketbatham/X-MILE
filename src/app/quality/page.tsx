@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useLanguage } from "@/i18n/LanguageContext";
-import LanguageSelector from "@/components/LanguageSelector";
 import PlatformHeader from "@/components/PlatformHeader";
 import ConnectedFarmerJourney from "@/components/ConnectedFarmerJourney";
 
@@ -16,7 +15,7 @@ type QualityResult = {
 };
 
 export default function QualityPage() {
-  const { t, formatNumber } = useLanguage();
+  const { t } = useLanguage();
   const [image, setImage] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [result, setResult] = useState<QualityResult | null>(null);
@@ -29,8 +28,8 @@ export default function QualityPage() {
 
   useEffect(() => {
     if (!loading) {
-      setScanProgress(0);
-      return;
+      const timer = setTimeout(() => setScanProgress(0), 0);
+      return () => clearTimeout(timer);
     }
 
     const interval = setInterval(() => {

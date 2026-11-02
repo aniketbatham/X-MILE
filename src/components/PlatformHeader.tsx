@@ -4,26 +4,34 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import LanguageSelector from "./LanguageSelector";
-import { useLanguage } from "@/i18n/LanguageContext";
-import { PlatformDb, PlatformNotification, UserProfile, UserRole } from "@/lib/platform-db";
+import { PlatformDb, PlatformNotification, UserRole } from "@/lib/platform-db";
+import { useAuth } from "@/context/AuthContext";
 
 export default function PlatformHeader() {
   const pathname = usePathname();
-  const { t } = useLanguage();
-  const [user, setUser] = useState<UserProfile>(PlatformDb.getUser());
+  const { user: authUser, isAuthenticated, logout } = useAuth();
+  const [localRole, setLocalRole] = useState<UserRole>("FARMER");
   const [notifications, setNotifications] = useState<PlatformNotification[]>([]);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [isRoleMenuOpen, setIsRoleMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  // Active role: strictly authoritative server-side role if authenticated, else local mock role
+  const activeRole: UserRole = authUser ? authUser.role : localRole;
+
   useEffect(() => {
-    setUser(PlatformDb.getUser());
-    setNotifications(PlatformDb.getNotifications());
+    // Asynchronous notification load to avoid synchronous setState inside render effect
+    const timer = setTimeout(() => {
+      setNotifications(PlatformDb.getNotifications());
+    }, 0);
+    return () => clearTimeout(timer);
   }, []);
 
   const handleRoleChange = (role: UserRole) => {
-    const updated = PlatformDb.updateUser({ role });
-    setUser(updated);
+    // Only non-admin public roles can be previewed locally
+    if (role === "ADMIN") return;
+    setLocalRole(role);
+    PlatformDb.updateUser({ role });
     setIsRoleMenuOpen(false);
   };
 
@@ -63,7 +71,7 @@ export default function PlatformHeader() {
     { label: "Escrow Status", href: "/transaction", icon: "💳" },
   ];
 
-  const currentNav = user.role === "BUYER" ? buyerNav : farmerNav;
+  const currentNav = activeRole === "BUYER" ? buyerNav : farmerNav;
 
   return (
     <>
@@ -79,8 +87,13 @@ export default function PlatformHeader() {
                 <div className="flex items-center gap-1.5">
                   <span className="text-lg font-black tracking-tight text-[#172019]">X-MILE</span>
                   <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-black text-emerald-800 uppercase tracking-wider">
-                    {user.role}
+                    {activeRole}
                   </span>
+                  {authUser?.isVerified && (
+                    <span className="rounded-full bg-blue-100 px-1.5 py-0.5 text-[8px] font-bold text-blue-800">
+                      ✓ Verified
+                    </span>
+                  )}
                 </div>
                 <div className="hidden text-[10px] font-semibold tracking-wider text-[#6a7c70] sm:block">
                   Every MILE Matters, Every FARMER Matters.
@@ -129,68 +142,107 @@ export default function PlatformHeader() {
                     <span>{item.label}</span>
                   </Link>
                 ))}
-                <div className="my-1 border-t border-gray-100" />
-                <Link
-                  href="/admin"
-                  className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold text-purple-700 hover:bg-purple-50 transition"
-                >
-                  <span>🛡️</span>
-                  <span>Admin Console</span>
-                </Link>
+                {activeRole === "ADMIN" && (
+                  <>
+                    <div className="my-1 border-t border-gray-100" />
+                    <Link
+                      href="/admin"
+                      className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold text-purple-700 hover:bg-purple-50 transition"
+                    >
+                      <span>🛡️</span>
+                      <span>Admin Console</span>
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
           </nav>
 
-          {/* Right Controls: Role Switcher, Notifications, Language, Profile */}
+          {/* Right Controls: Auth, Notifications, Language */}
           <div className="flex items-center gap-2.5">
-            {/* Role Switcher Pill */}
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setIsRoleMenuOpen(!isRoleMenuOpen)}
-                className="flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50/80 px-2.5 py-1.5 text-[11px] font-bold text-emerald-900 shadow-2xs hover:bg-emerald-100 transition"
-              >
-                <span>Role:</span>
-                <span className="font-extrabold">{user.role}</span>
-                <span className="text-[9px]">▼</span>
-              </button>
+            {/* Authenticated user badge or Role preview */}
+            {isAuthenticated && authUser ? (
+              <div className="flex items-center gap-2">
+                <Link
+                  href="/farm-profile"
+                  className="flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50/80 px-2.5 py-1.5 text-[11px] font-bold text-emerald-900 shadow-2xs hover:bg-emerald-100 transition"
+                >
+                  <span className="max-w-[100px] truncate">{authUser.fullName}</span>
+                </Link>
+                <button
+                  type="button"
+                  onClick={logout}
+                  title="Sign out"
+                  className="rounded-xl border border-gray-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-gray-600 hover:bg-gray-50 hover:text-red-600 transition"
+                >
+                  Sign Out
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5">
+                {/* Public Role Preview Dropdown (strictly excludes ADMIN) */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setIsRoleMenuOpen(!isRoleMenuOpen)}
+                    className="flex items-center gap-1 rounded-xl border border-gray-200 bg-white px-2 py-1.5 text-[11px] font-bold text-gray-700 shadow-2xs hover:bg-gray-50 transition"
+                  >
+                    <span>Role:</span>
+                    <span className="font-extrabold">{localRole}</span>
+                    <span className="text-[9px]">▼</span>
+                  </button>
 
-              {isRoleMenuOpen && (
-                <div className="absolute right-0 top-full mt-2 w-52 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-xl z-50 animate-in fade-in zoom-in-95 duration-100 p-1.5">
-                  <div className="px-3 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                    Switch Active Persona
-                  </div>
-                  {(
-                    [
-                      { role: "FARMER", label: "Farmer", icon: "🌾" },
-                      { role: "BUYER", label: "Bulk Buyer", icon: "🛒" },
-                      { role: "FPO_ADMIN", label: "FPO / Farmer Group", icon: "👥" },
-                      { role: "MACHINERY_PROVIDER", label: "Machinery Provider", icon: "🚜" },
-                      { role: "TRANSPORT_PROVIDER", label: "Transporter", icon: "🚚" },
-                      { role: "STORAGE_PROVIDER", label: "Warehouse Facility", icon: "🏬" },
-                      { role: "ADMIN", label: "System Admin", icon: "🛡️" },
-                    ] as const
-                  ).map((r) => (
-                    <button
-                      key={r.role}
-                      type="button"
-                      onClick={() => handleRoleChange(r.role)}
-                      className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-xs transition ${
-                        user.role === r.role
-                          ? "bg-emerald-50 font-bold text-emerald-950"
-                          : "text-gray-700 hover:bg-gray-50 font-medium"
-                      }`}
-                    >
-                      <span className="flex items-center gap-2">
-                        <span>{r.icon}</span>
-                        <span>{r.label}</span>
-                      </span>
-                      {user.role === r.role && <span className="text-emerald-600 font-bold">✓</span>}
-                    </button>
-                  ))}
+                  {isRoleMenuOpen && (
+                    <div className="absolute right-0 top-full mt-2 w-52 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-xl z-50 animate-in fade-in zoom-in-95 duration-100 p-1.5">
+                      <div className="px-3 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                        Switch Public View
+                      </div>
+                      {(
+                        [
+                          { role: "FARMER" as UserRole, label: "Farmer", icon: "🌾" },
+                          { role: "BUYER" as UserRole, label: "Bulk Buyer", icon: "🛒" },
+                          { role: "FPO_ADMIN" as UserRole, label: "FPO / Group", icon: "👥" },
+                          { role: "MACHINERY_PROVIDER" as UserRole, label: "Machinery", icon: "🚜" },
+                          { role: "TRANSPORT_PROVIDER" as UserRole, label: "Transporter", icon: "🚚" },
+                          { role: "STORAGE_PROVIDER" as UserRole, label: "Warehouse", icon: "🏬" },
+                          { role: "EXPERT" as UserRole, label: "KVK Expert", icon: "🎓" },
+                        ]
+                      ).map((r) => (
+                        <button
+                          key={r.role}
+                          type="button"
+                          onClick={() => handleRoleChange(r.role)}
+                          className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-xs transition ${
+                            localRole === r.role
+                              ? "bg-emerald-50 font-bold text-emerald-950"
+                              : "text-gray-700 hover:bg-gray-50 font-medium"
+                          }`}
+                        >
+                          <span className="flex items-center gap-2">
+                            <span>{r.icon}</span>
+                            <span>{r.label}</span>
+                          </span>
+                          {localRole === r.role && <span className="text-emerald-600 font-bold">✓</span>}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+
+                <Link
+                  href="/login"
+                  className="rounded-xl border border-emerald-600 bg-emerald-600 px-3 py-1.5 text-[11px] font-black text-white hover:bg-emerald-700 transition"
+                >
+                  Sign In
+                </Link>
+                <Link
+                  href="/register"
+                  className="hidden sm:inline-flex rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-[11px] font-bold text-gray-700 hover:bg-gray-50 transition"
+                >
+                  Register
+                </Link>
+              </div>
+            )}
 
             {/* Notification Bell */}
             <div className="relative">
@@ -287,14 +339,16 @@ export default function PlatformHeader() {
                   <span>{item.label}</span>
                 </Link>
               ))}
-              <Link
-                href="/admin"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="flex items-center gap-2 rounded-xl p-2 text-xs font-bold text-purple-700 hover:bg-purple-50 transition col-span-2"
-              >
-                <span>🛡️</span>
-                <span>Admin Console</span>
-              </Link>
+              {activeRole === "ADMIN" && (
+                <Link
+                  href="/admin"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center gap-2 rounded-xl p-2 text-xs font-bold text-purple-700 hover:bg-purple-50 transition col-span-2"
+                >
+                  <span>🛡️</span>
+                  <span>Admin Console</span>
+                </Link>
+              )}
             </div>
           </div>
         )}

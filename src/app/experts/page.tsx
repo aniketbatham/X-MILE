@@ -209,7 +209,7 @@ export default function ExpertsPage() {
                   <label className="block font-bold text-gray-700 mb-1">Case Urgency</label>
                   <select
                     value={urgency}
-                    onChange={(e) => setUrgency(e.target.value as any)}
+                    onChange={(e) => setUrgency(e.target.value as "Normal" | "High")}
                     className="w-full rounded-xl border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:border-emerald-500 focus:outline-none"
                   >
                     <option value="Normal">Normal Advisory (24-48 hrs)</option>

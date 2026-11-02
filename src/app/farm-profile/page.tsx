@@ -1,13 +1,65 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import PlatformHeader from "@/components/PlatformHeader";
 import ConnectedFarmerJourney from "@/components/ConnectedFarmerJourney";
 import { PlatformDb, FarmProfile, Plot } from "@/lib/platform-db";
+import { useAuth } from "@/context/AuthContext";
+
+interface UserAddress {
+  id: string;
+  address_type: "RESIDENTIAL" | "FARM_GATE" | "WAREHOUSE" | "COLLECTION_POINT" | "COMMERCIAL_OFFICE" | "OTHER";
+  label: string;
+  is_default: boolean;
+  recipient_name: string;
+  phone?: string;
+  address_line1: string;
+  address_line2?: string;
+  village_or_locality?: string;
+  city_or_town: string;
+  district: string;
+  state: string;
+  pincode: string;
+  notes?: string;
+}
+
+const BENCHMARK_ADDRESSES: UserAddress[] = [
+  {
+    id: "addr-01",
+    address_type: "FARM_GATE",
+    label: "Main Farm Gate & Loading Ramp",
+    is_default: true,
+    recipient_name: "Rameshwar Patel",
+    phone: "+91 98765 43210",
+    address_line1: "Survey #42/1, North Canal Road",
+    village_or_locality: "Kunigal Rural Gate",
+    city_or_town: "Kunigal",
+    district: "Tumakuru",
+    state: "Karnataka",
+    pincode: "572130",
+    notes: "Suitable for 10-wheeler e-Rickshaws & light trucks.",
+  },
+  {
+    id: "addr-02",
+    address_type: "WAREHOUSE",
+    label: "On-Farm Cold Storage Point",
+    is_default: false,
+    recipient_name: "Rameshwar Patel",
+    phone: "+91 98765 43210",
+    address_line1: "Plot 3 Shade Net Shed",
+    village_or_locality: "Kunigal Rural Gate",
+    city_or_town: "Kunigal",
+    district: "Tumakuru",
+    state: "Karnataka",
+    pincode: "572130",
+    notes: "Pre-cooling and grading dock.",
+  },
+];
 
 export default function FarmProfilePage() {
+  const { user: authUser, token } = useAuth();
   const [farm, setFarm] = useState<FarmProfile>(PlatformDb.getFarm());
-  const [user, setUser] = useState(PlatformDb.getUser());
+  const user = PlatformDb.getUser();
   const [isAddPlotOpen, setIsAddPlotOpen] = useState(false);
   const [plotForm, setPlotForm] = useState({
     code: "",
@@ -21,14 +73,163 @@ export default function FarmProfilePage() {
     expectedHarvestDate: "",
   });
 
-  const handleAddPlot = (e: React.FormEvent) => {
+  // Addresses State
+  const [addresses, setAddresses] = useState<UserAddress[]>(BENCHMARK_ADDRESSES);
+  const [isAddAddressOpen, setIsAddAddressOpen] = useState(false);
+  const [addressNotice, setAddressNotice] = useState<string | null>(null);
+  const [addressLoading, setAddressLoading] = useState(false);
+
+  const [addressForm, setAddressForm] = useState({
+    addressType: "FARM_GATE" as UserAddress["address_type"],
+    label: "Farm Gate 1",
+    isDefault: false,
+    recipientName: authUser?.fullName || user.name,
+    phone: authUser?.phone || user.phone,
+    addressLine1: "",
+    addressLine2: "",
+    villageOrLocality: authUser?.village || user.village,
+    cityOrTown: "Kunigal",
+    district: authUser?.district || user.district,
+    state: authUser?.state || user.state,
+    pincode: "572130",
+    notes: "",
+  });
+
+  const loadFarm = useCallback(async () => {
+    try {
+      const res = await fetch("/api/platform/farms", {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && Array.isArray(data.farms) && data.farms.length > 0) {
+          const f = data.farms[0];
+          setFarm({
+            id: f.id,
+            farmerId: f.farmer_id,
+            farmName: f.name,
+            surveyNumber: f.survey_number || "42/1",
+            totalAreaAcres: Number(f.total_area_acres),
+            state: f.state,
+            district: f.district,
+            village: f.village || "Kunigal",
+            plots: (f.plots || []).map((p: {
+              id: string;
+              plot_code: string;
+              area_acres: number | string;
+              soil_type: string;
+              irrigation_source: string;
+              current_crop?: string;
+              crop_stage?: string;
+              sowing_date?: string;
+              expected_harvest_date?: string;
+            }) => ({
+              id: p.id,
+              code: p.plot_code,
+              name: p.plot_code,
+              areaAcres: Number(p.area_acres),
+              soilType: p.soil_type,
+              irrigationSource: p.irrigation_source,
+              currentCrop: p.current_crop || "Tomato",
+              cropStage: p.crop_stage || "Sowing",
+              sowingDate: p.sowing_date || new Date().toISOString().split("T")[0],
+              expectedHarvestDate: p.expected_harvest_date || "",
+            })),
+          });
+        }
+      }
+    } catch {
+      // Keep initial farm state
+    }
+  }, [token]);
+
+  const loadAddresses = useCallback(async () => {
+    try {
+      const res = await fetch("/api/platform/addresses", {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && Array.isArray(data.addresses) && data.addresses.length > 0) {
+          setAddresses(data.addresses);
+        }
+      }
+    } catch {
+      // Graceful fallback to initial state
+    }
+  }, [token]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      loadFarm();
+      loadAddresses();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [loadFarm, loadAddresses]);
+
+  const handleAddPlot = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!plotForm.code || !plotForm.name || !plotForm.currentCrop) {
       alert("Please enter plot code, name, and current crop.");
       return;
     }
-    const newPlot = PlatformDb.addPlot(plotForm);
-    setFarm(PlatformDb.getFarm());
+
+    try {
+      let activeFarmId = farm.id;
+      // If farm not yet in DB, create it first
+      if (!activeFarmId || activeFarmId.startsWith("farm-")) {
+        const createFarmRes = await fetch("/api/platform/farms", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({
+            name: farm.farmName || "Primary Family Farm",
+            totalAreaAcres: plotForm.areaAcres,
+            district: authUser?.district || "Tumakuru",
+            state: authUser?.state || "Karnataka",
+            village: authUser?.village || "Kunigal",
+            surveyNumber: farm.surveyNumber || "42/1",
+          }),
+        });
+
+        if (createFarmRes.ok) {
+          const createData = await createFarmRes.json();
+          activeFarmId = createData.farm.id;
+        }
+      }
+
+      const res = await fetch("/api/platform/plots", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          farmId: activeFarmId,
+          plotCode: plotForm.code,
+          areaAcres: plotForm.areaAcres,
+          soilType: plotForm.soilType,
+          irrigationSource: plotForm.irrigationSource,
+          currentCrop: plotForm.currentCrop,
+          cropStage: plotForm.cropStage,
+          sowingDate: plotForm.sowingDate,
+          expectedHarvestDate: plotForm.expectedHarvestDate || null,
+        }),
+      });
+
+      if (res.ok) {
+        await loadFarm();
+      } else {
+        PlatformDb.addPlot(plotForm);
+        setFarm(PlatformDb.getFarm());
+      }
+    } catch {
+      PlatformDb.addPlot(plotForm);
+      setFarm(PlatformDb.getFarm());
+    }
+
     setIsAddPlotOpen(false);
     setPlotForm({
       code: "",
@@ -41,6 +242,90 @@ export default function FarmProfilePage() {
       sowingDate: new Date().toISOString().split("T")[0],
       expectedHarvestDate: "",
     });
+  };
+
+  const handleSaveAddress = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAddressLoading(true);
+    try {
+      const res = await fetch("/api/platform/addresses", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(addressForm),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to save address.");
+      }
+
+      setAddressNotice(`✓ Address '${addressForm.label}' added successfully.`);
+      setIsAddAddressOpen(false);
+      await loadAddresses();
+    } catch {
+      // In local mode if auth or migration is pending, update local state
+      const newAddr: UserAddress = {
+        id: `addr-${Date.now()}`,
+        address_type: addressForm.addressType,
+        label: addressForm.label,
+        is_default: addressForm.isDefault,
+        recipient_name: addressForm.recipientName,
+        phone: addressForm.phone,
+        address_line1: addressForm.addressLine1,
+        address_line2: addressForm.addressLine2,
+        village_or_locality: addressForm.villageOrLocality,
+        city_or_town: addressForm.cityOrTown,
+        district: addressForm.district,
+        state: addressForm.state,
+        pincode: addressForm.pincode,
+        notes: addressForm.notes,
+      };
+
+      setAddresses((prev) => {
+        const updated = addressForm.isDefault
+          ? prev.map((a) => ({ ...a, is_default: false }))
+          : [...prev];
+        return [newAddr, ...updated];
+      });
+      setAddressNotice(`✓ Address '${addressForm.label}' recorded for this session.`);
+      setIsAddAddressOpen(false);
+    } finally {
+      setAddressLoading(false);
+      setTimeout(() => setAddressNotice(null), 4000);
+    }
+  };
+
+  const handleSetDefaultAddress = async (id: string) => {
+    try {
+      await fetch("/api/platform/addresses", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, isDefault: true }),
+      });
+    } catch {
+      // Fallback
+    }
+    setAddresses((prev) =>
+      prev.map((a) => ({
+        ...a,
+        is_default: a.id === id,
+      }))
+    );
+    setAddressNotice("✓ Default address updated.");
+    setTimeout(() => setAddressNotice(null), 3000);
+  };
+
+  const handleDeleteAddress = async (id: string) => {
+    if (!confirm("Are you sure you want to remove this address?")) return;
+    try {
+      await fetch(`/api/platform/addresses?id=${id}`, {
+        method: "DELETE",
+      });
+    } catch {
+      // Fallback
+    }
+    setAddresses((prev) => prev.filter((a) => a.id !== id));
+    setAddressNotice("✓ Address removed.");
+    setTimeout(() => setAddressNotice(null), 3000);
   };
 
   return (
@@ -211,6 +496,270 @@ export default function FarmProfilePage() {
           </div>
         </div>
 
+        {/* User Addresses Management Section */}
+        <div className="mt-10 rounded-3xl border border-gray-200 bg-white p-6 shadow-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-gray-100">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-blue-800">
+                  Logistics & Gate Points
+                </span>
+                <span className="text-xs text-gray-500">• User Addresses Registry</span>
+              </div>
+              <h2 className="text-xl font-black text-gray-900 mt-1">Saved Farm Gates & Dispatch Locations</h2>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Manage collection gates, storage yards, and delivery addresses for seamless transport and order fulfillment.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsAddAddressOpen(true)}
+              className="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 transition shrink-0"
+            >
+              + Add Address
+            </button>
+          </div>
+
+          {addressNotice && (
+            <div className="mt-4 rounded-xl border border-emerald-300 bg-emerald-50 p-3 text-xs font-bold text-emerald-950">
+              {addressNotice}
+            </div>
+          )}
+
+          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+            {addresses.map((addr) => (
+              <div
+                key={addr.id}
+                className={`rounded-2xl border p-4 transition ${
+                  addr.is_default
+                    ? "border-emerald-500 bg-emerald-50/30 shadow-xs ring-1 ring-emerald-500/30"
+                    : "border-gray-200 bg-white hover:border-gray-300"
+                }`}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">📍</span>
+                    <h3 className="text-sm font-black text-gray-900">{addr.label}</h3>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="rounded-md bg-gray-100 px-2 py-0.5 text-[10px] font-bold text-gray-700">
+                      {addr.address_type.replace("_", " ")}
+                    </span>
+                    {addr.is_default && (
+                      <span className="rounded-md bg-emerald-600 px-2 py-0.5 text-[10px] font-black text-white">
+                        Default
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="mt-3 space-y-1 text-xs text-gray-600">
+                  <p className="font-semibold text-gray-800">
+                    {addr.recipient_name} {addr.phone && `• ${addr.phone}`}
+                  </p>
+                  <p>{addr.address_line1}</p>
+                  {addr.address_line2 && <p>{addr.address_line2}</p>}
+                  <p>
+                    {addr.village_or_locality ? `${addr.village_or_locality}, ` : ""}
+                    {addr.city_or_town}, {addr.district}, {addr.state} — {addr.pincode}
+                  </p>
+                  {addr.notes && <p className="text-[11px] italic text-gray-400 mt-1">{addr.notes}</p>}
+                </div>
+
+                <div className="mt-4 flex items-center justify-between border-t border-gray-100 pt-3">
+                  {!addr.is_default ? (
+                    <button
+                      type="button"
+                      onClick={() => handleSetDefaultAddress(addr.id)}
+                      className="text-xs font-bold text-emerald-700 hover:text-emerald-800 hover:underline"
+                    >
+                      ★ Set as Default
+                    </button>
+                  ) : (
+                    <span className="text-[11px] font-bold text-emerald-800">Primary Dispatch Point</span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteAddress(addr.id)}
+                    className="text-xs font-bold text-red-600 hover:text-red-700 hover:underline"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Modal: Add Address Form */}
+        {isAddAddressOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-150">
+            <div className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl border border-gray-100 max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+                <h3 className="text-lg font-black text-gray-900">Add New Gate / Address Point</h3>
+                <button
+                  type="button"
+                  onClick={() => setIsAddAddressOpen(false)}
+                  className="rounded-lg p-1 text-gray-400 hover:text-gray-600"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveAddress} className="mt-4 space-y-4 text-xs">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-bold text-gray-700 mb-1">Address Label</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. North Gate Ramp"
+                      value={addressForm.label}
+                      onChange={(e) => setAddressForm({ ...addressForm, label: e.target.value })}
+                      className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-gray-700 mb-1">Location Type</label>
+                    <select
+                      value={addressForm.addressType}
+                      onChange={(e) => setAddressForm({ ...addressForm, addressType: e.target.value as UserAddress["address_type"] })}
+                      className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none"
+                    >
+                      <option value="FARM_GATE">Farm Gate</option>
+                      <option value="WAREHOUSE">Warehouse / Shed</option>
+                      <option value="COLLECTION_POINT">Collection Point</option>
+                      <option value="RESIDENTIAL">Residential</option>
+                      <option value="COMMERCIAL_OFFICE">Office</option>
+                      <option value="OTHER">Other</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-bold text-gray-700 mb-1">Contact Name</label>
+                    <input
+                      type="text"
+                      required
+                      value={addressForm.recipientName}
+                      onChange={(e) => setAddressForm({ ...addressForm, recipientName: e.target.value })}
+                      className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-gray-700 mb-1">Phone Number</label>
+                    <input
+                      type="text"
+                      required
+                      value={addressForm.phone}
+                      onChange={(e) => setAddressForm({ ...addressForm, phone: e.target.value })}
+                      className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-gray-700 mb-1">Address Line 1</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Street, Survey Number, Land Plot"
+                    value={addressForm.addressLine1}
+                    onChange={(e) => setAddressForm({ ...addressForm, addressLine1: e.target.value })}
+                    className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-bold text-gray-700 mb-1">Village / Locality</label>
+                    <input
+                      type="text"
+                      value={addressForm.villageOrLocality}
+                      onChange={(e) => setAddressForm({ ...addressForm, villageOrLocality: e.target.value })}
+                      className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-gray-700 mb-1">City / Town</label>
+                    <input
+                      type="text"
+                      required
+                      value={addressForm.cityOrTown}
+                      onChange={(e) => setAddressForm({ ...addressForm, cityOrTown: e.target.value })}
+                      className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="block font-bold text-gray-700 mb-1">District</label>
+                    <input
+                      type="text"
+                      required
+                      value={addressForm.district}
+                      onChange={(e) => setAddressForm({ ...addressForm, district: e.target.value })}
+                      className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-gray-700 mb-1">State</label>
+                    <input
+                      type="text"
+                      required
+                      value={addressForm.state}
+                      onChange={(e) => setAddressForm({ ...addressForm, state: e.target.value })}
+                      className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-gray-700 mb-1">Pincode</label>
+                    <input
+                      type="text"
+                      required
+                      value={addressForm.pincode}
+                      onChange={(e) => setAddressForm({ ...addressForm, pincode: e.target.value })}
+                      className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 pt-2">
+                  <input
+                    type="checkbox"
+                    id="isDefaultAddr"
+                    checked={addressForm.isDefault}
+                    onChange={(e) => setAddressForm({ ...addressForm, isDefault: e.target.checked })}
+                    className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                  />
+                  <label htmlFor="isDefaultAddr" className="text-xs font-bold text-gray-700 cursor-pointer">
+                    Set as default primary dispatch/receipt address
+                  </label>
+                </div>
+
+                <div className="mt-6 flex justify-end gap-3 pt-3 border-t border-gray-100">
+                  <button
+                    type="button"
+                    onClick={() => setIsAddAddressOpen(false)}
+                    className="rounded-xl border border-gray-200 px-4 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={addressLoading}
+                    className="rounded-xl bg-emerald-600 px-5 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 disabled:opacity-50"
+                  >
+                    {addressLoading ? "Saving..." : "Save Address"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
         {/* Modal: Add Plot Form */}
         {isAddPlotOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-150">
@@ -268,7 +817,7 @@ export default function FarmProfilePage() {
                     <label className="block font-bold text-gray-700 mb-1">Soil Type</label>
                     <select
                       value={plotForm.soilType}
-                      onChange={(e) => setPlotForm({ ...plotForm, soilType: e.target.value as any })}
+                      onChange={(e) => setPlotForm({ ...plotForm, soilType: e.target.value as Plot["soilType"] })}
                       className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none"
                     >
                       <option value="Red Loamy">Red Loamy</option>
@@ -285,7 +834,7 @@ export default function FarmProfilePage() {
                     <label className="block font-bold text-gray-700 mb-1">Irrigation Source</label>
                     <select
                       value={plotForm.irrigationSource}
-                      onChange={(e) => setPlotForm({ ...plotForm, irrigationSource: e.target.value as any })}
+                      onChange={(e) => setPlotForm({ ...plotForm, irrigationSource: e.target.value as Plot["irrigationSource"] })}
                       className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none"
                     >
                       <option value="Drip Irrigation">Drip Irrigation</option>

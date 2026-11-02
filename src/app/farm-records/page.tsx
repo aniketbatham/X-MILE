@@ -241,7 +241,7 @@ export default function FarmRecordsPage() {
                     <label className="block font-bold text-gray-700 mb-1">Transaction Type</label>
                     <select
                       value={form.type}
-                      onChange={(e) => setForm({ ...form, type: e.target.value as any })}
+                      onChange={(e) => setForm({ ...form, type: e.target.value as FarmRecordItem["type"] })}
                       className="w-full rounded-xl border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:border-emerald-500 focus:outline-none"
                     >
                       <option value="EXPENSE">Expense (Outflow)</option>
@@ -252,7 +252,7 @@ export default function FarmRecordsPage() {
                     <label className="block font-bold text-gray-700 mb-1">Category</label>
                     <select
                       value={form.category}
-                      onChange={(e) => setForm({ ...form, category: e.target.value as any })}
+                      onChange={(e) => setForm({ ...form, category: e.target.value as FarmRecordItem["category"] })}
                       className="w-full rounded-xl border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:border-emerald-500 focus:outline-none"
                     >
                       <option value="Seeds">Seeds</option>

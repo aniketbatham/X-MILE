@@ -144,8 +144,15 @@ export async function GET(request: Request) {
       ])
     );
 
-    const orders = (orderItems ?? []).map(
-      (item: any) => {
+    interface OrderItemJoined {
+      id: string;
+      quantity_kg: number;
+      inventory_id: string;
+      orders: unknown;
+    }
+
+    const orders = (orderItems as unknown as OrderItemJoined[] ?? []).map(
+      (item) => {
         const inventoryItem =
           inventoryMap.get(item.inventory_id);
 

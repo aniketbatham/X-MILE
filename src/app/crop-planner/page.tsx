@@ -3,7 +3,7 @@
 import { useState } from "react";
 import PlatformHeader from "@/components/PlatformHeader";
 import ConnectedFarmerJourney from "@/components/ConnectedFarmerJourney";
-import { PlatformDb, CropPlan, Plot } from "@/lib/platform-db";
+import { PlatformDb, CropPlan } from "@/lib/platform-db";
 
 const CROP_CATALOGUE = [
   {
@@ -97,7 +97,7 @@ export default function CropPlannerPage() {
     const breakEvenPrice = estimatedCost / expectedYieldKg;
     const breakEvenYield = estimatedCost / crop.expectedPricePerKg;
 
-    const newPlan = PlatformDb.addCropPlan({
+    PlatformDb.addCropPlan({
       cropName: crop.name,
       variety: crop.variety,
       season,
@@ -168,7 +168,7 @@ export default function CropPlannerPage() {
               <label className="block text-[9px] font-bold text-gray-400 uppercase tracking-wider">Crop Season</label>
               <select
                 value={season}
-                onChange={(e) => setSeason(e.target.value as any)}
+                onChange={(e) => setSeason(e.target.value as "Rabi" | "Kharif" | "Zaid")}
                 className="text-xs font-black text-emerald-800 bg-transparent outline-none cursor-pointer"
               >
                 <option value="Rabi">Rabi (Winter / Current)</option>

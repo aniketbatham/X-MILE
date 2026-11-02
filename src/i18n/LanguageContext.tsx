@@ -44,12 +44,13 @@ function getInitialLocale(): LocaleCode {
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocaleState] = useState<LocaleCode>("en");
-  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const initial = getInitialLocale();
-    setLocaleState(initial);
-    setMounted(true);
+    const timer = setTimeout(() => {
+      const initial = getInitialLocale();
+      setLocaleState(initial);
+    }, 0);
+    return () => clearTimeout(timer);
   }, []);
 
   const currentLanguage = useMemo(() => getLanguageInfo(locale), [locale]);

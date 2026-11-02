@@ -1,8 +1,28 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useLanguage } from "@/i18n/LanguageContext";
+
+interface SpeechRecognitionEventLike {
+  results: Array<Array<{ transcript: string }>>;
+}
+
+interface SpeechRecognitionErrorLike {
+  error: string;
+}
+
+interface SpeechRecognitionLike {
+  lang: string;
+  interimResults: boolean;
+  maxAlternatives: number;
+  onstart: (() => void) | null;
+  onresult: ((event: SpeechRecognitionEventLike) => void) | null;
+  onerror: ((event: SpeechRecognitionErrorLike) => void) | null;
+  onend: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+}
 
 type Message = {
   id: string;
@@ -61,7 +81,7 @@ export default function Chatbot({
   // Module 17: Voice Assistant capabilities (Speech-to-Text & Text-to-Speech)
   const [isListening, setIsListening] = useState(false);
   const [isSpeakingId, setIsSpeakingId] = useState<string | null>(null);
-  const recognitionRef = useRef<any>(null);
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
 
   // Map app locale to BCP-47 locale code for Web Speech recognition & synthesis
   const getSpeechLocale = (appLocale: string): string => {
@@ -114,7 +134,8 @@ export default function Chatbot({
     if (typeof window === "undefined") return;
 
     const SpeechRecognition =
-      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      (window as unknown as { SpeechRecognition?: new () => SpeechRecognitionLike; webkitSpeechRecognition?: new () => SpeechRecognitionLike }).SpeechRecognition ||
+      (window as unknown as { webkitSpeechRecognition?: new () => SpeechRecognitionLike }).webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
       setErrorMessage("Voice recognition is not supported in this browser. Please type your query.");
@@ -138,14 +159,14 @@ export default function Chatbot({
         setErrorMessage(null);
       };
 
-      recognition.onresult = (event: any) => {
+      recognition.onresult = (event: SpeechRecognitionEventLike) => {
         const transcript = event.results[0][0].transcript;
         if (transcript) {
           setInput((prev) => (prev ? `${prev} ${transcript}` : transcript));
         }
       };
 
-      recognition.onerror = (event: any) => {
+      recognition.onerror = (event: SpeechRecognitionErrorLike) => {
         setIsListening(false);
         if (event.error !== "no-speech") {
           setErrorMessage(`Microphone error: ${event.error}`);
@@ -158,7 +179,7 @@ export default function Chatbot({
 
       recognitionRef.current = recognition;
       recognition.start();
-    } catch (err: any) {
+    } catch {
       setIsListening(false);
       setErrorMessage("Could not initialize microphone.");
     }
@@ -166,37 +187,43 @@ export default function Chatbot({
 
   // When locale changes, update welcome message if only 1 message exists
   useEffect(() => {
-    setMessages((prev) => {
-      if (prev.length === 1 && prev[0].role === "assistant") {
-        return [
-          {
-            ...prev[0],
-            content: t("chatbot.welcomeMessage"),
-          },
-        ];
-      }
-      return prev;
-    });
+    const timer = setTimeout(() => {
+      setMessages((prev) => {
+        if (prev.length === 1 && prev[0].role === "assistant") {
+          return [
+            {
+              ...prev[0],
+              content: t("chatbot.welcomeMessage"),
+            },
+          ];
+        }
+        return prev;
+      });
+    }, 0);
+    return () => clearTimeout(timer);
   }, [locale, t]);
 
   // Restore conversation and open state from sessionStorage on mount
   useEffect(() => {
-    try {
-      const savedMessages = sessionStorage.getItem("xmile_chat_messages");
-      if (savedMessages) {
-        const parsed = JSON.parse(savedMessages);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setMessages(parsed);
+    const timer = setTimeout(() => {
+      try {
+        const savedMessages = sessionStorage.getItem("xmile_chat_messages");
+        if (savedMessages) {
+          const parsed = JSON.parse(savedMessages);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setMessages(parsed);
+          }
         }
-      }
 
-      const savedOpenState = sessionStorage.getItem("xmile_chat_open");
-      if (savedOpenState === "true") {
-        setInternalIsOpen(true);
+        const savedOpenState = sessionStorage.getItem("xmile_chat_open");
+        if (savedOpenState === "true") {
+          setInternalIsOpen(true);
+        }
+      } catch {
+        // Ignore storage errors
       }
-    } catch {
-      // Ignore storage errors
-    }
+    }, 0);
+    return () => clearTimeout(timer);
   }, []);
 
   // Save conversation whenever it changes
@@ -235,7 +262,7 @@ export default function Chatbot({
     }
   }, [input]);
 
-  const handleSendMessage = async (textToSend?: string) => {
+  const handleSendMessage = useCallback(async (textToSend?: string) => {
     const text = (textToSend || input).trim();
     if (!text || isLoading) return;
 
@@ -247,14 +274,15 @@ export default function Chatbot({
       textareaRef.current.style.height = "auto";
     }
 
+    const now = new Date();
+    const timeString = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+    const userMsgId = `usr-${now.getTime()}-${Math.random().toString(36).slice(2, 7)}`;
+
     const userMessage: Message = {
-      id: `user-${Date.now()}`,
+      id: userMsgId,
       role: "user",
       content: text,
-      timestamp: new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
+      timestamp: timeString,
     };
 
     const updatedMessages = [...messages, userMessage];
@@ -300,14 +328,13 @@ export default function Chatbot({
         throw new Error("Received an empty answer from the assistant.");
       }
 
+      const replyNow = new Date();
+      const replyTime = `${String(replyNow.getHours()).padStart(2, "0")}:${String(replyNow.getMinutes()).padStart(2, "0")}`;
       const assistantMessage: Message = {
-        id: `assistant-${Date.now()}`,
+        id: `ast-${replyNow.getTime()}-${Math.random().toString(36).slice(2, 7)}`,
         role: "assistant",
         content: data.message,
-        timestamp: new Date().toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
+        timestamp: replyTime,
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
@@ -320,7 +347,7 @@ export default function Chatbot({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [currentLanguage.name, currentLanguage.nativeName, input, isLoading, locale, messages, t]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {

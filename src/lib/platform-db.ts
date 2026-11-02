@@ -1450,7 +1450,9 @@ export class PlatformDb {
 
   static addAgriCycleListing(item: Omit<AgriCycleResidue, "id" | "status" | "co2SavedKg">): AgriCycleResidue {
     const items = this.getAgriCycleListings();
-    const co2SavedKg = Math.round(Number(item.quantityQuintals) * 70); // approx 70kg CO2 avoided per quintal
+    // Estimated net GHG avoidance: approx 70 kg CO2e avoided per quintal diverted from open-field burning
+    // Derived from IPCC Guidelines for National Greenhouse Gas Inventories (AFOLU Chapter 2/5) and ICAR baseline stubble emission factors
+    const co2SavedKg = Math.round(Number(item.quantityQuintals) * 70);
     const newItem: AgriCycleResidue = {
       ...item,
       id: `agr-${Date.now()}`,

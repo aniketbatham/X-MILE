@@ -335,7 +335,7 @@ export default function SoilHealthPage() {
                     <label className="block font-bold text-gray-700 mb-1">Zinc (Zn)</label>
                     <select
                       value={form.micronutrientZinc}
-                      onChange={(e) => setForm({ ...form, micronutrientZinc: e.target.value as any })}
+                      onChange={(e) => setForm({ ...form, micronutrientZinc: e.target.value as "Adequate" | "Deficient" })}
                       className="w-full rounded-xl border border-gray-200 px-3 py-2 text-xs text-gray-900"
                     >
                       <option value="Adequate">Adequate</option>
@@ -346,7 +346,7 @@ export default function SoilHealthPage() {
                     <label className="block font-bold text-gray-700 mb-1">Iron (Fe)</label>
                     <select
                       value={form.micronutrientIron}
-                      onChange={(e) => setForm({ ...form, micronutrientIron: e.target.value as any })}
+                      onChange={(e) => setForm({ ...form, micronutrientIron: e.target.value as "Adequate" | "Deficient" })}
                       className="w-full rounded-xl border border-gray-200 px-3 py-2 text-xs text-gray-900"
                     >
                       <option value="Adequate">Adequate</option>
@@ -357,7 +357,7 @@ export default function SoilHealthPage() {
                     <label className="block font-bold text-gray-700 mb-1">Boron (B)</label>
                     <select
                       value={form.micronutrientBoron}
-                      onChange={(e) => setForm({ ...form, micronutrientBoron: e.target.value as any })}
+                      onChange={(e) => setForm({ ...form, micronutrientBoron: e.target.value as "Adequate" | "Deficient" })}
                       className="w-full rounded-xl border border-gray-200 px-3 py-2 text-xs text-gray-900"
                     >
                       <option value="Adequate">Adequate</option>

@@ -2,6 +2,14 @@ import { NextRequest } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { verifyServerSession } from "@/lib/server-auth";
 
+interface RecordBody {
+  type?: string;
+  category?: string;
+  description?: string;
+  amount?: number | string;
+  date?: string;
+}
+
 const SEED_BENCHMARK_RECORDS = [
   {
     id: "REC-BENCHMARK-01",
@@ -58,7 +66,7 @@ export async function GET(request: NextRequest) {
         success: true,
         databaseSource: "BENCHMARK_FALLBACK",
         migrationPending: true,
-        migrationNotice: "Table 'farm_records' awaiting migration 001_complete_platform_schema.sql. Sourced from benchmark ledger.",
+        migrationNotice: "Table 'farm_records' awaiting migration 001_platform_foundation.sql. Sourced from benchmark ledger.",
         records: SEED_BENCHMARK_RECORDS,
       });
     }
@@ -69,8 +77,9 @@ export async function GET(request: NextRequest) {
       migrationPending: false,
       records: records && records.length > 0 ? records : SEED_BENCHMARK_RECORDS,
     });
-  } catch (err: any) {
-    return Response.json({ success: false, error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Internal error";
+    return Response.json({ success: false, error: message }, { status: 500 });
   }
 }
 
@@ -78,7 +87,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await verifyServerSession(request);
 
-    let body: any;
+    let body: RecordBody;
     try {
       body = await request.json();
     } catch {
@@ -132,7 +141,8 @@ export async function POST(request: NextRequest) {
       message: "Ledger transaction recorded in database.",
       record: newRecord,
     });
-  } catch (err: any) {
-    return Response.json({ success: false, error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Internal error";
+    return Response.json({ success: false, error: message }, { status: 500 });
   }
 }

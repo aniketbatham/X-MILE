@@ -1,10 +1,14 @@
 import { GoogleGenAI } from "@google/genai";
 
+// Ensure hosting platform allocates sufficient execution window for multimodal analysis
+export const maxDuration = 30;
+
 // In-memory rate limiting map for serverless execution: ip -> timestamps[]
 const rateLimitMap = new Map<string, number[]>();
 const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
 const MAX_REQUESTS_PER_WINDOW = 15; // 15 quality checks per minute per IP
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024; // 10 MB limit
+const REQUEST_TIMEOUT_MS = 20000; // 20s timeout (fires before 30s hosting limit)
 
 function isRateLimited(ip: string): boolean {
   const now = Date.now();
@@ -119,8 +123,14 @@ Rules:
 `;
 
     const preferredModel = process.env.GEMINI_MODEL?.trim() || "gemini-3.6-flash";
+    const abortController = new AbortController();
+    const timeoutId = setTimeout(() => {
+      abortController.abort(new Error("AI_GATEWAY_TIMEOUT"));
+    }, REQUEST_TIMEOUT_MS);
 
-    let response: any;
+    type GenResponse = Awaited<ReturnType<InstanceType<typeof GoogleGenAI>["models"]["generateContent"]>>;
+    let response: GenResponse;
+
     try {
       response = await ai.models.generateContent({
         model: preferredModel,
@@ -133,22 +143,40 @@ Rules:
           },
           { text: prompt },
         ],
+        config: {
+          abortSignal: abortController.signal,
+          httpOptions: { timeout: REQUEST_TIMEOUT_MS },
+        },
       });
-    } catch (modelErr: any) {
-      console.warn(`Primary model ${preferredModel} failed, trying fallback model...`, modelErr.message);
-      // Fallback to gemini-3.8-flash if primary encounters issues
-      response = await ai.models.generateContent({
-        model: "gemini-3.8-flash",
-        contents: [
-          {
-            inlineData: {
-              mimeType: image.type || "image/jpeg",
-              data: base64Image,
-            },
-          },
-          { text: prompt },
-        ],
-      });
+    } catch (modelErr: unknown) {
+      const errMsg = modelErr instanceof Error ? modelErr.message : String(modelErr);
+      const isTimeout =
+        abortController.signal.aborted ||
+        modelErr instanceof Error && (modelErr.name === "AbortError" || errMsg.includes("AI_GATEWAY_TIMEOUT") || errMsg.includes("aborted"));
+
+      if (isTimeout) {
+        console.error(`AI quality assessment timed out after ${REQUEST_TIMEOUT_MS}ms using ${preferredModel}`);
+        return Response.json(
+          { error: "AI quality assessment request timed out. Please retry with a clearer or smaller photo." },
+          { status: 504 }
+        );
+      }
+
+      if (errMsg.includes("RESOURCE_EXHAUSTED") || errMsg.includes("429")) {
+        console.error(`AI quality rate limit/quota exhausted on ${preferredModel}`);
+        return Response.json(
+          { error: "AI assessment rate limit reached. Please wait a moment and try again." },
+          { status: 429 }
+        );
+      }
+
+      console.error(`Gemini generation failed on ${preferredModel}:`, errMsg);
+      return Response.json(
+        { error: "AI quality grading service encountered an upstream issue. Please try again." },
+        { status: 502 }
+      );
+    } finally {
+      clearTimeout(timeoutId);
     }
 
     let resultText = response.text?.trim();
@@ -206,7 +234,7 @@ Rules:
     return Response.json({
       result: JSON.stringify(parsedResult),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("X-MILE AI quality error:", error);
     return Response.json(
       { error: error instanceof Error ? error.message : String(error) },

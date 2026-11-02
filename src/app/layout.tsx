@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import QuickActionLauncher from "@/components/QuickActionLauncher";
 import { LanguageProvider } from "@/i18n/LanguageContext";
+import { AuthProvider } from "@/context/AuthContext";
 import FirstVisitModal from "@/components/FirstVisitModal";
 
 const geistSans = Geist({
@@ -21,7 +22,7 @@ export const metadata: Metadata = {
     "X-MILE connects farmers with trusted buyers through AI-assisted quality insights, smart supply aggregation, and transparent delivery. Every MILE Matters, Every FARMER Matters.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
       lang="en"
@@ -29,9 +30,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col font-sans">
         <LanguageProvider>
-          {children}
-          <QuickActionLauncher />
-          <FirstVisitModal />
+          <AuthProvider>
+            {children}
+            <QuickActionLauncher />
+            <FirstVisitModal />
+          </AuthProvider>
         </LanguageProvider>
       </body>
     </html>

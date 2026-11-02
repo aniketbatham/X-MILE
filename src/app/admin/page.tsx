@@ -59,16 +59,14 @@ export default function AdminConsolePage() {
   const [auditLog, setAuditLog] = useState<AdminAuditEntry[]>([]);
 
   // Server-side authorization state
-  const [adminKey, setAdminKey] = useState<string>("");
+  const [adminKey, setAdminKey] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      return sessionStorage.getItem("xmile_admin_key") || "";
+    }
+    return "";
+  });
   const [isUnauthorized, setIsUnauthorized] = useState(false);
   const [keyInput, setKeyInput] = useState("");
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const savedKey = sessionStorage.getItem("xmile_admin_key") || "xmile-admin-supervisory-token";
-      setAdminKey(savedKey);
-    }
-  }, []);
 
   // Load real records from database API
   const loadAdminData = useCallback(async (overrideKey?: string) => {
@@ -339,7 +337,7 @@ export default function AdminConsolePage() {
             >
               <input
                 type="password"
-                placeholder="Enter supervisor key (e.g. xmile-admin-supervisory-token)..."
+                placeholder="Enter supervisor key or admin token..."
                 value={keyInput}
                 onChange={(e) => setKeyInput(e.target.value)}
                 className="flex-1 px-3 py-2 text-xs border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"

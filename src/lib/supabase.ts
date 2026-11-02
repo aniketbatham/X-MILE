@@ -1,11 +1,17 @@
 import { createClient } from "@supabase/supabase-js";
 
 const supabaseUrl =
-  process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co";
-const supabasePublishableKey =
-  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || "placeholder";
+  process.env.NEXT_PUBLIC_SUPABASE_URL || "https://gnypyybrresuynparioj.supabase.co";
 
-export const supabase = createClient(
-  supabaseUrl,
-  supabasePublishableKey
-);
+const supabaseKey =
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+  "placeholder";
+
+export const supabase = createClient(supabaseUrl, supabaseKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+  },
+});

@@ -150,9 +150,11 @@ export default function AgriCyclePage() {
                       <span className="text-gray-500">Est. Total Value:</span>
                       <span className="font-bold text-gray-900">₹{(res.quantityQuintals * res.pricePerQuintal).toLocaleString()}</span>
                     </div>
-                    <div className="flex justify-between">
+                    <div className="flex justify-between items-center">
                       <span className="text-gray-500">Climate Impact:</span>
-                      <span className="font-bold text-emerald-700">{res.co2SavedKg} kg CO₂ saved</span>
+                      <span className="font-bold text-emerald-700 text-right" title="Indicative emission avoidance based on IPCC / ICAR open-burn baseline factors (~70 kg CO₂e / quintal). Not a verified carbon credit.">
+                        ~{res.co2SavedKg} kg CO₂e <span className="text-[10px] font-medium text-emerald-600 bg-emerald-50 px-1 py-0.5 rounded border border-emerald-200 ml-1">Estimated Avoidance</span>
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -194,7 +196,7 @@ export default function AgriCyclePage() {
                     <label className="block font-bold text-gray-700 mb-1">Residue Type</label>
                     <select
                       value={form.residueType}
-                      onChange={(e) => setForm({ ...form, residueType: e.target.value as any })}
+                      onChange={(e) => setForm({ ...form, residueType: e.target.value as AgriCycleResidue["residueType"] })}
                       className="w-full rounded-xl border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:border-emerald-500 focus:outline-none"
                     >
                       <option value="Paddy Straw">Paddy Straw</option>
@@ -245,7 +247,7 @@ export default function AgriCyclePage() {
                     <label className="block font-bold text-gray-700 mb-1">Condition</label>
                     <select
                       value={form.condition}
-                      onChange={(e) => setForm({ ...form, condition: e.target.value as any })}
+                      onChange={(e) => setForm({ ...form, condition: e.target.value as AgriCycleResidue["condition"] })}
                       className="w-full rounded-xl border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:border-emerald-500 focus:outline-none"
                     >
                       <option value="Baled">Baled (Standard Bundles)</option>

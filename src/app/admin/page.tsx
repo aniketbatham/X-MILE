@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import PlatformHeader from "@/components/PlatformHeader";
+import { useAuth } from "@/context/AuthContext";
 
 interface VerificationItem {
   id: string;
@@ -41,6 +42,7 @@ interface AdminAuditEntry {
 }
 
 export default function AdminConsolePage() {
+  const { user, token, isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState<"verifications" | "discrepancies" | "audit" | "guardrails">("verifications");
   const [verifications, setVerifications] = useState<VerificationItem[]>([]);
   const [discrepancies, setDiscrepancies] = useState<DiscrepancyItem[]>([]);
@@ -77,12 +79,15 @@ export default function AdminConsolePage() {
     const activeKey = overrideKey !== undefined ? overrideKey : (typeof window !== "undefined" ? sessionStorage.getItem("xmile_admin_key") || adminKey : adminKey);
 
     try {
-      const res = await fetch("/api/platform/admin", {
-        headers: {
-          "Cache-Control": "no-cache",
-          "x-admin-key": activeKey || "",
-        },
-      });
+      const headers: Record<string, string> = {
+        "Cache-Control": "no-cache",
+        "x-admin-key": activeKey || "",
+      };
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      const res = await fetch("/api/platform/admin", { headers });
       const data = await res.json();
 
       if (res.status === 403 || data.code === "ADMIN_REQUIRED") {
@@ -113,7 +118,7 @@ export default function AdminConsolePage() {
     } finally {
       setLoading(false);
     }
-  }, [adminKey]);
+  }, [adminKey, token]);
 
   useEffect(() => {
     let ignore = false;
@@ -140,6 +145,7 @@ export default function AdminConsolePage() {
         headers: {
           "Content-Type": "application/json",
           "x-admin-key": adminKey || "",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
           action: "update_verification",
@@ -199,6 +205,7 @@ export default function AdminConsolePage() {
         headers: {
           "Content-Type": "application/json",
           "x-admin-key": adminKey || "",
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
         },
         body: JSON.stringify({
           action: "update_discrepancy",
@@ -349,6 +356,16 @@ export default function AdminConsolePage() {
                 Unlock
               </button>
             </form>
+            {isAuthenticated && user && user.role !== "ADMIN" && (
+              <div className="pt-2 border-t border-stone-100">
+                <Link
+                  href={user.role === "FARMER" ? "/farmer" : user.role === "TRANSPORT_PROVIDER" ? "/logistics" : "/buyer"}
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700 hover:text-emerald-900 underline"
+                >
+                  Return to My {user.role === "FARMER" ? "Farmer" : user.role === "TRANSPORT_PROVIDER" ? "Transporter" : "Buyer"} Portal →
+                </Link>
+              </div>
+            )}
           </div>
         ) : (
           <>

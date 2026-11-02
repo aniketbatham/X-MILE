@@ -923,6 +923,23 @@ export default function BuyerPage() {
       <PlatformHeader />
 
       <div className="mx-auto max-w-7xl space-y-8 px-6 py-8">
+        {/* Role Guard Warning if signed in as another role */}
+        {isAuthenticated && user && user.role !== "BUYER" && user.role !== "ADMIN" && (
+          <div className="rounded-2xl border border-amber-300 bg-amber-50 p-4 text-xs text-amber-900 shadow-2xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <span className="font-bold">⚠️ Notice:</span> You are currently signed in with the role{" "}
+                <span className="font-extrabold uppercase">{user.role}</span>. You can test buyer procurement tools here or open your authorized role portal.
+              </div>
+              <Link
+                href={user.role === "FARMER" ? "/farmer" : "/logistics"}
+                className="inline-flex items-center gap-1 rounded-xl bg-amber-700 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-amber-800 transition"
+              >
+                Go to {user.role} Portal →
+              </Link>
+            </div>
+          </div>
+        )}
 
         {/* HERO */}
 

@@ -1,1188 +1,423 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { useAuth } from "@/context/AuthContext";
 import LanguageSelector from "@/components/LanguageSelector";
 import ConnectedFarmerJourney from "@/components/ConnectedFarmerJourney";
 
-const farmers = [
-  { name: "Farmer A", quantity: 1500 },
-  { name: "Farmer B", quantity: 1200 },
-  { name: "Farmer C", quantity: 1300 },
-  { name: "Farmer D", quantity: 1000 },
-];
+const ROLE_PORTALS: Record<string, string> = {
+  FARMER: "/farmer",
+  BUYER: "/buyer",
+  ADMIN: "/admin",
+  TRANSPORT_PROVIDER: "/logistics",
+  LOGISTICS: "/logistics",
+  FPO_ADMIN: "/fpo",
+  MACHINERY_PROVIDER: "/machinery",
+  STORAGE_PROVIDER: "/storage",
+  EXPERT: "/experts",
+};
 
 export default function HomePage() {
-  const { t, formatNumber } = useLanguage();
-  const [scanComplete, setScanComplete] = useState(false);
-  const [poolQuantity, setPoolQuantity] = useState(0);
+  const { t } = useLanguage();
+  const router = useRouter();
+  const { user, isAuthenticated, isLoading } = useAuth();
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
-  const processSteps = [
-    { number: "01", title: t("home.step1"), icon: "👨‍🌾" },
-    { number: "02", title: t("home.step2"), icon: "🌾" },
-    { number: "03", title: t("home.step3"), icon: "🤖" },
-    { number: "04", title: t("home.step4"), icon: "🏪" },
-    { number: "05", title: t("home.step5"), icon: "🔗" },
-    { number: "06", title: t("home.step6"), icon: "📦" },
-    { number: "07", title: t("home.step7"), icon: "🚚" },
+  // Role-based automatic redirection for returning authenticated users
+  useEffect(() => {
+    if (!isLoading && isAuthenticated && user) {
+      const destination = ROLE_PORTALS[user.role] || "/farmer";
+      const timer = setTimeout(() => {
+        setIsRedirecting(true);
+        router.replace(destination);
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading, isAuthenticated, user, router]);
+
+  const roleExperiences = [
+    {
+      role: "Farmer / किसान",
+      icon: "🌾",
+      title: "Farmer-First Experience",
+      description: "Sell harvests at fair prices, get instant photo-based AI crop grading, and receive guaranteed escrow payouts to your bank.",
+      href: "/farmer",
+      cta: "Open Farmer Portal →",
+      accent: "bg-emerald-600 text-white",
+      badge: "Highest Priority",
+    },
+    {
+      role: "Buyer / खरीदार",
+      icon: "🛒",
+      title: "Commercial Buyer Hub",
+      description: "Procure verified quality produce directly from farm gates, negotiate transparent counter-offers, and manage multi-stop pooling.",
+      href: "/buyer",
+      cta: "Open Buyer Hub →",
+      accent: "bg-stone-900 text-white",
+      badge: "Direct Procurement",
+    },
+    {
+      role: "Transporter / ट्रांसपोर्टर",
+      icon: "🚚",
+      title: "Rural Logistics & Haulage",
+      description: "Discover open farm freight jobs, accept assignments, optimize multi-farm pickup routes, and track verified mileage earnings.",
+      href: "/logistics",
+      cta: "Open Transporter Portal →",
+      accent: "bg-amber-600 text-white",
+      badge: "Fleet Dispatch",
+    },
+    {
+      role: "Administrator / प्रशासक",
+      icon: "🛡️",
+      title: "Admin Integrity Console",
+      description: "Participant KYC verification, electronic weighbridge variance monitoring, escrow audit trails, and platform governance.",
+      href: "/admin",
+      cta: "Open Admin Console →",
+      accent: "bg-purple-800 text-white",
+      badge: "Invitation Only",
+    },
+  ];
+
+  const fourSteps = [
+    {
+      number: "1",
+      icon: "📸",
+      title: "Take Crop Photo",
+      desc: "Instant AI checks color, size, and defects for honest Grade A/B/C.",
+    },
+    {
+      number: "2",
+      icon: "🤝",
+      title: "Fair Direct Offers",
+      desc: "Verified buyers make transparent offers with zero broker cuts.",
+    },
+    {
+      number: "3",
+      icon: "🚚",
+      title: "Farm-Gate Pickup",
+      desc: "Scheduled trucks pick up produce right from your farm gate.",
+    },
+    {
+      number: "4",
+      icon: "💰",
+      title: "Guaranteed Payout",
+      desc: "Electronic weighment confirms weight and releases instant payment.",
+    },
   ];
 
   const modules = [
-    {
-      title: t("common.farmerPortal"),
-      description: t("home.farmerDesc"),
-      href: "/farmer",
-      icon: "🌾",
-    },
-    {
-      title: t("common.buyerPortal"),
-      description: t("home.buyerDesc"),
-      href: "/buyer",
-      icon: "🛒",
-    },
-    {
-      title: "Live Marketplace",
-      description: "Standard harvests and surplus produce exchange with instant procurement offers.",
-      href: "/marketplace",
-      icon: "🏪",
-    },
-    {
-      title: "Crop Planning Assistant",
-      description: "ICAR-aligned season, soil, and regional yield planner for smallholders.",
-      href: "/crop-planner",
-      icon: "🌱",
-    },
-    {
-      title: "Farm Profit Calculator",
-      description: "Interactive unit economics, break-even price/yield, and scenario stress testing.",
-      href: "/profit-calculator",
-      icon: "📊",
-    },
-    {
-      title: "FPO Aggregation & Tenders",
-      description: "Farmer group bulk aggregation, traceable lot contribution, and institutional tenders.",
-      href: "/fpo",
-      icon: "👥",
-    },
-    {
-      title: "Machinery & Drone Hire",
-      description: "Book tractors, drone sprayers, harvesters, and levelers with transparent tariffs.",
-      href: "/machinery",
-      icon: "🚜",
-    },
-    {
-      title: "AgriCycle Residue Exchange",
-      description: "Monetize paddy straw, sugarcane bagasse, and stalks while eliminating crop burning.",
-      href: "/agricycle",
-      icon: "♻️",
-    },
-    {
-      title: "Soil Health & KVK Advisory",
-      description: "12-parameter soil test records, organic carbon tracking, and direct scientist consults.",
-      href: "/soil-health",
-      icon: "🧪",
-    },
-    {
-      title: "Logistics & Cold Fleet",
-      description: "Optimized multi-stop farm pickup, live temperature monitoring, and transparent freight.",
-      href: "/logistics",
-      icon: "🚚",
-    },
-    {
-      title: "Government Schemes Hub",
-      description: "Fast-track eligibility checklists for PM-KISAN, PMFBY insurance, and PM-KUSUM.",
-      href: "/schemes",
-      icon: "🏛️",
-    },
-    {
-      title: "Farm Financial Ledger",
-      description: "Track seeds, fertilizer, labor costs, sale proceeds, and export audited statements.",
-      href: "/farm-records",
-      icon: "📒",
-    },
-    {
-      title: "Storage & Warehouses",
-      description: "WDRA-verified cold rooms and dry godowns to avoid distress distress sales.",
-      href: "/storage",
-      icon: "🏭",
-    },
-    {
-      title: "Certified Agri-Inputs",
-      description: "Transparent pricing on certified seeds, bio-fertilizers, and micro-irrigation kits.",
-      href: "/inputs",
-      icon: "📦",
-    },
-    {
-      title: "Crop Health Triage",
-      description: "Photo-based pest/disease triage, hygienic field interventions, and KVK referrals.",
-      href: "/crop-triage",
-      icon: "🔬",
-    },
-    {
-      title: "Irrigation Water Planner",
-      description: "Track borewell pump runtimes, seasonal water quotas, and soil moisture levels.",
-      href: "/water-planner",
-      icon: "💧",
-    },
-    {
-      title: "Electronic Weighbridge",
-      description: "Digital tare/gross receipts with dual-party approval to eliminate gate cheating.",
-      href: "/weighment",
-      icon: "⚖️",
-    },
-    {
-      title: "Agricultural Learning Hub",
-      description: "Field-tested agronomic practices and post-harvest management modules.",
-      href: "/learning",
-      icon: "📚",
-    },
-    {
-      title: t("common.aiQuality"),
-      description: t("home.qualityDesc"),
-      href: "/quality",
-      icon: "🤖",
-    },
-    {
-      title: t("common.forecast"),
-      description: t("home.forecastDesc"),
-      href: "/forecast",
-      icon: "📈",
-    },
-    {
-      title: t("common.transaction"),
-      description: t("home.transactionDesc"),
-      href: "/transaction",
-      icon: "💳",
-    },
-    {
-      title: "Admin Integrity Console",
-      description: "Participant KYC verification, weighbridge tolerance checks, and escrow oversight.",
-      href: "/admin",
-      icon: "🛡️",
-    },
+    { title: "Live Marketplace", href: "/marketplace", icon: "🏪", desc: "Browse harvests & instant procurement offers." },
+    { title: "AI Quality Grading", href: "/quality", icon: "🤖", desc: "Instant computer vision crop inspection." },
+    { title: "Crop Planner", href: "/crop-planner", icon: "🌱", desc: "Season, soil, and yield planner for smallholders." },
+    { title: "Profit Calculator", href: "/profit-calculator", icon: "🧮", desc: "Break-even price, yield, and unit economics." },
+    { title: "FPO Aggregation", href: "/fpo", icon: "👥", desc: "Farmer group bulk pooling and collective sales." },
+    { title: "Machinery Hire", href: "/machinery", icon: "🚜", desc: "Rent tractors, drone sprayers, and harvesters." },
+    { title: "AgriCycle Residue", href: "/agricycle", icon: "♻️", desc: "Monetize straw and stalks without burning." },
+    { title: "Soil Health Advisory", href: "/soil-health", icon: "🧪", desc: "Soil test analysis and KVK scientist consults." },
+    { title: "Logistics & Fleet", href: "/logistics", icon: "🚚", desc: "Farm-to-mandi freight and temperature transit." },
+    { title: "Government Schemes", href: "/schemes", icon: "🏛️", desc: "PM-KISAN, PMFBY, and solar scheme guides." },
+    { title: "Farm Records", href: "/farm-records", icon: "📒", desc: "Track costs, revenues, and export statements." },
+    { title: "Storage & Cold Rooms", href: "/storage", icon: "🏬", desc: "WDRA-verified godowns and cold storage." },
+    { title: "Certified Agri-Inputs", href: "/inputs", icon: "📦", desc: "Quality seeds, bio-fertilizers, and tools." },
+    { title: "Crop Health Triage", href: "/crop-triage", icon: "🔬", desc: "Photo-based pest triage and treatment." },
+    { title: "Water Planner", href: "/water-planner", icon: "💧", desc: "Borewell runtime and drip irrigation plan." },
+    { title: "Digital Weighbridge", href: "/weighment", icon: "⚖️", desc: "Verified tare/gross receipts to avoid cheating." },
+    { title: "Agricultural Learning", href: "/learning", icon: "📚", desc: "Best farming practices and crop guides." },
+    { title: "Market Forecasts", href: "/forecast", icon: "📈", desc: "Historical price benchmarks and demand forecasts." },
+    { title: "Escrow & Settlements", href: "/transaction", icon: "💳", desc: "Milestone escrow receipts and settlement." },
+    { title: "My Farm Profile", href: "/farm-profile", icon: "🏡", desc: "Survey numbers, geo-plots, and crop stages." },
   ];
 
-  useEffect(() => {
-    const scanTimer = setTimeout(() => {
-      setScanComplete(true);
-    }, 4200);
-
-    const resetTimer = setInterval(() => {
-      setScanComplete(false);
-
-      setTimeout(() => {
-        setScanComplete(true);
-      }, 4200);
-    }, 9000);
-
-    return () => {
-      clearTimeout(scanTimer);
-      clearInterval(resetTimer);
-    };
-  }, []);
-
-  useEffect(() => {
-    let current = 0;
-    const target = 5000;
-
-    const timer = setInterval(() => {
-      current += 100;
-
-      if (current >= target) {
-        current = target;
-        clearInterval(timer);
-      }
-
-      setPoolQuantity(current);
-    }, 35);
-
-    return () => clearInterval(timer);
-  }, []);
+  // If authenticated, show a welcoming redirection screen
+  if (isRedirecting && user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#f7f8f5] p-6 text-center">
+        <div className="max-w-md rounded-3xl border border-stone-200 bg-white p-8 shadow-xl">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-600 text-3xl text-white shadow-md">
+            🌱
+          </div>
+          <h1 className="mt-4 text-2xl font-black text-stone-900">
+            Welcome back, {user.fullName}!
+          </h1>
+          <p className="mt-2 text-sm text-stone-600">
+            Redirecting you to your verified <span className="font-bold text-emerald-800">{user.role}</span> dashboard...
+          </p>
+          <div className="mt-6 flex justify-center">
+            <span className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-emerald-600 border-t-transparent" />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <main className="min-h-screen overflow-hidden bg-[#f7faf7] text-[#102218]">
-      <style jsx global>{`
-        html {
-          scroll-behavior: smooth;
-        }
-
-        @keyframes fadeUp {
-          from {
-            opacity: 0;
-            transform: translateY(24px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-          }
-          to {
-            opacity: 1;
-          }
-        }
-
-        @keyframes float {
-          0%,
-          100% {
-            transform: translateY(0px);
-          }
-          50% {
-            transform: translateY(-10px);
-          }
-        }
-
-        @keyframes floatSlow {
-          0%,
-          100% {
-            transform: translate(0, 0) rotate(0deg);
-          }
-          50% {
-            transform: translate(10px, -12px) rotate(3deg);
-          }
-        }
-
-        @keyframes scan {
-          0% {
-            top: 5%;
-            opacity: 0;
-          }
-          10% {
-            opacity: 1;
-          }
-          50% {
-            opacity: 1;
-          }
-          90% {
-            opacity: 1;
-          }
-          100% {
-            top: 92%;
-            opacity: 0;
-          }
-        }
-
-        @keyframes scanGlow {
-          0%,
-          100% {
-            opacity: 0.2;
-          }
-          50% {
-            opacity: 0.8;
-          }
-        }
-
-        @keyframes pulseDot {
-          0%,
-          100% {
-            transform: scale(1);
-            opacity: 0.55;
-          }
-          50% {
-            transform: scale(1.5);
-            opacity: 1;
-          }
-        }
-
-        @keyframes moveParticle {
-          0% {
-            left: 0%;
-            opacity: 0;
-          }
-          10% {
-            opacity: 1;
-          }
-          90% {
-            opacity: 1;
-          }
-          100% {
-            left: 100%;
-            opacity: 0;
-          }
-        }
-
-        @keyframes drawLine {
-          from {
-            width: 0%;
-          }
-          to {
-            width: 100%;
-          }
-        }
-
-        @keyframes truckMove {
-          0% {
-            left: 0%;
-          }
-          100% {
-            left: calc(100% - 42px);
-          }
-        }
-
-        @keyframes progressFill {
-          from {
-            width: 0%;
-          }
-          to {
-            width: 100%;
-          }
-        }
-
-        @keyframes reveal {
-          from {
-            opacity: 0;
-            transform: scale(0.9);
-          }
-          to {
-            opacity: 1;
-            transform: scale(1);
-          }
-        }
-
-        @keyframes blink {
-          0%,
-          45% {
-            opacity: 1;
-          }
-          50%,
-          100% {
-            opacity: 0.3;
-          }
-        }
-
-        .animate-fade-up {
-          animation: fadeUp 0.8s ease-out both;
-        }
-
-        .animate-fade-in {
-          animation: fadeIn 1s ease-out both;
-        }
-
-        .float {
-          animation: float 4s ease-in-out infinite;
-        }
-
-        .float-slow {
-          animation: floatSlow 7s ease-in-out infinite;
-        }
-
-        .scan-line {
-          animation: scan 4.2s ease-in-out infinite;
-        }
-
-        .scan-glow {
-          animation: scanGlow 2s ease-in-out infinite;
-        }
-
-        .pulse-dot {
-          animation: pulseDot 2s ease-in-out infinite;
-        }
-
-        .particle {
-          animation: moveParticle 3.5s linear infinite;
-        }
-
-        .truck {
-          animation: truckMove 6s ease-in-out infinite alternate;
-        }
-
-        .blink {
-          animation: blink 1.5s ease-in-out infinite;
-        }
-
-        .card-hover {
-          transition:
-            transform 0.35s ease,
-            box-shadow 0.35s ease,
-            border-color 0.35s ease;
-        }
-
-        .card-hover:hover {
-          transform: translateY(-7px);
-          box-shadow: 0 22px 50px rgba(16, 34, 24, 0.1);
-          border-color: rgba(39, 111, 68, 0.25);
-        }
-
-        .button-hover {
-          transition:
-            transform 0.25s ease,
-            box-shadow 0.25s ease,
-            background 0.25s ease;
-        }
-
-        .button-hover:hover {
-          transform: translateY(-3px);
-          box-shadow: 0 12px 25px rgba(28, 88, 51, 0.18);
-        }
-
-        .process-card {
-          animation: fadeUp 0.7s ease-out both;
-        }
-      `}</style>
-
-      {/* NAVBAR */}
-      <nav className="sticky top-0 z-50 border-b border-[#dfe9e1]/80 bg-[#f7faf7]/90 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 lg:px-8">
-          <Link
-            href="/"
-            className="group flex items-center gap-2"
-          >
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#1f6b3b] text-lg shadow-sm transition-transform duration-300 group-hover:rotate-6">
+    <main className="min-h-screen bg-[#f7faf7] text-[#142319]">
+      {/* PUBLIC WELCOMING NAVBAR */}
+      <nav className="sticky top-0 z-50 border-b border-stone-200/80 bg-white/95 backdrop-blur-md">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3.5 sm:px-6 lg:px-8">
+          {/* Logo & Tagline */}
+          <Link href="/" className="flex items-center gap-2.5">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-700 text-2xl text-white shadow-sm">
               🌱
             </div>
-
             <div>
-              <div className="text-lg font-black tracking-tight">
-                X-MILE
-              </div>
-              <div className="hidden text-[9px] font-semibold tracking-[0.14em] text-[#6a7c70] sm:block">
+              <div className="text-xl font-black tracking-tight text-stone-900">X-MILE</div>
+              <div className="text-[10px] font-bold tracking-wider text-emerald-800">
                 Every MILE Matters, Every FARMER Matters.
               </div>
             </div>
           </Link>
 
-          <div className="hidden items-center gap-8 md:flex">
-            <a
-              href="#how-it-works"
-              className="text-sm font-medium text-[#52655a] transition-colors hover:text-[#1f6b3b]"
-            >
-              {t("common.howItWorks")}
-            </a>
-
-            <a
-              href="#ai-vision"
-              className="text-sm font-medium text-[#52655a] transition-colors hover:text-[#1f6b3b]"
-            >
-              {t("common.aiVision")}
-            </a>
-
-            <a
-              href="#harvest-pool"
-              className="text-sm font-medium text-[#52655a] transition-colors hover:text-[#1f6b3b]"
-            >
-              {t("common.harvestPool")}
-            </a>
-          </div>
-
-          <div className="flex items-center gap-3">
+          {/* Quick Language Selector & Auth CTAs */}
+          <div className="flex items-center gap-2 sm:gap-3">
             <LanguageSelector />
 
             <Link
-              href="/buyer"
-              className="button-hover hidden rounded-full bg-[#1f6b3b] px-5 py-2.5 text-sm font-bold text-white sm:block"
+              href="/login"
+              className="rounded-xl border border-stone-300 bg-white px-3.5 py-2 text-xs font-bold text-stone-700 shadow-2xs hover:bg-stone-50 transition"
             >
-              {t("home.buyerCta")}
+              Sign In
+            </Link>
+
+            <Link
+              href="/register"
+              className="rounded-xl bg-emerald-700 px-4 py-2 text-xs font-black text-white shadow-sm hover:bg-emerald-800 transition"
+            >
+              Register
             </Link>
           </div>
         </div>
       </nav>
 
-      {/* HERO */}
-      <section className="relative mx-auto max-w-7xl px-5 pb-20 pt-20 lg:px-8 lg:pb-28 lg:pt-28">
-        <div className="pointer-events-none absolute -left-24 top-10 h-64 w-64 rounded-full bg-[#dcefdc] opacity-60 blur-3xl" />
-        <div className="pointer-events-none absolute -right-20 top-32 h-80 w-80 rounded-full bg-[#e6f2e7] opacity-70 blur-3xl" />
-
-        <div className="grid items-center gap-14 lg:grid-cols-[1.05fr_0.95fr]">
-          <div className="relative z-10">
-            <div
-              className="animate-fade-up mb-6 inline-flex items-center gap-2 rounded-full border border-[#cfe2d2] bg-white px-4 py-2 text-xs font-bold tracking-[0.1em] text-[#327247]"
-              style={{ animationDelay: "0.1s" }}
-            >
-              <span className="h-2 w-2 rounded-full bg-[#3c9656] shadow-[0_0_10px_rgba(60,150,86,0.6)]" />
-              {t("common.tagline")}
-            </div>
-
-            <h1
-              className="animate-fade-up max-w-3xl text-4xl font-black leading-[1.08] tracking-[-0.03em] sm:text-5xl lg:text-6xl"
-              style={{ animationDelay: "0.25s" }}
-            >
-              {t("home.heroTitlePart1")}
-              <br />
-              <span className="text-[#277443]">
-                {t("home.heroTitlePart2")}
-              </span>
-            </h1>
-
-            <p
-              className="animate-fade-up mt-7 max-w-xl text-base leading-relaxed text-[#5d6f64] sm:text-lg"
-              style={{ animationDelay: "0.4s" }}
-            >
-              {t("home.heroSubtitle")}
-            </p>
-
-            <div
-              className="animate-fade-up mt-9 flex flex-col gap-3 sm:flex-row"
-              style={{ animationDelay: "0.55s" }}
-            >
-              <Link
-                href="/farmer"
-                className="button-hover rounded-2xl bg-[#1f6b3b] px-7 py-4 text-center font-bold text-white shadow-lg shadow-[#1f6b3b]/15"
-              >
-                {t("home.farmerCta")}
-              </Link>
-
-              <Link
-                href="/buyer"
-                className="button-hover rounded-2xl border border-[#cadbce] bg-white px-7 py-4 text-center font-bold text-[#244b31]"
-              >
-                {t("home.buyerCta")}
-              </Link>
-            </div>
-
-            <div
-              className="animate-fade-up mt-9 flex flex-wrap gap-x-6 gap-y-3 text-sm font-medium text-[#718178]"
-              style={{ animationDelay: "0.7s" }}
-            >
-              <span>✓ {t("home.verifiedQuality")}</span>
-              <span>✓ {t("home.organizedLogistics")}</span>
-              <span>✓ {t("home.fairPricing")}</span>
-            </div>
+      {/* PUBLIC HERO SECTION */}
+      <section className="relative overflow-hidden bg-gradient-to-b from-emerald-50/70 via-white to-[#f7faf7] px-4 py-16 sm:px-6 lg:px-8 lg:py-24">
+        <div className="mx-auto max-w-5xl text-center">
+          <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-100/60 px-4 py-1.5 text-xs font-black text-emerald-900">
+            <span>🌾</span>
+            <span>Zero Middlemen • Fair Price • Guaranteed Escrow</span>
           </div>
 
-          {/* HERO AI VISUAL */}
-          <div
-            className="animate-fade-up relative"
-            style={{ animationDelay: "0.35s" }}
-          >
-            <div className="absolute -right-6 -top-8 h-24 w-24 rounded-full border border-[#cfe3d2] bg-white/70 blur-[1px] float-slow" />
-            <div
-              className="absolute -bottom-10 -left-8 h-20 w-20 rounded-full bg-[#e1f0e3] float"
-              style={{ animationDelay: "1s" }}
-            />
+          <h1 className="mt-6 text-4xl font-black tracking-tight text-stone-900 sm:text-5xl lg:text-6xl leading-[1.12]">
+            Fair Agricultural Market for <br className="hidden sm:inline" />
+            <span className="text-emerald-700">Every Indian Farmer</span>
+          </h1>
 
-            <div
-              id="ai-vision"
-              className="relative overflow-hidden rounded-[2rem] border border-[#dce8df] bg-white p-4 shadow-[0_30px_80px_rgba(25,70,38,0.10)]"
+          <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-stone-600 sm:text-lg">
+            X-MILE connects hardworking farmers directly with verified buyers and local transporters.
+            Get instant AI quality grading from a smartphone photo, agree on honest prices, and track pickup to your bank account.
+          </p>
+
+          {/* High-Contrast Role Entry CTAs */}
+          <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4">
+            <Link
+              href="/farmer"
+              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-700 px-8 py-4 text-base font-black text-white shadow-lg shadow-emerald-700/20 hover:bg-emerald-800 sm:w-auto transition transform hover:-translate-y-0.5"
             >
-              <div className="mb-3 flex items-center justify-between px-2">
-                <div>
-                  <div className="text-xs font-black tracking-[0.18em] text-[#277443]">
-                    X-MILE AI VISION
-                  </div>
-                  <div className="mt-1 text-sm text-[#728078]">
-                    Computer vision quality analysis
-                  </div>
-                </div>
+              <span className="text-xl">🌾</span>
+              <span>I am a Farmer (किसान पोर्टल)</span>
+            </Link>
 
-                <div className="flex items-center gap-2 rounded-full bg-[#eff8f0] px-3 py-1.5 text-[10px] font-bold text-[#317445]">
-                  <span className="blink h-1.5 w-1.5 rounded-full bg-[#3c9656]" />
-                  LIVE SCAN
-                </div>
-              </div>
+            <Link
+              href="/buyer"
+              className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-stone-800 bg-white px-8 py-4 text-base font-black text-stone-900 shadow-sm hover:bg-stone-50 sm:w-auto transition transform hover:-translate-y-0.5"
+            >
+              <span className="text-xl">🛒</span>
+              <span>I am a Buyer (खरीदार पोर्टल)</span>
+            </Link>
 
-              <div className="relative aspect-[4/3] overflow-hidden rounded-[1.5rem] bg-[#dbead9]">
-                {/* Produce illustration */}
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_45%,#f1f6df_0%,#c7ddc1_40%,#9fbd9d_100%)]" />
+            <Link
+              href="/logistics"
+              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-stone-300 bg-white px-6 py-4 text-sm font-bold text-stone-700 shadow-2xs hover:bg-stone-50 sm:w-auto transition"
+            >
+              <span className="text-lg">🚚</span>
+              <span>Transporters</span>
+            </Link>
+          </div>
 
-                <div className="absolute left-[22%] top-[30%] h-28 w-28 rounded-full bg-[#d7a83d] shadow-[inset_-12px_-14px_25px_rgba(85,58,10,0.15),0_20px_30px_rgba(47,70,39,0.16)] sm:h-36 sm:w-36" />
-
-                <div className="absolute left-[46%] top-[42%] h-32 w-32 rounded-full bg-[#e0b84c] shadow-[inset_-15px_-16px_25px_rgba(85,58,10,0.15),0_20px_30px_rgba(47,70,39,0.16)] sm:h-40 sm:w-40" />
-
-                <div className="absolute left-[33%] top-[55%] h-24 w-24 rounded-full bg-[#c9942e] shadow-[inset_-10px_-12px_20px_rgba(85,58,10,0.18)] sm:h-32 sm:w-32" />
-
-                {/* Leaves */}
-                <div className="absolute left-[35%] top-[20%] h-10 w-20 -rotate-25 rounded-full bg-[#4d824e]" />
-                <div className="absolute left-[51%] top-[28%] h-9 w-20 rotate-20 rounded-full bg-[#5b8f57]" />
-
-                {/* Detection points */}
-                <div className="pulse-dot absolute left-[29%] top-[39%] h-3 w-3 rounded-full border-2 border-white bg-[#24703e] shadow-lg" />
-                <div
-                  className="pulse-dot absolute left-[56%] top-[48%] h-3 w-3 rounded-full border-2 border-white bg-[#24703e] shadow-lg"
-                  style={{ animationDelay: "0.5s" }}
-                />
-                <div
-                  className="pulse-dot absolute left-[43%] top-[63%] h-3 w-3 rounded-full border-2 border-white bg-[#24703e] shadow-lg"
-                  style={{ animationDelay: "1s" }}
-                />
-
-                {/* Detection labels */}
-                <div className="absolute left-[13%] top-[34%] rounded-md bg-[#173523]/85 px-2 py-1 text-[8px] font-bold tracking-wider text-white">
-                  {t("common.color").toUpperCase()}
-                </div>
-
-                <div className="absolute right-[10%] top-[43%] rounded-md bg-[#173523]/85 px-2 py-1 text-[8px] font-bold tracking-wider text-white">
-                  {t("common.texture").toUpperCase()}
-                </div>
-
-                <div className="absolute left-[29%] bottom-[14%] rounded-md bg-[#173523]/85 px-2 py-1 text-[8px] font-bold tracking-wider text-white">
-                  {t("common.size").toUpperCase()}
-                </div>
-
-                {/* Scan frame */}
-                <div className="absolute inset-[9%] rounded-xl border border-white/40">
-                  <div className="absolute left-0 top-0 h-7 w-7 border-l-2 border-t-2 border-[#efffec]" />
-                  <div className="absolute right-0 top-0 h-7 w-7 border-r-2 border-t-2 border-[#efffec]" />
-                  <div className="absolute bottom-0 left-0 h-7 w-7 border-b-2 border-l-2 border-[#efffec]" />
-                  <div className="absolute bottom-0 right-0 h-7 w-7 border-b-2 border-r-2 border-[#efffec]" />
-
-                  {/* Scan beam */}
-                  <div className="scan-line absolute left-0 right-0 h-[3px] bg-[#f3fff1] shadow-[0_0_18px_6px_rgba(227,255,218,0.7)]">
-                    <div className="scan-glow absolute -top-6 h-12 w-full bg-[#e9ffdf]/20 blur-xl" />
-                  </div>
-                </div>
-
-                {/* Scanning label */}
-                <div className="absolute bottom-4 left-4 rounded-xl border border-white/20 bg-[#122a1b]/80 px-4 py-3 text-white backdrop-blur-md">
-                  <div className="flex items-center gap-2 text-[10px] font-bold tracking-[0.15em]">
-                    <span className="blink h-1.5 w-1.5 rounded-full bg-[#b9ed9f]" />
-                    {t("home.analyzingHarvest").toUpperCase()}
-                  </div>
-                  <div className="mt-1 text-xs text-white/65">
-                    {scanComplete
-                      ? t("home.visualIndicatorsDetected")
-                      : t("home.scanningSurface")}
-                  </div>
-                </div>
-              </div>
-
-              {/* AI result */}
-              <div
-                className={`mt-3 grid grid-cols-[1fr_auto] items-center rounded-2xl bg-[#f3f8f3] p-4 transition-all duration-700 ${
-                  scanComplete
-                    ? "opacity-100"
-                    : "opacity-60"
-                }`}
-              >
-                <div>
-                  <div className="text-[10px] font-bold tracking-[0.16em] text-[#718078]">
-                    {t("common.grade").toUpperCase()}
-                  </div>
-
-                  <div className="mt-1 flex items-center gap-3">
-                    <span className="text-4xl font-black text-[#277443]">
-                      {scanComplete ? "A" : "—"}
-                    </span>
-
-                    <div>
-                      <div className="text-xs font-bold text-[#31533c]">
-                        {scanComplete
-                          ? t("home.excellentQuality")
-                          : t("common.processing")}
-                      </div>
-                      <div className="mt-2 h-1.5 w-36 overflow-hidden rounded-full bg-[#d9e7da]">
-                        <div
-                          className="h-full rounded-full bg-[#3f8b51] transition-all duration-1000"
-                          style={{
-                            width: scanComplete
-                              ? "92%"
-                              : "35%",
-                          }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="text-right">
-                  <div className="text-[10px] font-bold tracking-[0.15em] text-[#718078]">
-                    CONFIDENCE
-                  </div>
-                  <div className="mt-1 text-2xl font-black text-[#183c26]">
-                    {scanComplete ? "92%" : "..."}
-                  </div>
-                </div>
-              </div>
-            </div>
+          {/* Quick Highlights */}
+          <div className="mt-12 flex flex-wrap items-center justify-center gap-6 text-xs font-bold text-stone-500">
+            <span className="flex items-center gap-1.5">
+              <span className="text-emerald-600">✓</span> 22 Indian Languages Supported
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="text-emerald-600">✓</span> Spoken Voice Guidance
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="text-emerald-600">✓</span> Electronic Weighbridge Integration
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="text-emerald-600">✓</span> Instant Milestone Escrow
+            </span>
           </div>
         </div>
       </section>
 
-      {/* CONNECTED 9-STEP FARMER JOURNEY */}
-      <section className="mx-auto max-w-7xl px-5 pb-12 lg:px-8">
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-sm">
-          <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+      {/* 4-STEP SIMPLE VISUAL FLOW */}
+      <section className="border-y border-stone-200 bg-white px-4 py-16 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl">
+          <div className="text-center">
+            <span className="text-xs font-black uppercase tracking-wider text-emerald-800">
+              Simple 4-Step Process
+            </span>
+            <h2 className="mt-2 text-2xl font-black text-stone-900 sm:text-3xl">
+              How X-MILE Works For You
+            </h2>
+            <p className="mt-2 text-xs sm:text-sm text-stone-600">
+              No complicated paperwork. No hidden cuts. Everything happens transparently.
+            </p>
+          </div>
+
+          <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {fourSteps.map((step) => (
+              <div
+                key={step.number}
+                className="relative rounded-3xl border border-stone-200 bg-stone-50/50 p-6 text-center hover:border-emerald-300 hover:bg-emerald-50/30 transition"
+              >
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-3xl shadow-sm border border-stone-200">
+                  {step.icon}
+                </div>
+                <div className="mt-4 text-xs font-black text-emerald-800">
+                  STEP {step.number}
+                </div>
+                <h3 className="mt-1 text-base font-black text-stone-900">
+                  {step.title}
+                </h3>
+                <p className="mt-2 text-xs leading-relaxed text-stone-600">
+                  {step.desc}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 4 DISTINCT ROLE EXPERIENCES */}
+      <section className="px-4 py-16 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl">
+          <div className="text-center mb-12">
+            <span className="text-xs font-black uppercase tracking-wider text-emerald-800">
+              Tailored Portals
+            </span>
+            <h2 className="mt-2 text-2xl font-black text-stone-900 sm:text-3xl">
+              Four Connected Roles. One Unified Platform.
+            </h2>
+            <p className="mt-2 text-xs sm:text-sm text-stone-600 max-w-xl mx-auto">
+              Every participant gets their own dedicated dashboard, simple controls, and authorized operations.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+            {roleExperiences.map((exp) => (
+              <div
+                key={exp.role}
+                className="flex flex-col justify-between rounded-3xl border border-stone-200 bg-white p-6 shadow-sm hover:shadow-md transition"
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-3xl">{exp.icon}</span>
+                    <span className="rounded-full bg-stone-100 px-2.5 py-1 text-[10px] font-bold text-stone-700">
+                      {exp.badge}
+                    </span>
+                  </div>
+                  <div className="text-xs font-black text-emerald-800">{exp.role}</div>
+                  <h3 className="mt-1 text-lg font-black text-stone-900">{exp.title}</h3>
+                  <p className="mt-2 text-xs leading-relaxed text-stone-600">{exp.description}</p>
+                </div>
+
+                <div className="mt-6 pt-4 border-t border-stone-100">
+                  <Link
+                    href={exp.href}
+                    className={`block w-full rounded-xl py-3 text-center text-xs font-black shadow-xs transition hover:opacity-90 ${exp.accent}`}
+                  >
+                    {exp.cta}
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 9-STEP CONNECTED FARMER JOURNEY */}
+      <section className="border-t border-stone-200 bg-white px-4 py-16 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl">
+          <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full">
-                Unified Agricultural Lifecycle
+              <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full">
+                Complete Data Continuity
               </span>
               <h2 className="text-xl sm:text-2xl font-black text-stone-900 mt-1">
                 The 9-Step Connected Farmer Journey
               </h2>
             </div>
             <p className="text-xs text-stone-500 max-w-md">
-              Every phase from pre-season soil tests to milestone escrow payouts is connected with complete data continuity.
+              From initial pre-season soil tests to milestone escrow payouts, all phases share authoritative data.
             </p>
           </div>
           <ConnectedFarmerJourney currentStep="plan" />
         </div>
       </section>
 
-      {/* HOW IT WORKS */}
-      <section
-        id="how-it-works"
-        className="border-y border-[#e1e9e2] bg-white"
-      >
-        <div className="mx-auto max-w-7xl px-5 py-20 lg:px-8">
-          <div className="mx-auto max-w-2xl text-center">
-            <div className="animate-fade-up text-xs font-black tracking-[0.2em] text-[#34794a]">
-              {t("home.heroBadge")}
-            </div>
-
-            <h2 className="animate-fade-up mt-3 text-3xl font-black tracking-tight sm:text-4xl">
-              {t("home.processTitle")}
+      {/* ALL 21 AGRICULTURAL MODULES DIRECTORY */}
+      <section className="border-t border-stone-200 bg-[#f7faf7] px-4 py-16 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl">
+          <div className="text-center mb-10">
+            <span className="text-xs font-black uppercase tracking-wider text-emerald-800">
+              Complete Agricultural Directory
+            </span>
+            <h2 className="mt-2 text-2xl font-black text-stone-900 sm:text-3xl">
+              Explore All Platform Modules
             </h2>
-
-            <p className="animate-fade-up mt-4 text-[#68776e]">
-              {t("home.processSubtitle")}
+            <p className="mt-2 text-xs sm:text-sm text-stone-600">
+              Access agronomic planning, equipment hire, government schemes, residue trading, and digital records.
             </p>
           </div>
 
-          <div className="relative mt-14">
-            {/* Animated connecting line */}
-            <div className="absolute left-[7%] right-[7%] top-9 hidden h-[2px] overflow-hidden bg-[#dce8de] md:block">
-              <div
-                className="h-full bg-[#4b8e59]"
-                style={{
-                  animation:
-                    "drawLine 4s ease-in-out infinite",
-                }}
-              />
-
-              <div className="particle absolute top-[-2px] h-1.5 w-1.5 rounded-full bg-[#277443]" />
-            </div>
-
-            <div className="grid grid-cols-2 gap-8 sm:grid-cols-3 md:grid-cols-7">
-              {processSteps.map((step, index) => (
-                <div
-                  key={step.number}
-                  className="process-card relative text-center"
-                  style={{
-                    animationDelay: `${index * 0.12}s`,
-                  }}
-                >
-                  <div className="relative z-10 mx-auto flex h-[74px] w-[74px] items-center justify-center rounded-2xl border border-[#dce8df] bg-white text-2xl shadow-sm transition-all duration-300 hover:-translate-y-2 hover:shadow-lg">
-                    {step.icon}
-                  </div>
-
-                  <div className="mt-3 text-[10px] font-black tracking-widest text-[#8b9b91]">
-                    {step.number}
-                  </div>
-
-                  <div className="mt-1 text-sm font-bold text-[#294432]">
-                    {step.title}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* THREE FEATURE CARDS */}
-      <section className="mx-auto max-w-7xl px-5 py-20 lg:px-8">
-        <div className="grid gap-5 md:grid-cols-3">
-          <FeatureCard
-            icon="🤖"
-            label={t("home.featureQualityLabel")}
-            title={t("home.featureQualityTitle")}
-            description={t("home.featureQualityDesc")}
-            href="/quality"
-            delay="0s"
-          />
-
-          <FeatureCard
-            icon="🌾"
-            label={t("home.featurePoolLabel")}
-            title={t("home.featurePoolTitle")}
-            description={t("home.featurePoolDesc")}
-            href="/buyer"
-            delay="0.12s"
-          />
-
-          <FeatureCard
-            icon="🚚"
-            label={t("home.featureLogisticsLabel")}
-            title={t("home.featureLogisticsTitle")}
-            description={t("home.featureLogisticsDesc")}
-            href="/buyer"
-            delay="0.24s"
-          />
-        </div>
-      </section>
-
-      {/* HARVEST POOL */}
-      <section
-        id="harvest-pool"
-        className="mx-auto max-w-7xl px-5 pb-20 lg:px-8"
-      >
-        <div className="overflow-hidden rounded-[2rem] border border-[#dce8df] bg-[#edf6ed]">
-          <div className="grid lg:grid-cols-[0.85fr_1.15fr]">
-            <div className="relative overflow-hidden p-8 sm:p-10">
-              <div className="absolute -right-20 -top-20 h-48 w-48 rounded-full bg-white/50 blur-2xl" />
-
-              <div className="relative">
-                <div className="text-xs font-black tracking-[0.18em] text-[#36764a]">
-                  {t("home.poolingTitle")}
-                </div>
-
-                <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
-                  {t("home.heroTitlePart1")}
-                  <br />
-                  {t("home.heroTitlePart2")}
-                </h2>
-
-                <p className="mt-5 max-w-md leading-7 text-[#627368]">
-                  {t("home.poolingSubtitle")}
-                </p>
-
-                <div className="mt-8 flex items-end gap-2">
-                  <span className="text-4xl font-black text-[#1f6b3b]">
-                    {formatNumber(poolQuantity)}
-                  </span>
-                  <span className="pb-1 text-sm font-bold text-[#6b7b70]">
-                    / {formatNumber(5000)} {t("common.kg")}
-                  </span>
-                </div>
-
-                <div className="mt-3 h-3 overflow-hidden rounded-full bg-white">
-                  <div
-                    className="h-full rounded-full bg-[#327b48] transition-all duration-300"
-                    style={{
-                      width: `${Math.min(
-                        100,
-                        (poolQuantity / 5000) * 100
-                      )}%`,
-                    }}
-                  />
-                </div>
-
-                <div className="mt-4 flex items-center gap-2 text-sm font-bold text-[#317247]">
-                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white">
-                    ✓
-                  </span>
-                  {t("home.poolingStatSub")}
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 sm:p-10">
-              <div className="mb-5 flex items-center justify-between">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+            {modules.map((m) => (
+              <Link
+                key={m.title}
+                href={m.href}
+                className="group flex flex-col justify-between rounded-2xl border border-stone-200 bg-white p-4 shadow-2xs hover:border-emerald-300 hover:bg-emerald-50/20 transition"
+              >
                 <div>
-                  <div className="text-xs font-black tracking-[0.16em] text-[#819087]">
-                    {t("home.buyerRequirement").toUpperCase()}
+                  <span className="text-2xl">{m.icon}</span>
+                  <div className="mt-2 text-xs font-bold text-stone-900 group-hover:text-emerald-800">
+                    {m.title}
                   </div>
-                  <div className="mt-1 text-xl font-black">
-                    5,000 {t("common.kg")} {t("quality.produceTypes.onion")}
-                  </div>
+                  <p className="mt-1 text-[11px] leading-snug text-stone-500 line-clamp-2">
+                    {m.desc}
+                  </p>
                 </div>
-
-                <div className="rounded-full bg-[#eef7ef] px-3 py-1 text-xs font-bold text-[#337348]">
-                  {t("home.matched")}
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                {farmers.map((farmer, index) => (
-                  <div
-                    key={farmer.name}
-                    className="card-hover flex items-center gap-4 rounded-2xl border border-[#e3ebe4] bg-[#fbfdfb] p-4"
-                    style={{
-                      animation:
-                        "fadeUp 0.6s ease-out both",
-                      animationDelay: `${0.2 + index * 0.15}s`,
-                    }}
-                  >
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#e7f1e8]">
-                      👨‍🌾
-                    </div>
-
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-bold">
-                          {farmer.name}
-                        </span>
-                        <span className="text-sm font-black text-[#2d7044]">
-                          {farmer.quantity.toLocaleString()} kg
-                        </span>
-                      </div>
-
-                      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#e4ece5]">
-                        <div
-                          className="h-full rounded-full bg-[#78a77d]"
-                          style={{
-                            width: `${
-                              (farmer.quantity / 1500) *
-                              100
-                            }%`,
-                            animation:
-                              "progressFill 1.2s ease-out both",
-                            animationDelay: `${
-                              0.5 + index * 0.15
-                            }s`,
-                          }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-5 rounded-2xl bg-[#f2f7f2] p-4 text-center text-sm font-semibold text-[#4f6256]">
-                {t("home.poolingDemoSummary")}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* LOGISTICS */}
-      <section className="border-y border-[#e1e9e2] bg-white">
-        <div className="mx-auto max-w-7xl px-5 py-20 lg:px-8">
-          <div className="grid items-center gap-12 lg:grid-cols-[0.8fr_1.2fr]">
-            <div>
-              <div className="text-xs font-black tracking-[0.18em] text-[#34794a]">
-                {t("home.featureLogisticsLabel")}
-              </div>
-
-              <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
-                {t("home.logisticsJourneyTitle")}
-              </h2>
-
-              <p className="mt-5 max-w-lg leading-7 text-[#69786e]">
-                {t("home.logisticsJourneySubtitle")}
-              </p>
-
-              <Link
-                href="/buyer"
-                className="button-hover mt-7 inline-flex rounded-xl bg-[#1f6b3b] px-5 py-3 text-sm font-bold text-white"
-              >
-                {t("common.viewTracking")} →
+                <span className="mt-3 text-[10px] font-black text-emerald-700">Open →</span>
               </Link>
-            </div>
-
-            <div className="rounded-[2rem] border border-[#dce8df] bg-[#f8fbf8] p-7 shadow-sm">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-xs font-black tracking-[0.16em] text-[#7b8a81]">
-                    {t("common.status").toUpperCase()}
-                  </div>
-                  <div className="mt-1 text-lg font-black">
-                    {t("home.orderInTransit")}
-                  </div>
-                </div>
-
-                <div className="rounded-full bg-[#e9f5ea] px-3 py-1 text-xs font-bold text-[#327247]">
-                  ● {t("common.live").toUpperCase()}
-                </div>
-              </div>
-
-              <div className="relative mt-12">
-                <div className="h-1 rounded-full bg-[#dbe6dc]" />
-
-                <div
-                  className="absolute left-0 top-0 h-1 w-full origin-left rounded-full bg-[#4d8b58]"
-                  style={{
-                    animation:
-                      "drawLine 6s ease-in-out infinite alternate",
-                  }}
-                />
-
-                <div className="absolute -top-4 left-0 flex h-9 w-9 items-center justify-center rounded-full border-4 border-white bg-[#33794a] text-xs shadow-md">
-                  🌾
-                </div>
-
-                <div className="truck absolute -top-5">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl border-4 border-white bg-[#f0f6ef] text-xl shadow-lg">
-                    🚚
-                  </div>
-                </div>
-
-                <div className="absolute -top-4 right-0 flex h-9 w-9 items-center justify-center rounded-full border-4 border-white bg-[#33794a] text-xs shadow-md">
-                  🏪
-                </div>
-              </div>
-
-              <div className="mt-10 flex justify-between text-xs font-bold text-[#617167]">
-                <span>Tumakuru</span>
-                <span>Bengaluru</span>
-              </div>
-
-              <div className="mt-8 grid gap-3 sm:grid-cols-3">
-                <StatusBox
-                  title={t("common.status").toUpperCase()}
-                  value={t("farmer.orderInTransit")}
-                />
-                <StatusBox
-                  title={t("common.currentLocation").toUpperCase()}
-                  value="Tumakuru"
-                />
-                <StatusBox
-                  title={t("home.visibility").toUpperCase()}
-                  value={t("common.live")}
-                />
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* EXPLORE MODULES */}
-      <section className="mx-auto max-w-7xl px-5 py-20 lg:px-8">
-        <div className="text-center">
-          <div className="text-xs font-black tracking-[0.2em] text-[#34794a]">
-            {t("home.exploreTitle").toUpperCase()}
-          </div>
-
-          <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
-            {t("home.exploreTitle")}
-          </h2>
-
-          <p className="mx-auto mt-4 max-w-2xl text-[#69786e]">
-            {t("home.exploreSubtitle")}
-          </p>
-        </div>
-
-        <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-          {modules.map((module, index) => (
-            <Link
-              key={module.title}
-              href={module.href}
-              className="card-hover rounded-2xl border border-[#dfe8e1] bg-white p-5"
-              style={{
-                animation:
-                  "fadeUp 0.65s ease-out both",
-                animationDelay: `${index * 0.1}s`,
-              }}
-            >
-              <div className="float-slow text-3xl">
-                {module.icon}
-              </div>
-
-              <div className="mt-5 text-sm font-black">
-                {module.title}
-              </div>
-
-              <p className="mt-2 text-xs leading-5 text-[#718077]">
-                {module.description}
-              </p>
-
-              <div className="mt-5 text-xs font-black text-[#317247]">
-                {t("common.openModule")} →
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      {/* FINAL CTA */}
-      <section className="px-5 pb-20 lg:px-8">
-        <div className="relative mx-auto max-w-7xl overflow-hidden rounded-[2rem] bg-[#173c25] px-7 py-14 text-center text-white sm:px-12">
-          <div className="absolute left-10 top-10 h-32 w-32 rounded-full bg-[#5e996a]/10 blur-2xl" />
-          <div className="absolute bottom-0 right-10 h-40 w-40 rounded-full bg-[#9bc89f]/10 blur-3xl" />
-
-          <div className="relative">
-            <div className="text-3xl font-black tracking-tight sm:text-4xl">
-              {t("home.finalCtaTitle")}
-            </div>
-
-            <p className="mx-auto mt-5 max-w-xl text-sm leading-6 text-white/65">
-              {t("home.finalCtaSubtitle")}
-            </p>
-
-            <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-              <Link
-                href="/farmer"
-                className="button-hover rounded-xl bg-white px-6 py-3 font-bold text-[#173c25]"
-              >
-                {t("home.farmerCta")}
-              </Link>
-
-              <Link
-                href="/buyer"
-                className="button-hover rounded-xl border border-white/20 bg-white/10 px-6 py-3 font-bold text-white backdrop-blur"
-              >
-                {t("home.buyerCta")}
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* FOOTER */}
-      <footer className="border-t border-[#dfe8e1] bg-white">
-        <div className="mx-auto flex max-w-7xl flex-col gap-4 px-5 py-8 text-sm text-[#75837a] sm:flex-row sm:items-center sm:justify-between lg:px-8">
+      {/* PUBLIC FOOTER */}
+      <footer className="border-t border-stone-200 bg-white px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 text-center sm:flex-row sm:text-left">
           <div>
-            <span className="font-black text-[#213a29]">
-              X-MILE
-            </span>{" "}
-            — {t("common.tagline")}
+            <div className="flex items-center justify-center sm:justify-start gap-2">
+              <span className="text-lg">🌱</span>
+              <span className="font-black text-stone-900">X-MILE</span>
+              <span className="text-xs text-stone-500">| Digital Agriculture Platform</span>
+            </div>
+            <div className="text-xs font-semibold text-stone-500 mt-1">
+              Every MILE Matters, Every FARMER Matters.
+            </div>
           </div>
 
-          <div className="text-xs font-medium text-[#75837a]">
-            {t("common.allRightsReserved")}
+          <div className="text-xs text-stone-500">
+            © {new Date().getFullYear()} X-MILE. Built for Indian Smallholders. {t("common.allRightsReserved")}
           </div>
         </div>
       </footer>
     </main>
-  );
-}
-
-function FeatureCard({
-  icon,
-  label,
-  title,
-  description,
-  href,
-  delay,
-}: {
-  icon: string;
-  label: string;
-  title: string;
-  description: string;
-  href: string;
-  delay: string;
-}) {
-  return (
-    <Link
-      href={href}
-      className="card-hover animate-fade-up rounded-[1.75rem] border border-[#dfe8e1] bg-white p-7"
-      style={{ animationDelay: delay }}
-    >
-      <div className="flex items-start justify-between">
-        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#edf6ee] text-2xl">
-          {icon}
-        </div>
-
-        <span className="text-xs font-bold text-[#8b998f]">
-          →
-        </span>
-      </div>
-
-      <div className="mt-6 text-[10px] font-black tracking-[0.18em] text-[#4b8358]">
-        {label}
-      </div>
-
-      <h3 className="mt-2 text-xl font-black tracking-tight">
-        {title}
-      </h3>
-
-      <p className="mt-3 text-sm leading-6 text-[#6d7c72]">
-        {description}
-      </p>
-    </Link>
-  );
-}
-
-function StatusBox({
-  title,
-  value,
-}: {
-  title: string;
-  value: string;
-}) {
-  return (
-    <div className="rounded-xl border border-[#e0e9e1] bg-white p-3">
-      <div className="text-[9px] font-black tracking-[0.14em] text-[#8a988f]">
-        {title}
-      </div>
-      <div className="mt-1 text-xs font-bold text-[#294632]">
-        {value}
-      </div>
-    </div>
   );
 }

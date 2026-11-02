@@ -217,13 +217,13 @@ export default function PlatformHeader() {
                 href="/login"
                 className="rounded-xl bg-emerald-700 px-3 py-1.5 text-xs font-bold text-white shadow-2xs hover:bg-emerald-800 transition"
               >
-                {t("nav.signIn") || "Sign In"}
+                Sign In
               </Link>
               <Link
                 href="/register"
                 className="hidden sm:inline-flex rounded-xl border border-stone-300 bg-white px-3 py-1.5 text-xs font-bold text-stone-700 hover:bg-stone-50 transition"
               >
-                {t("nav.register") || "Sign Up"}
+                Sign Up
               </Link>
             </div>
           )}

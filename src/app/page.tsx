@@ -65,13 +65,13 @@ export default function HomePage() {
             href="/login"
             className="w-full flex items-center justify-center px-6 py-4 rounded-2xl bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold text-base shadow-lg shadow-emerald-800/20 active:scale-[0.98] transition duration-150"
           >
-            {t("nav.signIn") || "Sign In"}
+            Sign In
           </Link>
           <Link
             href="/register"
             className="w-full flex items-center justify-center px-6 py-4 rounded-2xl bg-stone-900 hover:bg-black text-white font-extrabold text-base shadow-md active:scale-[0.98] transition duration-150"
           >
-            {t("nav.register") || "Sign Up"}
+            Sign Up
           </Link>
         </div>
 

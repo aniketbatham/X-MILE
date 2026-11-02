@@ -153,6 +153,7 @@ export async function GET(request: Request | NextRequest) {
         created_at: string;
         offer_id?: string | null;
         listing_id?: string | null;
+        price_per_kg?: number | null;
       } | null;
     }> = [];
 
@@ -175,7 +176,8 @@ export async function GET(request: Request | NextRequest) {
             status,
             created_at,
             offer_id,
-            listing_id
+            listing_id,
+            price_per_kg
           )
         `)
         .in("inventory_id", inventoryIds)
@@ -207,7 +209,8 @@ export async function GET(request: Request | NextRequest) {
           status,
           created_at,
           offer_id,
-          listing_id
+          listing_id,
+          price_per_kg
         `)
         .in("listing_id", farmerListingIds)
         .order("created_at", { ascending: false });
@@ -252,16 +255,60 @@ export async function GET(request: Request | NextRequest) {
       const offer = item.orders?.offer_id ? offerMap.get(item.orders.offer_id) : null;
       const listing = item.orders?.listing_id ? listingIdMap.get(item.orders.listing_id) : null;
 
-      const unitPrice = offer?.offered_price_per_kg || listing?.asking_price_per_kg || 25;
+      const unitPrice =
+        item.orders?.price_per_kg ||
+        offer?.offered_price_per_kg ||
+        listing?.asking_price_per_kg ||
+        25;
       const paymentTerms = offer?.payment_terms || "ESCROW";
+
+      const orderRecord = (item.orders || {}) as Record<string, unknown>;
+      // Financial verification flags: only true when verified records exist
+      const hasConfirmedPayout = Boolean(
+        orderRecord.payout_confirmed === true ||
+        orderRecord.payout_status === "PAID" ||
+        orderRecord.payout_status === "DISBURSED" ||
+        orderRecord.settlement_status === "DISBURSED"
+      );
+      const hasConfirmedEscrow = Boolean(
+        orderRecord.escrow_confirmed === true ||
+        orderRecord.escrow_status === "LOCKED" ||
+        orderRecord.escrow_status === "HELD" ||
+        orderRecord.settlement_status === "HELD_IN_ESCROW"
+      );
+
+      let settlementStatus = "PAYMENT_STATUS_UNAVAILABLE";
+      if (hasConfirmedPayout) {
+        settlementStatus = "DISBURSED";
+      } else if (hasConfirmedEscrow) {
+        settlementStatus = "HELD_IN_ESCROW";
+      } else if (item.orders?.status === "Cancelled") {
+        settlementStatus = "REFUNDED";
+      } else if (item.orders?.status === "Disputed") {
+        settlementStatus = "DISPUTED";
+      } else if (item.orders?.status === "Delivered") {
+        // Physical delivery fulfilled, but payment settlement is awaiting confirmation
+        settlementStatus = "AWAITING_SETTLEMENT_CONFIRMATION";
+      } else if (item.orders?.status === "Accepted" || item.orders?.status === "Dispatched") {
+        // Order in transit, awaiting settlement confirmation
+        settlementStatus = "AWAITING_SETTLEMENT_CONFIRMATION";
+      }
+
+      const fulfilledQty = Number(item.orders?.fulfilled_quantity_kg) || 0;
+      const orderQty = Number(item.quantity_kg) || 0;
+      const deliveredQty = item.orders?.status === "Delivered" ? (fulfilledQty || orderQty) : fulfilledQty;
 
       return {
         id: item.id,
-        quantity_kg: item.quantity_kg,
+        quantity_kg: orderQty,
         inventory_id: item.inventory_id,
         unit_price_per_kg: unitPrice,
         payment_terms: paymentTerms,
-        total_value: (Number(item.quantity_kg) || 0) * unitPrice,
+        total_value: orderQty * unitPrice,
+        fulfilled_value: deliveredQty * unitPrice,
+        settlement_status: settlementStatus,
+        payout_confirmed: hasConfirmedPayout,
+        escrow_confirmed: hasConfirmedEscrow,
         orders: item.orders,
         inventory: inventoryItem ?? null,
         farmer: farmer

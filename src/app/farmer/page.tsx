@@ -27,6 +27,10 @@ export interface FarmerOrderItem {
   unit_price_per_kg?: number;
   payment_terms?: string;
   total_value?: number;
+  fulfilled_value?: number;
+  settlement_status?: string;
+  payout_confirmed?: boolean;
+  escrow_confirmed?: boolean;
   orders: {
     id: string;
     buyer_name: string;
@@ -39,6 +43,10 @@ export interface FarmerOrderItem {
     status: OrderStatus;
     created_at: string;
     offer_id?: string | null;
+    listing_id?: string | null;
+    price_per_kg?: number | null;
+    payout_confirmed?: boolean;
+    escrow_confirmed?: boolean;
   } | null;
   inventory?: {
     id: string;
@@ -691,25 +699,53 @@ export default function FarmerPage() {
     }
   };
 
-  // Financial Calculations
+  // Strict Financial Separation & Verification
   const deliveredOrders = orders.filter((o) => o.orders?.status === "Delivered");
   const inTransitOrders = orders.filter(
     (o) => o.orders?.status === "Accepted" || o.orders?.status === "Dispatched"
   );
 
-  const totalDisbursedEarnings = deliveredOrders.reduce(
-    (sum, o) => sum + (o.total_value ?? (o.quantity_kg * (o.unit_price_per_kg || 24))),
-    0
-  );
-
-  const totalPendingInEscrow = inTransitOrders.reduce(
-    (sum, o) => sum + (o.total_value ?? (o.quantity_kg * (o.unit_price_per_kg || 24))),
-    0
-  );
-
+  // 1. Physical Fulfilled Produce Metrics (Volume kg and Value ₹)
   const totalFulfilledVolumeKg = deliveredOrders.reduce(
     (sum, o) => sum + Number(o.orders?.fulfilled_quantity_kg || o.quantity_kg || 0),
     0
+  );
+
+  const totalFulfilledProduceValue = deliveredOrders.reduce((sum, o) => {
+    if (typeof o.fulfilled_value === "number") return sum + o.fulfilled_value;
+    const rate = o.unit_price_per_kg || o.orders?.price_per_kg || 24;
+    const qty = Number(o.orders?.fulfilled_quantity_kg || o.quantity_kg || 0);
+    return sum + qty * rate;
+  }, 0);
+
+  // 2. Verified Financial Settlement Metrics (NEVER assumed without verified database record)
+  // Only orders with explicit confirmed payout receipts count as disbursed to bank
+  const totalConfirmedBankDisbursements = orders.reduce((sum, o) => {
+    const isDisbursed =
+      o.payout_confirmed === true ||
+      o.orders?.payout_confirmed === true ||
+      o.settlement_status === "DISBURSED";
+    if (isDisbursed) {
+      return sum + (o.fulfilled_value ?? o.total_value ?? (o.quantity_kg * (o.unit_price_per_kg || 24)));
+    }
+    return sum;
+  }, 0);
+
+  // Only orders with explicit confirmed escrow receipts count as locked in escrow
+  const totalConfirmedEscrow = orders.reduce((sum, o) => {
+    const isEscrowLocked =
+      o.escrow_confirmed === true ||
+      o.orders?.escrow_confirmed === true ||
+      o.settlement_status === "HELD_IN_ESCROW";
+    if (isEscrowLocked) {
+      return sum + (o.total_value ?? (o.quantity_kg * (o.unit_price_per_kg || 24)));
+    }
+    return sum;
+  }, 0);
+
+  // Orders awaiting settlement confirmation
+  const ordersAwaitingSettlement = deliveredOrders.filter(
+    (o) => !(o.payout_confirmed === true || o.settlement_status === "DISBURSED")
   );
 
   return (
@@ -951,8 +987,20 @@ export default function FarmerPage() {
                   >
                     <div className="flex items-center justify-between w-full">
                       <span className="text-3xl p-3 bg-emerald-50 rounded-2xl">💵</span>
-                      <span className="text-xs font-black text-emerald-900 bg-emerald-100 px-2.5 py-1 rounded-full">
-                        ₹{totalDisbursedEarnings.toLocaleString("en-IN")} Disbursed
+                      <span
+                        className={`text-xs font-black px-2.5 py-1 rounded-full ${
+                          totalConfirmedBankDisbursements > 0
+                            ? "text-emerald-900 bg-emerald-100"
+                            : totalFulfilledProduceValue > 0
+                            ? "text-amber-900 bg-amber-100"
+                            : "text-stone-700 bg-stone-100"
+                        }`}
+                      >
+                        {totalConfirmedBankDisbursements > 0
+                          ? `₹${totalConfirmedBankDisbursements.toLocaleString("en-IN")} Disbursed`
+                          : totalFulfilledProduceValue > 0
+                          ? `₹${totalFulfilledProduceValue.toLocaleString("en-IN")} Fulfilled · Awaiting settlement`
+                          : "₹0 Confirmed"}
                       </span>
                     </div>
                     <div>
@@ -960,7 +1008,7 @@ export default function FarmerPage() {
                         6. My Earnings
                       </h3>
                       <p className="text-xs text-stone-500 mt-1">
-                        Check completed sales deposits and funds held safely in escrow.
+                        Check completed sales, verified bank payouts, and escrow settlement status.
                       </p>
                     </div>
                   </button>
@@ -1795,28 +1843,79 @@ export default function FarmerPage() {
                 </p>
               </div>
 
-              {/* SUMMARY STATS */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {/* SUMMARY STATS - STRICT FINANCIAL SEPARATION */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* 1. Fulfilled Produce Value */}
                 <div className="p-6 rounded-3xl bg-white border border-stone-200">
-                  <span className="text-xs font-bold text-stone-400 block uppercase">Disbursed to Bank</span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-stone-400 block uppercase">Fulfilled Produce Value</span>
+                    {ordersAwaitingSettlement.length > 0 && (
+                      <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
+                        Awaiting settlement
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-2xl sm:text-3xl font-black text-stone-900 mt-2">
+                    ₹{totalFulfilledProduceValue.toLocaleString("en-IN")}
+                  </div>
+                  <span className="text-[11px] text-stone-500 mt-1 block">
+                    {deliveredOrders.length > 0
+                      ? `From ${deliveredOrders.length} completed deliveries (${ordersAwaitingSettlement.length} awaiting settlement confirmation)`
+                      : "No completed delivery fulfillments yet"}
+                  </span>
+                </div>
+
+                {/* 2. Disbursed to Bank */}
+                <div className="p-6 rounded-3xl bg-white border border-stone-200">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-stone-400 block uppercase">Disbursed to Bank</span>
+                    {totalConfirmedBankDisbursements > 0 ? (
+                      <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                        Confirmed
+                      </span>
+                    ) : (
+                      <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-stone-100 text-stone-600 border border-stone-200">
+                        Unconfirmed
+                      </span>
+                    )}
+                  </div>
                   <div className="text-2xl sm:text-3xl font-black text-emerald-800 mt-2">
-                    ₹{totalDisbursedEarnings.toLocaleString("en-IN")}
+                    ₹{totalConfirmedBankDisbursements.toLocaleString("en-IN")}
                   </div>
                   <span className="text-[11px] text-stone-500 mt-1 block">
-                    From {deliveredOrders.length} completed delivery fulfillments
+                    {totalConfirmedBankDisbursements > 0
+                      ? "Verified bank payout receipts deposited"
+                      : "Awaiting settlement confirmation from banking network"}
                   </span>
                 </div>
 
+                {/* 3. Held in Escrow */}
                 <div className="p-6 rounded-3xl bg-white border border-stone-200">
-                  <span className="text-xs font-bold text-stone-400 block uppercase">Locked in Escrow</span>
-                  <div className="text-2xl sm:text-3xl font-black text-amber-700 mt-2">
-                    ₹{totalPendingInEscrow.toLocaleString("en-IN")}
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-stone-400 block uppercase">Held in Escrow</span>
+                    {totalConfirmedEscrow > 0 ? (
+                      <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200">
+                        Protected
+                      </span>
+                    ) : (
+                      <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-stone-100 text-stone-600 border border-stone-200">
+                        Unconfirmed
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-2xl sm:text-3xl font-black text-blue-900 mt-2">
+                    ₹{totalConfirmedEscrow.toLocaleString("en-IN")}
                   </div>
                   <span className="text-[11px] text-stone-500 mt-1 block">
-                    Held in trust for orders currently in transit
+                    {totalConfirmedEscrow > 0
+                      ? "Verified buyer funds held in escrow trust"
+                      : inTransitOrders.length > 0
+                      ? "In transit · Awaiting escrow deposit confirmation"
+                      : "No active verified escrow holdings"}
                   </span>
                 </div>
 
+                {/* 4. Total Fulfilled Volume */}
                 <div className="p-6 rounded-3xl bg-white border border-stone-200">
                   <span className="text-xs font-bold text-stone-400 block uppercase">Total Fulfilled Volume</span>
                   <div className="text-2xl sm:text-3xl font-black text-stone-900 mt-2">
@@ -1830,7 +1929,12 @@ export default function FarmerPage() {
 
               {/* REAL TRANSACTION LEDGER */}
               <div className="p-6 sm:p-8 rounded-3xl bg-white border border-stone-200 space-y-4">
-                <h3 className="text-base font-black text-stone-900">Settlement Ledger</h3>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h3 className="text-base font-black text-stone-900">Settlement Ledger</h3>
+                  <span className="text-[11px] text-stone-500 font-medium">
+                    Strict verification: bank payouts and escrow holdings require confirmed ledger receipts
+                  </span>
+                </div>
 
                 {orders.length === 0 ? (
                   <div className="p-8 rounded-2xl bg-stone-50 text-center text-xs text-stone-500">
@@ -1847,14 +1951,33 @@ export default function FarmerPage() {
                           <th className="pb-3">Produce</th>
                           <th className="pb-3">Quantity</th>
                           <th className="pb-3">Rate</th>
-                          <th className="pb-3">Total Amount</th>
-                          <th className="pb-3">Settlement Status</th>
+                          <th className="pb-3">Delivered Value</th>
+                          <th className="pb-3">Settlement / Payout Status</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-stone-100 font-medium">
                         {orders.map((item) => {
                           const isDelivered = item.orders?.status === "Delivered";
-                          const totalAmt = item.total_value ?? (item.quantity_kg * (item.unit_price_per_kg || 24));
+                          const isInTransit = item.orders?.status === "Accepted" || item.orders?.status === "Dispatched";
+                          const isCancelled = item.orders?.status === "Cancelled" || item.settlement_status === "REFUNDED";
+                          const isDisputed = item.orders?.status === "Disputed" || item.settlement_status === "DISPUTED";
+                          const isPayoutConfirmed = Boolean(
+                            item.payout_confirmed ||
+                            item.orders?.payout_confirmed ||
+                            item.settlement_status === "DISBURSED"
+                          );
+                          const isEscrowConfirmed = Boolean(
+                            item.escrow_confirmed ||
+                            item.orders?.escrow_confirmed ||
+                            item.settlement_status === "HELD_IN_ESCROW"
+                          );
+
+                          const unitRate = item.unit_price_per_kg || item.orders?.price_per_kg || 24;
+                          const totalAmt = item.total_value ?? (item.quantity_kg * unitRate);
+                          const fulfilledQty = Number(item.orders?.fulfilled_quantity_kg) || 0;
+                          const displayQty = isDelivered ? (fulfilledQty || item.quantity_kg) : item.quantity_kg;
+                          const deliveredVal = item.fulfilled_value ?? (isDelivered ? displayQty * unitRate : 0);
+
                           return (
                             <tr key={item.id} className="hover:bg-stone-50 transition">
                               <td className="py-3 text-stone-500">
@@ -1869,19 +1992,41 @@ export default function FarmerPage() {
                                 {item.orders?.buyer_name || "Commercial Buyer"}
                               </td>
                               <td className="py-3">{item.orders?.produce}</td>
-                              <td className="py-3 font-bold text-stone-900">{item.quantity_kg} kg</td>
-                              <td className="py-3 text-emerald-800 font-bold">₹{item.unit_price_per_kg || 24}/kg</td>
-                              <td className="py-3 font-black text-stone-900">₹{totalAmt.toLocaleString("en-IN")}</td>
+                              <td className="py-3 font-bold text-stone-900">{displayQty} kg</td>
+                              <td className="py-3 text-emerald-800 font-bold">₹{unitRate}/kg</td>
+                              <td className="py-3 font-black text-stone-900">
+                                {isDelivered ? `₹${deliveredVal.toLocaleString("en-IN")}` : `₹${totalAmt.toLocaleString("en-IN")}`}
+                              </td>
                               <td className="py-3">
-                                <span
-                                  className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${
-                                    isDelivered
-                                      ? "bg-emerald-100 text-emerald-800"
-                                      : "bg-amber-100 text-amber-800"
-                                  }`}
-                                >
-                                  {isDelivered ? "Disbursed" : "In Escrow"}
-                                </span>
+                                {isPayoutConfirmed ? (
+                                  <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-emerald-100 text-emerald-800 border border-emerald-200 inline-block">
+                                    ✓ Disbursed to Bank
+                                  </span>
+                                ) : isEscrowConfirmed ? (
+                                  <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-blue-100 text-blue-800 border border-blue-200 inline-block">
+                                    🔒 Held in Escrow
+                                  </span>
+                                ) : isCancelled ? (
+                                  <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-stone-100 text-stone-600 border border-stone-200 inline-block">
+                                    Cancelled / Refunded
+                                  </span>
+                                ) : isDisputed ? (
+                                  <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-rose-100 text-rose-800 border border-rose-200 inline-block">
+                                    Disputed
+                                  </span>
+                                ) : isDelivered ? (
+                                  <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-amber-100 text-amber-800 border border-amber-200 inline-block">
+                                    Delivered · Awaiting settlement confirmation
+                                  </span>
+                                ) : isInTransit ? (
+                                  <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-amber-50 text-amber-700 border border-amber-200 inline-block">
+                                    In Transit · Awaiting settlement confirmation
+                                  </span>
+                                ) : (
+                                  <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-stone-100 text-stone-500 border border-stone-200 inline-block">
+                                    Payment status unavailable
+                                  </span>
+                                )}
                               </td>
                             </tr>
                           );

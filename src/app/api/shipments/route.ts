@@ -14,27 +14,56 @@ async function isPartyToShipmentOrder(
   // 1. Check if user is buyer or creator
   const { data: order } = await dbClient
     .from("orders")
-    .select("id, buyer_id, created_by, assigned_transporter_id")
+    .select("id, buyer_id, created_by, assigned_transporter_id, listing_id")
     .eq("id", orderId)
     .maybeSingle();
 
   const isBuyer = Boolean(order && (order.buyer_id === userId || order.created_by === userId));
   const isAssignedTransporter = Boolean(order && order.assigned_transporter_id === userId);
 
-  // 2. Check if user is seller farmer for any item in this order
+  // 2. Check if user is seller farmer for this order
   let isSeller = false;
   if (role === "FARMER") {
-    const { data: matchingFarmer } = await dbClient
-      .from("order_items")
-      .select("inventory!inner(farmer_id, farmers!inner(profile_id))")
-      .eq("order_id", orderId)
-      .limit(1);
+    // Check direct listing linkage
+    if (order?.listing_id) {
+      const { data: listing } = await dbClient
+        .from("produce_listings")
+        .select("farmer_id")
+        .eq("id", order.listing_id)
+        .maybeSingle();
 
-    if (matchingFarmer && matchingFarmer.length > 0) {
-      // @ts-expect-error nested join structure
-      const farmerProfileId = matchingFarmer[0]?.inventory?.farmers?.profile_id;
-      if (farmerProfileId === userId) {
+      if (listing?.farmer_id === userId) {
         isSeller = true;
+      }
+    }
+
+    if (!isSeller) {
+      // Check farmer entity and order items
+      const { data: farmerRecs } = await dbClient
+        .from("farmers")
+        .select("id")
+        .eq("profile_id", userId);
+
+      const farmerIds = (farmerRecs || []).map((f) => f.id);
+      if (farmerIds.length > 0) {
+        const { data: invRecs } = await dbClient
+          .from("inventory")
+          .select("id")
+          .in("farmer_id", farmerIds);
+
+        const invIds = (invRecs || []).map((i) => i.id);
+        if (invIds.length > 0) {
+          const { data: matchItem } = await dbClient
+            .from("order_items")
+            .select("id")
+            .eq("order_id", orderId)
+            .in("inventory_id", invIds)
+            .limit(1);
+
+          if (matchItem && matchItem.length > 0) {
+            isSeller = true;
+          }
+        }
       }
     }
   }

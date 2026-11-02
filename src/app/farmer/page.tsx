@@ -1,19 +1,15 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useId } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import PlatformHeader from "@/components/PlatformHeader";
 import RoleGuard from "@/components/RoleGuard";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/context/AuthContext";
-import {
-  addInventoryItem,
-  getInventory,
-} from "@/lib/inventory";
-import type { Farmer } from "@/lib/aggregation";
-import { speakText, stopSpeaking, isSpeechSupported } from "@/lib/speech";
+import { speakText, stopSpeaking } from "@/lib/speech";
 
-export type OrderStatus = "Accepted" | "Dispatched" | "Delivered" | "Disputed" | "Cancelled";
+export type OrderStatus = "Accepted" | "Dispatched" | "Delivered" | "Disputed" | "Cancelled" | string;
 
 export interface QualityResult {
   grade: "A" | "B" | "C";
@@ -24,10 +20,13 @@ export interface QualityResult {
   suitability?: string;
 }
 
-export interface FarmerOrderItemRow {
+export interface FarmerOrderItem {
   id: string;
   quantity_kg: number;
   inventory_id: string;
+  unit_price_per_kg?: number;
+  payment_terms?: string;
+  total_value?: number;
   orders: {
     id: string;
     buyer_name: string;
@@ -39,6 +38,7 @@ export interface FarmerOrderItemRow {
     fulfillment_percentage: number;
     status: OrderStatus;
     created_at: string;
+    offer_id?: string | null;
   } | null;
   inventory?: {
     id: string;
@@ -52,15 +52,20 @@ export interface FarmerOrderItemRow {
 
 export interface LiveMarketListing {
   id: string;
+  farmer_id?: string;
   crop_name: string;
-  variety: string | null;
+  variety?: string | null;
+  category?: string;
   quantity_kg: number;
   quality_grade: string;
   asking_price_per_kg: number;
   harvest_date: string;
   pickup_location: string;
+  district: string;
+  state: string;
   status: string;
-  images: string[];
+  images?: string[];
+  created_at?: string;
 }
 
 export interface LiveMarketOffer {
@@ -80,21 +85,60 @@ export interface LiveMarketOffer {
   buyer_profiles?: {
     full_name: string;
     district: string;
+    is_verified?: boolean;
   } | null;
 }
 
-export interface LiveFarmSummary {
+export interface LiveFarmPlot {
+  id: string;
+  plot_code: string;
+  area_acres: number;
+  soil_type?: string;
+  irrigation_source?: string;
+  current_crop?: string;
+  crop_stage?: string;
+  sowing_date?: string;
+  expected_harvest_date?: string;
+}
+
+export interface LiveFarm {
   id: string;
   name: string;
   total_area_acres: number;
   district: string;
-  plots?: Array<{
-    id: string;
-    plot_code: string;
-    area_acres: number;
-    current_crop: string;
-    crop_stage: string;
-  }>;
+  state: string;
+  village?: string | null;
+  survey_number?: string | null;
+  plots?: LiveFarmPlot[];
+}
+
+export interface LiveInventoryItem {
+  id: string;
+  produce: string;
+  quantity_kg: number;
+  quality_grade: string;
+  reserved_quantity_kg: number;
+  status: string;
+  available: boolean;
+  quality_score?: number | null;
+  quality_confidence?: number | null;
+  quality_observations?: string[] | null;
+  available_quantity_kg?: number;
+  listing_id?: string | null;
+  created_at?: string;
+}
+
+export interface LiveShipment {
+  id: string;
+  order_id: string;
+  origin?: string | null;
+  destination: string;
+  total_quantity_kg: number;
+  current_location?: string | null;
+  status: string;
+  progress_percentage: number;
+  created_at: string;
+  updated_at?: string;
 }
 
 type FarmerTab =
@@ -107,145 +151,153 @@ type FarmerTab =
   | "my-earnings";
 
 const COMMON_CROPS = [
-  { name: "Tomato", hindi: "टमाटर", icon: "🍅", defaultPrice: 22 },
-  { name: "Onion", hindi: "प्याज", icon: "🧅", defaultPrice: 26 },
-  { name: "Potato", hindi: "आलू", icon: "🥔", defaultPrice: 18 },
+  { name: "Tomato", hindi: "टमाटर", icon: "🍅", defaultPrice: 24 },
+  { name: "Onion", hindi: "प्याज", icon: "🧅", defaultPrice: 28 },
+  { name: "Potato", hindi: "आलू", icon: "🥔", defaultPrice: 19 },
   { name: "Chilli", hindi: "मिर्च", icon: "🌶️", defaultPrice: 120 },
   { name: "Wheat", hindi: "गेहूं", icon: "🌾", defaultPrice: 28 },
-  { name: "Rice", hindi: "चावल / धान", icon: "🍚", defaultPrice: 32 },
+  { name: "Rice", hindi: "चावल / धान", icon: "🍚", defaultPrice: 34 },
   { name: "Cotton", hindi: "कपास", icon: "☁️", defaultPrice: 75 },
-  { name: "Maize", hindi: "मक्का", icon: "🌽", defaultPrice: 20 },
+  { name: "Maize", hindi: "मक्का", icon: "🌽", defaultPrice: 21 },
 ];
 
 export default function FarmerPage() {
   const { locale } = useLanguage();
-  const { user, token, isAuthenticated } = useAuth();
+  const { user, token } = useAuth();
+  const photoInputId = useId();
 
   const [activeTab, setActiveTab] = useState<FarmerTab>("overview");
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [feedback, setFeedback] = useState<{ type: "success" | "error" | "info"; text: string } | null>(null);
 
-  // Form states for selling produce
-  const [produce, setProduce] = useState("Tomato");
-  const [quantity, setQuantity] = useState("500");
-  const [askingPrice, setAskingPrice] = useState("24");
-  const [location, setLocation] = useState("Tumakuru Farm Gate");
-  const [image, setImage] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
+  // Data states
+  const [farms, setFarms] = useState<LiveFarm[]>([]);
+  const [inventory, setInventory] = useState<LiveInventoryItem[]>([]);
+  const [listings, setListings] = useState<LiveMarketListing[]>([]);
+  const [offers, setOffers] = useState<LiveMarketOffer[]>([]);
+  const [orders, setOrders] = useState<FarmerOrderItem[]>([]);
+  const [shipments, setShipments] = useState<LiveShipment[]>([]);
 
-  // Quality grading state
-  const [quality, setQuality] = useState<QualityResult | null>(null);
+  // Produce Listing Form state
+  const [selectedProduce, setSelectedProduce] = useState("Tomato");
+  const [listingQty, setListingQty] = useState("500");
+  const [listingPrice, setListingPrice] = useState("24");
+  const [listingGrade, setListingGrade] = useState("A");
+  const [listingPickup, setListingPickup] = useState("Tumakuru Farm Gate Hub");
+  const [selectedInventoryId, setSelectedInventoryId] = useState<string>("");
+  const [publishingListing, setPublishingListing] = useState(false);
+
+  // New Farm Form state
+  const [showAddFarmModal, setShowAddFarmModal] = useState(false);
+  const [newFarmName, setNewFarmName] = useState("");
+  const [newFarmAcres, setNewFarmAcres] = useState("");
+  const [newFarmSurvey, setNewFarmSurvey] = useState("");
+  const [newFarmVillage, setNewFarmVillage] = useState("");
+  const [savingFarm, setSavingFarm] = useState(false);
+
+  // Counter Offer Modal state
+  const [counterModalOffer, setCounterModalOffer] = useState<LiveMarketOffer | null>(null);
+  const [counterPriceInput, setCounterPriceInput] = useState("");
+  const [submittingCounter, setSubmittingCounter] = useState(false);
+
+  // Quality Assessment state
+  const [qualityImage, setQualityImage] = useState<File | null>(null);
+  const [qualityPreview, setQualityPreview] = useState<string | null>(null);
+  const [qualityProduce, setQualityProduce] = useState("Tomato");
+  const [qualityResult, setQualityResult] = useState<QualityResult | null>(null);
   const [qualityLoading, setQualityLoading] = useState(false);
-  const [qualityError, setQualityError] = useState("");
+  const [addingToInventory, setAddingToInventory] = useState(false);
 
-  // Server data state
-  const [inventory, setInventory] = useState<Farmer[]>([]);
-  const [incomingOrders, setIncomingOrders] = useState<FarmerOrderItemRow[]>([]);
-  const [myListings, setMyListings] = useState<LiveMarketListing[]>([]);
-  const [marketOffers, setMarketOffers] = useState<LiveMarketOffer[]>([]);
-  const [farmerFarms, setFarmerFarms] = useState<LiveFarmSummary[]>([]);
+  // Action in-progress trackers
+  const [actionInProgress, setActionInProgress] = useState<string | null>(null);
 
-  // Action status states
-  const [ordersLoading, setOrdersLoading] = useState(false);
-  const [savingListing, setSavingListing] = useState(false);
-  const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
-  const [notification, setNotification] = useState<string | null>(null);
-  const [formError, setFormError] = useState("");
-
-  // Handle image preview cleanup
-  useEffect(() => {
-    if (!image) {
-      const timer = setTimeout(() => setPreview(null), 0);
-      return () => clearTimeout(timer);
+  // Photo select handler
+  const handlePhotoSelect = (file: File | null) => {
+    if (qualityPreview) {
+      URL.revokeObjectURL(qualityPreview);
     }
-    const url = URL.createObjectURL(image);
-    const timer = setTimeout(() => setPreview(url), 0);
-    return () => {
-      clearTimeout(timer);
-      URL.revokeObjectURL(url);
-    };
-  }, [image]);
-
-  const loadInventoryData = async () => {
-    try {
-      const data = await getInventory();
-      setInventory(data);
-    } catch {
-      // Ignore inventory load failure
+    setQualityImage(file);
+    if (file) {
+      setQualityPreview(URL.createObjectURL(file));
+    } else {
+      setQualityPreview(null);
     }
+    setQualityResult(null);
   };
 
-  const loadIncomingOrders = useCallback(async () => {
-    if (!token) {
-      setIncomingOrders([]);
-      return;
-    }
-    setOrdersLoading(true);
-    try {
-      const res = await fetch("/api/farmer/orders", {
-        headers: { Authorization: `Bearer ${token}` },
-        cache: "no-store",
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setIncomingOrders(data.orders ?? []);
-      }
-    } catch (err) {
-      console.warn("Failed to load incoming orders:", err);
-    } finally {
-      setOrdersLoading(false);
-    }
-  }, [token]);
-
-  const loadAuthoritativeFarmerData = useCallback(async () => {
+  // Load authoritative farmer data from backend APIs
+  const loadFarmerData = useCallback(async () => {
     if (!token) return;
+    setLoading(true);
+
     try {
-      // 1. Farms
-      const farmsRes = await fetch("/api/platform/farms", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const headers = { Authorization: `Bearer ${token}` };
+
+      // 1. Farms and plots
+      const farmsRes = await fetch("/api/platform/farms", { headers });
       if (farmsRes.ok) {
         const d = await farmsRes.json();
-        if (d.success && Array.isArray(d.farms)) setFarmerFarms(d.farms);
+        if (d.success && Array.isArray(d.farms)) setFarms(d.farms);
       }
 
-      // 2. Listings
-      const listRes = await fetch(`/api/platform/marketplace?farmerId=${user?.id || ""}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      // 2. Real Inventory Lots
+      const invRes = await fetch("/api/farmer/inventory", { headers });
+      if (invRes.ok) {
+        const d = await invRes.json();
+        if (d.success && Array.isArray(d.inventory)) setInventory(d.inventory);
+      }
+
+      // 3. Farmer's Published Listings
+      const listRes = await fetch("/api/platform/marketplace", { headers });
       if (listRes.ok) {
         const d = await listRes.json();
-        if (d.success && Array.isArray(d.listings)) setMyListings(d.listings);
+        if (d.success && Array.isArray(d.listings)) {
+          // Filter to listings owned by this farmer
+          setListings(d.listings.filter((l: LiveMarketListing) => l.farmer_id === user?.id));
+        }
       }
 
-      // 3. Offers
-      const offersRes = await fetch("/api/platform/marketplace/offers?viewAs=farmer", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      // 4. Incoming Buyer Offers
+      const offersRes = await fetch("/api/platform/marketplace/offers?viewAs=farmer", { headers });
       if (offersRes.ok) {
         const d = await offersRes.json();
-        if (d.success && Array.isArray(d.offers)) setMarketOffers(d.offers);
+        if (d.success && Array.isArray(d.offers)) setOffers(d.offers);
       }
-    } catch (e) {
-      console.warn("Error loading farmer profile data:", e);
+
+      // 5. Confirmed Farmer Orders
+      const ordersRes = await fetch("/api/farmer/orders", { headers });
+      if (ordersRes.ok) {
+        const d = await ordersRes.json();
+        if (d.success && Array.isArray(d.orders)) setOrders(d.orders);
+      }
+
+      // 6. Linked Shipments / Deliveries
+      const shipRes = await fetch("/api/shipments", { headers });
+      if (shipRes.ok) {
+        const d = await shipRes.json();
+        if (d.success && Array.isArray(d.shipments)) setShipments(d.shipments);
+      }
+    } catch (err) {
+      console.warn("Failed to load farmer portal data:", err);
+    } finally {
+      setLoading(false);
     }
-  }, [token, user]);
+  }, [token, user?.id]);
 
   useEffect(() => {
     let active = true;
     void Promise.resolve().then(() => {
-      if (!active) return;
-      loadInventoryData();
-      if (token) {
-        loadIncomingOrders();
-        loadAuthoritativeFarmerData();
+      if (active && token) {
+        loadFarmerData();
       }
     });
     return () => {
       active = false;
     };
-  }, [token, loadIncomingOrders, loadAuthoritativeFarmerData]);
+  }, [token, loadFarmerData]);
 
-  // Voice guidance helper
+  // Voice Guidance
   const handleVoiceGuidance = () => {
     if (isSpeaking) {
       stopSpeaking();
@@ -256,177 +308,202 @@ export default function FarmerPage() {
     let speechText = "";
     switch (activeTab) {
       case "overview":
-        speechText = `Welcome to X-MILE Farmer Portal. Choose one of the six main buttons: My Farm, Sell My Crops, My Orders, Track Delivery, Check Crop Quality, or My Earnings.`;
-        break;
-      case "sell-crops":
-        speechText = `Sell your harvest. Select your crop, enter the quantity in kilograms, set your asking price per kilogram, add a crop photo, and tap Publish for Sale.`;
-        break;
-      case "check-quality":
-        speechText = `AI Quality Grading. Take a clear photo of your produce. Tap Check Quality. Our artificial intelligence will grade your crop into Grade A, B, or C with instant observations.`;
-        break;
-      case "my-orders":
-        speechText = `My Orders. Here you see buyers who placed orders for your harvest. You can mark orders as Dispatched when the truck leaves, and Delivered when it arrives.`;
-        break;
-      case "track-delivery":
-        speechText = `Track Delivery. View the truck assigned to pick up your harvest and check if it is at the farm gate or on the road to the mandi.`;
+        speechText = "Welcome to the X-MILE Farmer Portal. Use the six big buttons below to manage your farm, sell your crops, view your buyer orders, track mandi deliveries, check crop quality with AI, and view your bank earnings.";
         break;
       case "my-farm":
-        speechText = `My Farm. View your registered land acreage, survey numbers, soil types, and active crops.`;
+        speechText = "My Farm section. View your registered land acreage, survey numbers, active plots, and your real harvested crop inventory.";
+        break;
+      case "sell-crops":
+        speechText = "Sell My Crops. Choose your crop, enter the quantity in kilograms and your asking price per kilogram, and tap Publish to Live Marketplace.";
+        break;
+      case "my-orders":
+        speechText = "My Orders section. Review incoming purchase offers from verified commercial buyers. You can accept, reject, or send a counteroffer.";
+        break;
+      case "track-delivery":
+        speechText = "Track Delivery. View assigned transport trucks and follow your harvest from the farm gate all the way to the buyer's destination mandi.";
+        break;
+      case "check-quality":
+        speechText = "Check Crop Quality with AI. Upload a clear photo of your produce. Our artificial intelligence analyzes color, texture, and defects to assign an instant quality grade.";
         break;
       case "my-earnings":
-        speechText = `My Earnings. View your total completed crop sales, money deposited to your bank, and payments held safely in milestone escrow.`;
+        speechText = "My Earnings. View your total money deposited to your bank account, funds held safely in buyer escrow, and your complete verified sales ledger.";
         break;
     }
 
     setIsSpeaking(true);
-    speakText(speechText, locale, () => {
-      setIsSpeaking(false);
-    });
+    speakText(speechText, locale, () => setIsSpeaking(false));
   };
 
-  // AI Quality Inspection
-  async function handleAnalyzeQuality() {
-    setQualityError("");
-    setQuality(null);
+  // Handler: Create Farm Profile
+  const handleCreateFarm = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!token) return;
+    setSavingFarm(true);
+    setFeedback(null);
 
-    if (!image) {
-      setQualityError("Please tap the camera button to upload or take a photo of your crop.");
-      return;
-    }
-
-    setQualityLoading(true);
     try {
-      const formData = new FormData();
-      formData.append("image", image);
-      formData.append("produce", produce);
-
-      const res = await fetch("/api/quality", {
+      const res = await fetch("/api/platform/farms", {
         method: "POST",
-        body: formData,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name: newFarmName.trim(),
+          totalAreaAcres: Number(newFarmAcres),
+          district: user?.district || "Tumakuru",
+          state: user?.state || "Karnataka",
+          village: newFarmVillage.trim() || undefined,
+          surveyNumber: newFarmSurvey.trim() || undefined,
+        }),
       });
 
       const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || "Quality inspection failed. Please try again.");
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Failed to create farm profile.");
       }
 
-      const parsed: QualityResult = JSON.parse(data.result);
-      setQuality(parsed);
-
-      // Speak result aloud
-      speakText(
-        `Your ${produce} quality is Grade ${parsed.grade}, with a score of ${parsed.score} out of 100.`,
-        locale
-      );
+      setFeedback({ type: "success", text: `✓ Farm profile '${newFarmName}' registered successfully!` });
+      setShowAddFarmModal(false);
+      setNewFarmName("");
+      setNewFarmAcres("");
+      setNewFarmSurvey("");
+      setNewFarmVillage("");
+      await loadFarmerData();
     } catch (err: unknown) {
-      setQualityError(err instanceof Error ? err.message : "Failed to analyze photo.");
+      setFeedback({ type: "error", text: err instanceof Error ? err.message : "Failed to save farm." });
     } finally {
-      setQualityLoading(false);
+      setSavingFarm(false);
     }
-  }
+  };
 
-  // Publish produce for sale
-  async function handleConfirmListing() {
-    setFormError("");
-    const qty = Number(quantity);
-    const price = Number(askingPrice);
+  // Handler: Publish Produce Listing
+  const handlePublishListing = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!token) return;
 
-    if (!qty || qty <= 0) {
-      setFormError("Please enter a valid harvest quantity in kilograms (e.g. 500).");
+    const qty = Number(listingQty);
+    const price = Number(listingPrice);
+
+    if (isNaN(qty) || qty <= 0) {
+      setFeedback({ type: "error", text: "Please enter a valid harvest quantity in kg." });
+      return;
+    }
+    if (isNaN(price) || price <= 0) {
+      setFeedback({ type: "error", text: "Please enter a valid asking price per kg." });
       return;
     }
 
-    if (!price || price <= 0) {
-      setFormError("Please enter your asking price in rupees per kilogram (e.g. 24).");
-      return;
+    // Check inventory ceiling if linked lot is chosen
+    if (selectedInventoryId) {
+      const lot = inventory.find((i) => i.id === selectedInventoryId);
+      if (lot && qty > (lot.available_quantity_kg ?? lot.quantity_kg)) {
+        setFeedback({
+          type: "error",
+          text: `Listing quantity (${qty} kg) exceeds available unreserved stock in selected lot (${lot.available_quantity_kg ?? lot.quantity_kg} kg).`,
+        });
+        return;
+      }
     }
 
-    setSavingListing(true);
+    setPublishingListing(true);
+    setFeedback(null);
 
     try {
-      let uploadedUrl: string | null = null;
-      if (image && token) {
-        try {
-          const fd = new FormData();
-          fd.append("file", image);
-          const uploadRes = await fetch("/api/platform/marketplace/upload", {
-            method: "POST",
-            headers: { Authorization: `Bearer ${token}` },
-            body: fd,
-          });
-          if (uploadRes.ok) {
-            const upData = await uploadRes.json();
-            if (upData.success) uploadedUrl = upData.url;
-          }
-        } catch {
-          // Non-blocking upload fallback
-        }
+      // Create listing on the marketplace
+      const res = await fetch("/api/platform/marketplace", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          cropName: selectedProduce,
+          variety: "Standard Lot",
+          category: "standard",
+          quantityKg: qty,
+          qualityGrade: listingGrade,
+          askingPricePerKg: price,
+          harvestDate: new Date().toISOString().split("T")[0],
+          pickupLocation: listingPickup || "Farm Gate Hub",
+          district: user?.district || "Tumakuru",
+          state: user?.state || "Karnataka",
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Failed to publish produce listing.");
       }
 
-      if (token) {
-        await fetch("/api/platform/marketplace", {
+      // If no inventory was explicitly selected, auto-record this lot in inventory
+      if (!selectedInventoryId) {
+        await fetch("/api/farmer/inventory", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
-            cropName: produce,
-            variety: "Standard Lot",
-            category: "standard",
+            produce: selectedProduce,
             quantityKg: qty,
-            qualityGrade: quality?.grade || "A",
-            askingPricePerKg: price,
-            harvestDate: new Date().toISOString().split("T")[0],
-            pickupLocation: location || "Farm Gate",
-            district: user?.district || "Tumakuru",
-            state: user?.state || "Karnataka",
-            images: uploadedUrl ? [uploadedUrl] : [],
+            qualityGrade: listingGrade,
           }),
         });
       }
 
-      // Add to local state
-      const farmerRecord: Farmer = {
-        id: user?.id || crypto.randomUUID(),
-        name: user?.fullName || "Verified Farmer",
-        produce,
-        quantity: qty,
-        grade: quality?.grade || "A",
-        location: location || "Farm Gate",
-        distanceKm: 0,
-      };
-
-      await addInventoryItem(
-        farmerRecord,
-        quality?.score || 88,
-        quality?.confidence || 90,
-        quality?.observations || ["Good lot"]
-      );
-
-      await loadInventoryData();
-      if (token) {
-        await loadAuthoritativeFarmerData();
-      }
-
-      setNotification(`✓ ${qty} kg of ${produce} published for sale at ₹${price}/kg!`);
-      setTimeout(() => setNotification(null), 6000);
-
-      // Reset form
-      setQuantity("");
-      setImage(null);
-      setQuality(null);
+      setFeedback({
+        type: "success",
+        text: `✓ Successfully listed ${qty} kg of ${selectedProduce} on the Live Marketplace at ₹${price}/kg!`,
+      });
+      await loadFarmerData();
       setActiveTab("my-orders");
     } catch (err: unknown) {
-      setFormError(err instanceof Error ? err.message : "Failed to publish listing.");
+      setFeedback({ type: "error", text: err instanceof Error ? err.message : "Failed to publish listing." });
     } finally {
-      setSavingListing(false);
+      setPublishingListing(false);
     }
-  }
+  };
 
-  // Accept / Decline Buyer Offers
-  async function handleAcceptOffer(offerId: string) {
+  // Handler: Withdraw Produce Listing
+  const handleWithdrawListing = async (listingId: string) => {
     if (!token) return;
+    setActionInProgress(listingId);
+    setFeedback(null);
+
+    try {
+      const res = await fetch("/api/platform/marketplace", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          id: listingId,
+          status: "CANCELLED",
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Failed to withdraw listing.");
+      }
+
+      setFeedback({ type: "success", text: "✓ Listing withdrawn from active marketplace." });
+      await loadFarmerData();
+    } catch (err: unknown) {
+      setFeedback({ type: "error", text: err instanceof Error ? err.message : "Failed to withdraw listing." });
+    } finally {
+      setActionInProgress(null);
+    }
+  };
+
+  // Handler: Accept Buyer Offer
+  const handleAcceptOffer = async (offerId: string) => {
+    if (!token) return;
+    setActionInProgress(offerId);
+    setFeedback(null);
+
     try {
       const res = await fetch("/api/platform/marketplace/offers", {
         method: "PATCH",
@@ -434,22 +511,35 @@ export default function FarmerPage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ offerId, action: "ACCEPT" }),
+        body: JSON.stringify({
+          offerId,
+          action: "ACCEPT",
+        }),
       });
+
       const data = await res.json();
-      if (!res.ok || !data.success) throw new Error(data.error || "Failed to accept offer.");
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Failed to accept offer.");
+      }
 
-      setNotification("✓ Buyer offer accepted! Order moved to Escrow and Logistics allocation.");
-      setTimeout(() => setNotification(null), 5000);
-      await loadAuthoritativeFarmerData();
-      await loadIncomingOrders();
-    } catch (e: unknown) {
-      alert(e instanceof Error ? e.message : "Failed to accept offer.");
+      setFeedback({
+        type: "success",
+        text: "✓ Buyer offer accepted! Order confirmed, inventory reserved, and transport manifest queued.",
+      });
+      await loadFarmerData();
+    } catch (err: unknown) {
+      setFeedback({ type: "error", text: err instanceof Error ? err.message : "Failed to accept offer." });
+    } finally {
+      setActionInProgress(null);
     }
-  }
+  };
 
-  async function handleDeclineOffer(offerId: string) {
+  // Handler: Reject Buyer Offer
+  const handleRejectOffer = async (offerId: string) => {
     if (!token) return;
+    setActionInProgress(offerId);
+    setFeedback(null);
+
     try {
       const res = await fetch("/api/platform/marketplace/offers", {
         method: "PATCH",
@@ -457,849 +547,1499 @@ export default function FarmerPage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ offerId, action: "REJECT" }),
+        body: JSON.stringify({
+          offerId,
+          action: "REJECT",
+        }),
       });
+
       const data = await res.json();
-      if (!res.ok || !data.success) throw new Error(data.error || "Failed to decline offer.");
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Failed to reject offer.");
+      }
 
-      setNotification("✓ Offer declined.");
-      setTimeout(() => setNotification(null), 4000);
-      await loadAuthoritativeFarmerData();
-    } catch (e: unknown) {
-      alert(e instanceof Error ? e.message : "Failed to decline offer.");
+      setFeedback({ type: "info", text: "Offer declined." });
+      await loadFarmerData();
+    } catch (err: unknown) {
+      setFeedback({ type: "error", text: err instanceof Error ? err.message : "Failed to reject offer." });
+    } finally {
+      setActionInProgress(null);
     }
-  }
+  };
 
-  // Update Order Status (Dispatched -> Delivered)
-  async function handleUpdateOrderStatus(orderId: string, status: OrderStatus) {
-    setUpdatingOrderId(orderId);
+  // Handler: Submit Counteroffer
+  const handleSubmitCounteroffer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!counterModalOffer || !token) return;
+    const price = Number(counterPriceInput);
+    if (isNaN(price) || price <= 0) {
+      setFeedback({ type: "error", text: "Please enter a valid positive counter price." });
+      return;
+    }
+
+    setSubmittingCounter(true);
+    setFeedback(null);
+
     try {
-      const res = await fetch("/api/orders", {
+      const res = await fetch("/api/platform/marketplace/offers", {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ id: orderId, status }),
+        body: JSON.stringify({
+          offerId: counterModalOffer.id,
+          action: "COUNTER",
+          counterPricePerKg: price,
+        }),
       });
+
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to update order.");
-      await loadIncomingOrders();
-      setNotification(`✓ Order marked as ${status}!`);
-      setTimeout(() => setNotification(null), 5000);
-    } catch (e: unknown) {
-      alert(e instanceof Error ? e.message : "Order status update failed.");
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Failed to submit counteroffer.");
+      }
+
+      setFeedback({ type: "success", text: `✓ Counteroffer of ₹${price}/kg transmitted to the buyer!` });
+      setCounterModalOffer(null);
+      setCounterPriceInput("");
+      await loadFarmerData();
+    } catch (err: unknown) {
+      setFeedback({ type: "error", text: err instanceof Error ? err.message : "Failed to submit counteroffer." });
     } finally {
-      setUpdatingOrderId(null);
+      setSubmittingCounter(false);
     }
-  }
+  };
 
-  // Computed summary metrics
-  const totalEarningsEstimated = incomingOrders
-    .filter((o) => o.orders?.status === "Delivered")
-    .reduce((acc, o) => acc + (o.quantity_kg || 0) * 24, 0);
+  // Handler: Run AI Quality Assessment
+  const handleAnalyzeQuality = async () => {
+    if (!qualityImage) {
+      setFeedback({ type: "error", text: "Please tap the camera button to select a crop photo first." });
+      return;
+    }
 
-  const pendingEscrow = incomingOrders
-    .filter((o) => o.orders?.status === "Dispatched" || o.orders?.status === "Accepted")
-    .reduce((acc, o) => acc + (o.quantity_kg || 0) * 24, 0);
+    setQualityLoading(true);
+    setQualityResult(null);
+    setFeedback(null);
 
-  const priorityTiles = [
-    {
-      id: "my-farm" as FarmerTab,
-      icon: "🏡",
-      title: "1. My Farm",
-      subtitle: "मेरा खेत",
-      description: "Land, plots, soil & standing crops",
-      badge: `${farmerFarms.length} Farms`,
-      color: "border-emerald-300 bg-emerald-50/60 hover:bg-emerald-100/60",
-    },
-    {
-      id: "sell-crops" as FarmerTab,
-      icon: "📦",
-      title: "2. Sell My Crops",
-      subtitle: "फसल बेचें",
-      description: "List harvest with photo & set price",
-      badge: "Sell Direct",
-      color: "border-amber-300 bg-amber-50/60 hover:bg-amber-100/60",
-    },
-    {
-      id: "my-orders" as FarmerTab,
-      icon: "📋",
-      title: "3. My Orders",
-      subtitle: "मेरे ऑर्डर",
-      description: "Buyer orders & dispatch status",
-      badge: `${incomingOrders.length + marketOffers.length} Orders`,
-      color: "border-blue-300 bg-blue-50/60 hover:bg-blue-100/60",
-    },
-    {
-      id: "track-delivery" as FarmerTab,
-      icon: "🚚",
-      title: "4. Track Delivery",
-      subtitle: "ट्रक देखें",
-      description: "Pickup trucks moving your produce",
-      badge: "Live Fleet",
-      color: "border-purple-300 bg-purple-50/60 hover:bg-purple-100/60",
-    },
-    {
-      id: "check-quality" as FarmerTab,
-      icon: "🔍",
-      title: "5. Check Crop Quality",
-      subtitle: "क्वालिटी जांचें",
-      description: "1-Tap photo AI grading (A, B, C)",
-      badge: "AI Vision",
-      color: "border-teal-300 bg-teal-50/60 hover:bg-teal-100/60",
-    },
-    {
-      id: "my-earnings" as FarmerTab,
-      icon: "💰",
-      title: "6. My Earnings",
-      subtitle: "मेरी कमाई",
-      description: "Completed sales & safe escrow payouts",
-      badge: `₹${totalEarningsEstimated.toLocaleString()}`,
-      color: "border-lime-300 bg-lime-50/60 hover:bg-lime-100/60",
-    },
-  ];
+    try {
+      const fd = new FormData();
+      fd.append("image", qualityImage);
+      fd.append("produce", qualityProduce);
+
+      const res = await fetch("/api/quality", {
+        method: "POST",
+        body: fd,
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.result) {
+        throw new Error(data.error || "AI Quality Analysis failed.");
+      }
+
+      const parsed: QualityResult = JSON.parse(data.result);
+      setQualityResult(parsed);
+
+      speakText(
+        `AI Quality Assessment complete. Your ${qualityProduce} is graded Grade ${parsed.grade} with an AI visual score of ${parsed.score} out of 100.`,
+        locale
+      );
+    } catch (err: unknown) {
+      setFeedback({ type: "error", text: err instanceof Error ? err.message : "Quality assessment failed." });
+    } finally {
+      setQualityLoading(false);
+    }
+  };
+
+  // Handler: Add AI-Graded Lot to Inventory
+  const handleSaveQualityToInventory = async () => {
+    if (!qualityResult || !token) return;
+    setAddingToInventory(true);
+    setFeedback(null);
+
+    try {
+      const res = await fetch("/api/farmer/inventory", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          produce: qualityProduce,
+          quantityKg: 500,
+          qualityGrade: qualityResult.grade,
+          qualityScore: qualityResult.score,
+          qualityConfidence: qualityResult.confidence,
+          qualityObservations: qualityResult.observations,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Failed to record inventory.");
+      }
+
+      setFeedback({
+        type: "success",
+        text: `✓ Saved 500 kg of Grade-${qualityResult.grade} ${qualityProduce} to your Farm Inventory!`,
+      });
+      await loadFarmerData();
+      setActiveTab("my-farm");
+    } catch (err: unknown) {
+      setFeedback({ type: "error", text: err instanceof Error ? err.message : "Failed to save inventory." });
+    } finally {
+      setAddingToInventory(false);
+    }
+  };
+
+  // Financial Calculations
+  const deliveredOrders = orders.filter((o) => o.orders?.status === "Delivered");
+  const inTransitOrders = orders.filter(
+    (o) => o.orders?.status === "Accepted" || o.orders?.status === "Dispatched"
+  );
+
+  const totalDisbursedEarnings = deliveredOrders.reduce(
+    (sum, o) => sum + (o.total_value ?? (o.quantity_kg * (o.unit_price_per_kg || 24))),
+    0
+  );
+
+  const totalPendingInEscrow = inTransitOrders.reduce(
+    (sum, o) => sum + (o.total_value ?? (o.quantity_kg * (o.unit_price_per_kg || 24))),
+    0
+  );
+
+  const totalFulfilledVolumeKg = deliveredOrders.reduce(
+    (sum, o) => sum + Number(o.orders?.fulfilled_quantity_kg || o.quantity_kg || 0),
+    0
+  );
 
   return (
-    <RoleGuard allowedRoles={["FARMER", "ADMIN"]} portalName="Farmer Portal">
-      <div className="min-h-screen bg-[#f7faf7] text-stone-900 flex flex-col">
+    <RoleGuard allowedRoles={["FARMER", "ADMIN"]} portalName="Farmer Operations Portal">
+      <div className="min-h-screen bg-[#f7f8f6] text-stone-900 pb-20">
         <PlatformHeader />
 
-        <main className="flex-1 mx-auto w-full max-w-5xl px-3 sm:px-6 py-4 sm:py-8">
-          {/* Global Notification Banner */}
-        {notification && (
-          <div className="mb-4 rounded-2xl border border-emerald-300 bg-emerald-100/90 p-4 text-sm font-bold text-emerald-950 shadow-sm animate-in fade-in">
-            {notification}
-          </div>
-        )}
-
-        {/* TOP WELCOME BAR WITH SPOKEN VOICE ASSISTANT */}
-        <section className="mb-6 rounded-3xl border border-stone-200 bg-white p-5 sm:p-7 shadow-xs">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-2xl">🌾</span>
-                <span className="text-xs font-black uppercase tracking-wider text-emerald-800 bg-emerald-100/70 px-3 py-1 rounded-full">
-                  Farmer Portal • किसान सेवा
-                </span>
-                {user?.isVerified && (
-                  <span className="text-xs font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full">
-                    ✓ Verified
-                  </span>
-                )}
+        {/* TOP STATUS BAR */}
+        <section className="bg-white border-b border-stone-200">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-12 rounded-2xl bg-emerald-700 text-white flex items-center justify-center text-2xl shadow-sm">
+                🌾
               </div>
-
-              <h1 className="mt-2 text-2xl sm:text-3xl font-black text-stone-900">
-                Namaste, {user?.fullName || "Kisan Mitra"}!
-              </h1>
-              <p className="mt-1 text-xs sm:text-sm text-stone-600">
-                {user?.village ? `${user.village}, ` : ""}{user?.district || "Tumakuru"}, {user?.state || "Karnataka"} • Choose an action below:
-              </p>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-xl sm:text-2xl font-black text-stone-900">
+                    {user?.fullName || "Kisan Portal"}
+                  </h1>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-emerald-100 text-emerald-800">
+                    Verified Farmer
+                  </span>
+                </div>
+                <p className="text-xs text-stone-500 font-medium">
+                  {user?.district || "Tumakuru"}, {user?.state || "Karnataka"} · Primary Farm Hub
+                </p>
+              </div>
             </div>
 
-            {/* Voice Guidance Speaker Button */}
-            {isSpeechSupported() && (
+            <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={handleVoiceGuidance}
-                className={`flex items-center justify-center gap-2 rounded-2xl px-5 py-3.5 text-xs sm:text-sm font-black shadow-sm transition transform active:scale-95 ${
+                className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition shadow-sm min-h-[48px] ${
                   isSpeaking
-                    ? "bg-red-600 text-white animate-pulse"
-                    : "bg-emerald-700 text-white hover:bg-emerald-800"
+                    ? "bg-amber-500 text-white animate-pulse"
+                    : "bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100"
                 }`}
               >
-                <span className="text-lg">{isSpeaking ? "⏹" : "🔊"}</span>
-                <span>{isSpeaking ? "Stop Speaking" : "Listen (आवाज़ सुनें)"}</span>
+                <span>{isSpeaking ? "🔊 Speaking..." : "🔈 Voice Guidance"}</span>
               </button>
-            )}
+
+              <button
+                type="button"
+                onClick={() => loadFarmerData()}
+                disabled={loading}
+                className="px-4 py-2.5 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 text-xs font-bold text-stone-700 min-h-[48px] shadow-sm transition"
+              >
+                {loading ? "Syncing..." : "🔄 Refresh"}
+              </button>
+            </div>
+          </div>
+
+          {/* PRIMARY 6 ACTIONS NAVIGATION BAR */}
+          <div className="max-w-6xl mx-auto px-4 sm:px-6">
+            <nav className="flex space-x-1 sm:space-x-2 overflow-x-auto py-2 scrollbar-none">
+              {[
+                { id: "overview", label: "Dashboard", icon: "📊" },
+                { id: "my-farm", label: "1. My Farm", icon: "🏡" },
+                { id: "sell-crops", label: "2. Sell My Crops", icon: "💰" },
+                { id: "my-orders", label: "3. My Orders", icon: "📦", badge: offers.filter((o) => o.status === "PENDING").length },
+                { id: "track-delivery", label: "4. Track Delivery", icon: "🚚", badge: shipments.filter((s) => s.status !== "Delivered").length },
+                { id: "check-quality", label: "5. Crop Quality", icon: "🔬" },
+                { id: "my-earnings", label: "6. My Earnings", icon: "💵" },
+              ].map((tab) => {
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setActiveTab(tab.id as FarmerTab)}
+                    className={`flex items-center gap-2 px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black whitespace-nowrap transition min-h-[48px] ${
+                      isActive
+                        ? "bg-emerald-800 text-white shadow-md"
+                        : "text-stone-600 hover:bg-stone-100 hover:text-stone-900"
+                    }`}
+                  >
+                    <span>{tab.icon}</span>
+                    <span>{tab.label}</span>
+                    {typeof tab.badge === "number" && tab.badge > 0 ? (
+                      <span className="h-5 min-w-[20px] px-1.5 rounded-full bg-amber-500 text-white text-[10px] font-black flex items-center justify-center">
+                        {tab.badge}
+                      </span>
+                    ) : null}
+                  </button>
+                );
+              })}
+            </nav>
           </div>
         </section>
 
-        {/* MODE: MAIN 6-TILE MENU (When on Overview) */}
-        {activeTab === "overview" && (
-          <section className="space-y-6 animate-in fade-in">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-              {priorityTiles.map((tile) => (
-                <button
-                  key={tile.id}
-                  type="button"
-                  onClick={() => setActiveTab(tile.id)}
-                  className={`flex flex-col justify-between rounded-3xl border-2 p-5 sm:p-6 text-left transition transform hover:-translate-y-1 hover:shadow-md active:scale-98 ${tile.color}`}
-                >
-                  <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-4xl">{tile.icon}</span>
-                      <span className="rounded-full bg-white/90 px-3 py-1 text-xs font-black text-stone-800 shadow-2xs">
-                        {tile.badge}
-                      </span>
-                    </div>
-                    <div className="text-lg font-black text-stone-900">{tile.title}</div>
-                    <div className="text-xs font-bold text-emerald-800">{tile.subtitle}</div>
-                    <p className="mt-2 text-xs leading-relaxed text-stone-600">{tile.description}</p>
-                  </div>
-
-                  <div className="mt-5 pt-3 border-t border-black/5 flex items-center justify-between text-xs font-black text-stone-800">
-                    <span>Open Section</span>
-                    <span className="text-base">→</span>
-                  </div>
-                </button>
-              ))}
+        {/* FEEDBACK BANNERS */}
+        {feedback && (
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 mt-4">
+            <div
+              className={`p-4 rounded-2xl flex items-center justify-between text-xs sm:text-sm font-bold border shadow-sm ${
+                feedback.type === "success"
+                  ? "bg-emerald-50 text-emerald-900 border-emerald-200"
+                  : feedback.type === "error"
+                  ? "bg-red-50 text-red-900 border-red-200"
+                  : "bg-blue-50 text-blue-900 border-blue-200"
+              }`}
+            >
+              <span>{feedback.text}</span>
+              <button type="button" onClick={() => setFeedback(null)} className="text-xs font-black px-2 py-1">
+                ✕
+              </button>
             </div>
-
-            {/* Quick Helper Tools */}
-            <div className="rounded-3xl border border-stone-200 bg-white p-5">
-              <h2 className="text-sm font-black text-stone-900 mb-3">Agricultural Tools & Advisory</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                <Link
-                  href="/crop-planner"
-                  className="rounded-2xl border border-stone-200 p-3 text-center hover:bg-emerald-50 transition"
-                >
-                  <span className="text-xl">🌱</span>
-                  <div className="text-xs font-bold text-stone-800 mt-1">Crop Planner</div>
-                </Link>
-                <Link
-                  href="/soil-health"
-                  className="rounded-2xl border border-stone-200 p-3 text-center hover:bg-emerald-50 transition"
-                >
-                  <span className="text-xl">🧪</span>
-                  <div className="text-xs font-bold text-stone-800 mt-1">Soil Health</div>
-                </Link>
-                <Link
-                  href="/schemes"
-                  className="rounded-2xl border border-stone-200 p-3 text-center hover:bg-emerald-50 transition"
-                >
-                  <span className="text-xl">🏛️</span>
-                  <div className="text-xs font-bold text-stone-800 mt-1">Govt Schemes</div>
-                </Link>
-                <Link
-                  href="/machinery"
-                  className="rounded-2xl border border-stone-200 p-3 text-center hover:bg-emerald-50 transition"
-                >
-                  <span className="text-xl">🚜</span>
-                  <div className="text-xs font-bold text-stone-800 mt-1">Hire Tractors</div>
-                </Link>
-              </div>
-            </div>
-          </section>
+          </div>
         )}
 
-        {/* SECTION: 1. MY FARM */}
-        {activeTab === "my-farm" && (
-          <section className="space-y-4 animate-in fade-in">
-            <button
-              type="button"
-              onClick={() => setActiveTab("overview")}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-stone-200 px-3.5 py-2 text-xs font-bold text-stone-800 hover:bg-stone-300 transition"
-            >
-              ⬅ Back to Main Menu (वापस जाएं)
-            </button>
+        <main className="max-w-6xl mx-auto px-4 sm:px-6 pt-6">
+          {/* TAB 0: OVERVIEW (THE 6 BIG CORE ACTION CARDS) */}
+          {activeTab === "overview" && (
+            <div className="space-y-8">
+              {/* 6 LARGE PRIMARY TOUCH CARDS */}
+              <div>
+                <h2 className="text-lg font-black text-stone-900 mb-1">Select an Action</h2>
+                <p className="text-xs text-stone-500 mb-4">
+                  Tap any of the 6 primary tasks below to manage your harvest and sales:
+                </p>
 
-            <div className="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
-              <div className="flex items-center justify-between pb-4 border-b border-stone-100">
-                <div>
-                  <h2 className="text-xl font-black text-stone-900">🏡 My Farm (मेरा खेत)</h2>
-                  <p className="text-xs text-stone-600 mt-0.5">
-                    Your registered agricultural land, survey numbers, and active plots.
-                  </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {/* Card 1: My Farm */}
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("my-farm")}
+                    className="p-6 rounded-3xl bg-white border border-stone-200 text-left hover:border-emerald-600 hover:shadow-lg transition min-h-[140px] flex flex-col justify-between group"
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <span className="text-3xl p-3 bg-emerald-50 rounded-2xl">🏡</span>
+                      <span className="text-xs font-black text-emerald-800 bg-emerald-100 px-2.5 py-1 rounded-full">
+                        {farms.length} Registered Farms
+                      </span>
+                    </div>
+                    <div>
+                      <h3 className="text-base font-black text-stone-900 group-hover:text-emerald-800 transition">
+                        1. My Farm
+                      </h3>
+                      <p className="text-xs text-stone-500 mt-1">
+                        View land details, survey numbers, crops & harvested stock.
+                      </p>
+                    </div>
+                  </button>
+
+                  {/* Card 2: Sell My Crops */}
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("sell-crops")}
+                    className="p-6 rounded-3xl bg-white border border-stone-200 text-left hover:border-emerald-600 hover:shadow-lg transition min-h-[140px] flex flex-col justify-between group"
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <span className="text-3xl p-3 bg-amber-50 rounded-2xl">💰</span>
+                      <span className="text-xs font-black text-amber-800 bg-amber-100 px-2.5 py-1 rounded-full">
+                        {listings.filter((l) => l.status === "ACTIVE").length} Active Listings
+                      </span>
+                    </div>
+                    <div>
+                      <h3 className="text-base font-black text-stone-900 group-hover:text-emerald-800 transition">
+                        2. Sell My Crops
+                      </h3>
+                      <p className="text-xs text-stone-500 mt-1">
+                        List fresh produce for sale to commercial mandi buyers.
+                      </p>
+                    </div>
+                  </button>
+
+                  {/* Card 3: My Orders */}
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("my-orders")}
+                    className="p-6 rounded-3xl bg-white border border-stone-200 text-left hover:border-emerald-600 hover:shadow-lg transition min-h-[140px] flex flex-col justify-between group"
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <span className="text-3xl p-3 bg-blue-50 rounded-2xl">📦</span>
+                      <span className="text-xs font-black text-blue-800 bg-blue-100 px-2.5 py-1 rounded-full">
+                        {offers.filter((o) => o.status === "PENDING").length} New Offers
+                      </span>
+                    </div>
+                    <div>
+                      <h3 className="text-base font-black text-stone-900 group-hover:text-emerald-800 transition">
+                        3. My Orders
+                      </h3>
+                      <p className="text-xs text-stone-500 mt-1">
+                        Review incoming buyer offers, accept terms, and track orders.
+                      </p>
+                    </div>
+                  </button>
+
+                  {/* Card 4: Track My Delivery */}
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("track-delivery")}
+                    className="p-6 rounded-3xl bg-white border border-stone-200 text-left hover:border-emerald-600 hover:shadow-lg transition min-h-[140px] flex flex-col justify-between group"
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <span className="text-3xl p-3 bg-purple-50 rounded-2xl">🚚</span>
+                      <span className="text-xs font-black text-purple-800 bg-purple-100 px-2.5 py-1 rounded-full">
+                        {shipments.filter((s) => s.status !== "Delivered").length} Live Shipments
+                      </span>
+                    </div>
+                    <div>
+                      <h3 className="text-base font-black text-stone-900 group-hover:text-emerald-800 transition">
+                        4. Track Delivery
+                      </h3>
+                      <p className="text-xs text-stone-500 mt-1">
+                        Follow assigned transport vehicles from farm gate to mandi.
+                      </p>
+                    </div>
+                  </button>
+
+                  {/* Card 5: Check Crop Quality */}
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("check-quality")}
+                    className="p-6 rounded-3xl bg-white border border-stone-200 text-left hover:border-emerald-600 hover:shadow-lg transition min-h-[140px] flex flex-col justify-between group"
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <span className="text-3xl p-3 bg-emerald-50 rounded-2xl">🔬</span>
+                      <span className="text-xs font-black text-emerald-800 bg-emerald-100 px-2.5 py-1 rounded-full">
+                        AI Multimodal
+                      </span>
+                    </div>
+                    <div>
+                      <h3 className="text-base font-black text-stone-900 group-hover:text-emerald-800 transition">
+                        5. Crop Quality
+                      </h3>
+                      <p className="text-xs text-stone-500 mt-1">
+                        Take a photo for instant AI Grade A / B / C visual analysis.
+                      </p>
+                    </div>
+                  </button>
+
+                  {/* Card 6: My Earnings */}
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("my-earnings")}
+                    className="p-6 rounded-3xl bg-white border border-stone-200 text-left hover:border-emerald-600 hover:shadow-lg transition min-h-[140px] flex flex-col justify-between group"
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <span className="text-3xl p-3 bg-emerald-50 rounded-2xl">💵</span>
+                      <span className="text-xs font-black text-emerald-900 bg-emerald-100 px-2.5 py-1 rounded-full">
+                        ₹{totalDisbursedEarnings.toLocaleString("en-IN")} Disbursed
+                      </span>
+                    </div>
+                    <div>
+                      <h3 className="text-base font-black text-stone-900 group-hover:text-emerald-800 transition">
+                        6. My Earnings
+                      </h3>
+                      <p className="text-xs text-stone-500 mt-1">
+                        Check completed sales deposits and funds held safely in escrow.
+                      </p>
+                    </div>
+                  </button>
                 </div>
-                <Link
-                  href="/farm-profile"
-                  className="rounded-xl bg-emerald-700 px-4 py-2 text-xs font-black text-white hover:bg-emerald-800 transition"
-                >
-                  Edit Farm Profile →
-                </Link>
               </div>
 
-              {farmerFarms.length === 0 ? (
-                <div className="py-12 text-center">
-                  <span className="text-4xl">🏡</span>
-                  <div className="mt-2 text-sm font-bold text-stone-700">No Farm Registered Yet</div>
-                  <p className="mt-1 text-xs text-stone-500 max-w-sm mx-auto">
-                    Add your farm plots, soil test information, and active crops in the Farm Profile.
-                  </p>
+              {/* SECONDARY SERVICES SECTION (ISOLATED) */}
+              <div className="p-6 rounded-3xl bg-stone-100/80 border border-stone-200">
+                <h3 className="text-xs font-black uppercase tracking-wider text-stone-600 mb-3">
+                  Secondary Agricultural Services
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <Link
-                    href="/farm-profile"
-                    className="mt-4 inline-block rounded-xl bg-emerald-700 px-5 py-2.5 text-xs font-black text-white hover:bg-emerald-800 transition"
+                    href="/forecast"
+                    className="p-4 rounded-2xl bg-white border border-stone-200 hover:border-emerald-600 transition flex items-center gap-3"
                   >
-                    Setup My Farm Now →
+                    <span className="text-2xl">🌦️</span>
+                    <div>
+                      <div className="text-xs font-black text-stone-900">Weather & Rain Forecast</div>
+                      <div className="text-[11px] text-stone-500">Mandi rainfall prediction</div>
+                    </div>
+                  </Link>
+                  <Link
+                    href="/schemes"
+                    className="p-4 rounded-2xl bg-white border border-stone-200 hover:border-emerald-600 transition flex items-center gap-3"
+                  >
+                    <span className="text-2xl">📜</span>
+                    <div>
+                      <div className="text-xs font-black text-stone-900">Government Subsidies</div>
+                      <div className="text-[11px] text-stone-500">PM-Kisan & state schemes</div>
+                    </div>
+                  </Link>
+                  <Link
+                    href="/crop-triage"
+                    className="p-4 rounded-2xl bg-white border border-stone-200 hover:border-emerald-600 transition flex items-center gap-3"
+                  >
+                    <span className="text-2xl">👨‍🌾</span>
+                    <div>
+                      <div className="text-xs font-black text-stone-900">Agronomist Advisory</div>
+                      <div className="text-[11px] text-stone-500">Pest & crop diagnostics</div>
+                    </div>
                   </Link>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 1: MY FARM (DATABASE-BACKED LAND, PLOTS, AND REAL INVENTORY) */}
+          {activeTab === "my-farm" && (
+            <div className="space-y-6">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-xl font-black text-stone-900">🏡 My Farm & Production Records</h2>
+                  <p className="text-xs text-stone-500">
+                    Real database records for your registered land, plots, and inventory stock.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowAddFarmModal(true)}
+                  className="px-4 py-2.5 rounded-xl bg-emerald-800 text-white text-xs font-bold shadow-md hover:bg-emerald-900 min-h-[48px] transition"
+                >
+                  + Add New Farm Profile
+                </button>
+              </div>
+
+              {/* FARM PROFILES LIST */}
+              {farms.length === 0 ? (
+                <div className="p-8 rounded-3xl bg-white border border-stone-200 text-center space-y-3">
+                  <span className="text-4xl">🌾</span>
+                  <h3 className="text-base font-black text-stone-900">No Farm Profile Registered Yet</h3>
+                  <p className="text-xs text-stone-500 max-w-sm mx-auto">
+                    Register your land acreage and survey numbers so buyers can verify your farm location.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setShowAddFarmModal(true)}
+                    className="px-6 py-2.5 rounded-xl bg-emerald-800 text-white text-xs font-black min-h-[48px]"
+                  >
+                    Register Your First Farm →
+                  </button>
+                </div>
               ) : (
-                <div className="mt-6 space-y-4">
-                  {farmerFarms.map((farm) => (
-                    <div key={farm.id} className="rounded-2xl border border-stone-200 p-4 bg-stone-50/50">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-base font-black text-stone-900">{farm.name}</span>
-                        <span className="text-xs font-bold text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {farms.map((farm) => (
+                    <div key={farm.id} className="p-6 rounded-3xl bg-white border border-stone-200 space-y-4">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="text-base font-black text-stone-900">{farm.name}</h3>
+                          <p className="text-xs text-stone-500">
+                            {farm.village ? `${farm.village}, ` : ""}{farm.district}, {farm.state}
+                          </p>
+                        </div>
+                        <span className="px-2.5 py-1 rounded-full text-xs font-black bg-emerald-50 text-emerald-800">
                           {farm.total_area_acres} Acres
                         </span>
                       </div>
-                      <div className="text-xs text-stone-600">District: {farm.district}</div>
+
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div className="p-3 bg-stone-50 rounded-xl">
+                          <span className="text-stone-400 block text-[10px] font-bold">Survey No:</span>
+                          <span className="font-bold text-stone-900">{farm.survey_number || "Verified Pahani"}</span>
+                        </div>
+                        <div className="p-3 bg-stone-50 rounded-xl">
+                          <span className="text-stone-400 block text-[10px] font-bold">Active Plots:</span>
+                          <span className="font-bold text-stone-900">{farm.plots?.length || 0} Plot Records</span>
+                        </div>
+                      </div>
 
                       {farm.plots && farm.plots.length > 0 && (
-                        <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          {farm.plots.map((p) => (
-                            <div key={p.id} className="rounded-xl border border-stone-200 bg-white p-3 text-xs">
-                              <div className="font-bold text-stone-800">{p.plot_code}</div>
-                              <div className="text-emerald-700 font-semibold">{p.current_crop}</div>
-                              <div className="text-stone-500 text-[11px]">{p.area_acres} Acres • {p.crop_stage}</div>
-                            </div>
-                          ))}
+                        <div className="space-y-2 pt-2 border-t border-stone-100">
+                          <span className="text-[11px] font-bold text-stone-500 block">Cultivation Plots:</span>
+                          <div className="space-y-1.5">
+                            {farm.plots.map((plot) => (
+                              <div
+                                key={plot.id}
+                                className="p-2.5 rounded-xl bg-stone-50 border border-stone-100 flex items-center justify-between text-xs"
+                              >
+                                <div>
+                                  <span className="font-black text-stone-800">{plot.plot_code}</span>
+                                  <span className="text-stone-500 ml-2">({plot.area_acres} ac)</span>
+                                </div>
+                                <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 text-[10px] font-bold">
+                                  {plot.current_crop || "Standing Crop"} · {plot.crop_stage || "Cultivation"}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       )}
                     </div>
                   ))}
                 </div>
               )}
-            </div>
-          </section>
-        )}
 
-        {/* SECTION: 2. SELL MY CROPS */}
-        {activeTab === "sell-crops" && (
-          <section className="space-y-4 animate-in fade-in">
-            <button
-              type="button"
-              onClick={() => setActiveTab("overview")}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-stone-200 px-3.5 py-2 text-xs font-bold text-stone-800 hover:bg-stone-300 transition"
-            >
-              ⬅ Back to Main Menu (वापस जाएं)
-            </button>
-
-            <div className="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
-              <h2 className="text-xl font-black text-stone-900">📦 Sell My Crops (फसल बेचें)</h2>
-              <p className="text-xs text-stone-600 mt-1">
-                List your produce directly on the X-MILE marketplace for buyers to make offers.
-              </p>
-
-              {formError && (
-                <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-800 font-bold">
-                  ⚠️ {formError}
+              {/* REAL FARM INVENTORY LOTS */}
+              <div className="mt-8 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-base font-black text-stone-900">📦 Harvested Inventory in Stock</h3>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("check-quality")}
+                    className="text-xs font-bold text-emerald-800 hover:underline"
+                  >
+                    + Grade & Add Produce
+                  </button>
                 </div>
-              )}
 
-              <div className="mt-6 space-y-6">
-                {/* 1. Pick Crop */}
-                <div>
-                  <label className="block text-xs font-black uppercase tracking-wider text-stone-700 mb-2">
-                    Step 1: Choose Your Produce (फसल चुनें)
-                  </label>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    {COMMON_CROPS.map((c) => (
-                      <button
-                        key={c.name}
-                        type="button"
-                        onClick={() => {
-                          setProduce(c.name);
-                          setAskingPrice(String(c.defaultPrice));
-                        }}
-                        className={`flex items-center gap-2 rounded-2xl border p-3 text-left transition ${
-                          produce === c.name
-                            ? "border-emerald-600 bg-emerald-50 text-emerald-950 font-black shadow-xs"
-                            : "border-stone-200 hover:bg-stone-50 text-stone-800 font-bold"
-                        }`}
-                      >
-                        <span className="text-2xl">{c.icon}</span>
-                        <div>
-                          <div className="text-xs">{c.name}</div>
-                          <div className="text-[10px] text-stone-500 font-medium">{c.hindi}</div>
+                {inventory.length === 0 ? (
+                  <div className="p-8 rounded-3xl bg-white border border-stone-200 text-center space-y-2">
+                    <p className="text-xs text-stone-500">No inventory recorded in database yet.</p>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab("sell-crops")}
+                      className="px-4 py-2 rounded-xl bg-stone-900 text-white text-xs font-bold"
+                    >
+                      Record Harvest Stock →
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {inventory.map((item) => (
+                      <div key={item.id} className="p-5 rounded-2xl bg-white border border-stone-200 space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-black text-stone-900">{item.produce}</span>
+                          <span
+                            className={`px-2 py-0.5 rounded-md text-[10px] font-black ${
+                              item.quality_grade === "A"
+                                ? "bg-emerald-100 text-emerald-800"
+                                : item.quality_grade === "B"
+                                ? "bg-blue-100 text-blue-800"
+                                : "bg-amber-100 text-amber-800"
+                            }`}
+                          >
+                            Grade {item.quality_grade}
+                          </span>
                         </div>
-                      </button>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-stone-500">Available Stock:</span>
+                          <span className="font-bold text-stone-900">
+                            {item.available_quantity_kg ?? item.quantity_kg} kg
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-stone-500">Reserved for Orders:</span>
+                          <span className="font-bold text-amber-700">{item.reserved_quantity_kg || 0} kg</span>
+                        </div>
+                        <div className="pt-2 border-t border-stone-100 flex items-center justify-between text-[11px]">
+                          <span className="text-stone-400">
+                            Status: <strong className="text-stone-700">{item.status}</strong>
+                          </span>
+                          {item.listing_id && (
+                            <span className="text-emerald-700 font-bold">✓ Listed for Sale</span>
+                          )}
+                        </div>
+                      </div>
                     ))}
                   </div>
-                </div>
-
-                {/* 2. Quantity & Asking Price */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-black uppercase tracking-wider text-stone-700 mb-1" htmlFor="farmer-crop-qty">
-                      Step 2: Harvest Quantity in kg (वजन किलो में)
-                    </label>
-                    <input
-                      id="farmer-crop-qty"
-                      type="number"
-                      value={quantity}
-                      onChange={(e) => setQuantity(e.target.value)}
-                      placeholder="e.g. 500"
-                      className="w-full rounded-2xl border-2 border-stone-200 p-3.5 text-base font-bold text-stone-900 focus:border-emerald-600 focus:outline-none"
-                    />
-                    <div className="mt-1 text-[11px] text-stone-500">Example: 500 kg, 1200 kg</div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-black uppercase tracking-wider text-stone-700 mb-1" htmlFor="farmer-asking-price">
-                      Step 3: Your Asking Price (₹ प्रति किलो)
-                    </label>
-                    <div className="relative">
-                      <span className="absolute left-3.5 top-3.5 text-base font-bold text-stone-500">₹</span>
-                      <input
-                        id="farmer-asking-price"
-                        type="number"
-                        value={askingPrice}
-                        onChange={(e) => setAskingPrice(e.target.value)}
-                        placeholder="e.g. 24"
-                        className="w-full rounded-2xl border-2 border-stone-200 p-3.5 pl-8 text-base font-bold text-stone-900 focus:border-emerald-600 focus:outline-none"
-                      />
-                    </div>
-                    <div className="mt-1 text-[11px] text-stone-500">Enter your expected minimum rate per kg</div>
-                  </div>
-                </div>
-
-                {/* 3. Crop Photo Upload & Instant Quality */}
-                <div>
-                  <label className="block text-xs font-black uppercase tracking-wider text-stone-700 mb-2" htmlFor="farmer-crop-photo">
-                    Step 4: Take Crop Photo (फोटो खींचें - Optional)
-                  </label>
-                  <div className="flex flex-col sm:flex-row items-center gap-4">
-                    <label
-                      htmlFor="farmer-crop-photo"
-                      className="flex w-full sm:w-auto cursor-pointer items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-stone-300 bg-stone-50 px-6 py-4 text-xs font-bold text-stone-700 hover:border-emerald-500 hover:bg-emerald-50/50 transition"
-                    >
-                      <span className="text-xl">📸</span>
-                      <span>{image ? "Change Photo" : "Upload / Take Crop Photo"}</span>
-                      <input
-                        id="farmer-crop-photo"
-                        type="file"
-                        accept="image/*"
-                        capture="environment"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) setImage(file);
-                        }}
-                        className="hidden"
-                      />
-                    </label>
-
-                    {preview && (
-                      <div className="flex items-center gap-3">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={preview}
-                          alt="Crop preview"
-                          className="h-16 w-16 rounded-xl object-cover border border-stone-200 shadow-2xs"
-                        />
-                        <span className="text-xs font-bold text-emerald-800">✓ Photo Selected</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Submit Button */}
-                <button
-                  type="button"
-                  disabled={savingListing}
-                  onClick={handleConfirmListing}
-                  className="w-full rounded-2xl bg-emerald-700 p-4 text-base font-black text-white shadow-md hover:bg-emerald-800 transition disabled:opacity-50"
-                >
-                  {savingListing ? "Publishing Lot..." : "Publish Crop for Sale (फसल बिक्री के लिए भेजें) →"}
-                </button>
+                )}
               </div>
             </div>
-          </section>
-        )}
+          )}
 
-        {/* SECTION: 3. MY ORDERS */}
-        {activeTab === "my-orders" && (
-          <section className="space-y-4 animate-in fade-in">
-            <button
-              type="button"
-              onClick={() => setActiveTab("overview")}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-stone-200 px-3.5 py-2 text-xs font-bold text-stone-800 hover:bg-stone-300 transition"
-            >
-              ⬅ Back to Main Menu (वापस जाएं)
-            </button>
-
-            {/* Buyer Counter-Offers */}
-            {marketOffers.length > 0 && (
-              <div className="rounded-3xl border border-amber-300 bg-amber-50/60 p-6 shadow-sm">
-                <div className="flex items-center justify-between pb-3 border-b border-amber-200">
-                  <h3 className="text-base font-black text-amber-950">
-                    🤝 Direct Buyer Counter-Offers ({marketOffers.length})
-                  </h3>
-                  <span className="text-xs font-bold text-amber-800">Pending Your Approval</span>
+          {/* TAB 2: SELL MY CROPS (PUBLISH PRODUCE LISTING TO LIVE MARKETPLACE) */}
+          {activeTab === "sell-crops" && (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* PUBLISH FORM */}
+              <div className="lg:col-span-2 p-6 sm:p-8 rounded-3xl bg-white border border-stone-200 space-y-6">
+                <div>
+                  <h2 className="text-xl font-black text-stone-900">💰 Publish Produce for Sale</h2>
+                  <p className="text-xs text-stone-500">
+                    List your harvest to verified commercial mandi buyers across India.
+                  </p>
                 </div>
 
-                <div className="mt-4 space-y-3">
-                  {marketOffers.map((off) => (
-                    <div key={off.id} className="rounded-2xl border border-amber-200 bg-white p-4 shadow-2xs">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div>
-                          <div className="text-sm font-black text-stone-900">
-                            {off.buyer_profiles?.full_name || "Commercial Buyer"} offered ₹{off.offered_price_per_kg}/kg
-                          </div>
-                          <div className="text-xs text-stone-600 mt-0.5">
-                            Quantity: {off.offered_quantity_kg} kg • Destination: {off.destination_city}
-                          </div>
-                        </div>
+                <form onSubmit={handlePublishListing} className="space-y-5">
+                  {/* Common Crops Quick Selector */}
+                  <div>
+                    <label className="block text-xs font-black uppercase tracking-wider text-stone-700 mb-2">
+                      Select Your Crop:
+                    </label>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {COMMON_CROPS.map((crop) => {
+                        const isSelected = selectedProduce === crop.name;
+                        return (
+                          <button
+                            key={crop.name}
+                            type="button"
+                            onClick={() => {
+                              setSelectedProduce(crop.name);
+                              setListingPrice(String(crop.defaultPrice));
+                            }}
+                            className={`p-3 rounded-2xl border text-left flex items-center gap-2 transition min-h-[48px] ${
+                              isSelected
+                                ? "bg-emerald-50 border-emerald-600 text-emerald-900 font-black shadow-sm"
+                                : "bg-white border-stone-200 text-stone-700 hover:bg-stone-50"
+                            }`}
+                          >
+                            <span className="text-xl">{crop.icon}</span>
+                            <div>
+                              <div className="text-xs font-bold leading-tight">{crop.name}</div>
+                              <div className="text-[10px] text-stone-400">{crop.hindi}</div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
 
-                        {off.status === "PENDING" && (
-                          <div className="flex items-center gap-2">
+                  {/* Quantity & Asking Rate */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-black uppercase tracking-wider text-stone-700 mb-1">
+                        Available Harvest Quantity (kg):
+                      </label>
+                      <input
+                        type="number"
+                        min="10"
+                        max="100000"
+                        required
+                        value={listingQty}
+                        onChange={(e) => setListingQty(e.target.value)}
+                        placeholder="e.g. 500"
+                        className="w-full rounded-xl border border-stone-200 px-4 py-3 text-sm font-bold text-stone-900 focus:border-emerald-600 focus:outline-none min-h-[48px]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-black uppercase tracking-wider text-stone-700 mb-1">
+                        Asking Price (₹ / kg):
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="5000"
+                        required
+                        value={listingPrice}
+                        onChange={(e) => setListingPrice(e.target.value)}
+                        placeholder="e.g. 24"
+                        className="w-full rounded-xl border border-stone-200 px-4 py-3 text-sm font-bold text-stone-900 focus:border-emerald-600 focus:outline-none min-h-[48px]"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Quality Grade & Location */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-black uppercase tracking-wider text-stone-700 mb-1">
+                        Supported Quality Grade:
+                      </label>
+                      <select
+                        value={listingGrade}
+                        onChange={(e) => setListingGrade(e.target.value)}
+                        className="w-full rounded-xl border border-stone-200 px-3 py-3 text-xs font-bold text-stone-800 focus:border-emerald-600 focus:outline-none min-h-[48px]"
+                      >
+                        <option value="A">Grade A (Premium / Export Quality)</option>
+                        <option value="B">Grade B (Standard Mandi Quality)</option>
+                        <option value="C">Grade C (Processing / Bulk Lot)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-black uppercase tracking-wider text-stone-700 mb-1">
+                        Farm Gate / Pickup Location:
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={listingPickup}
+                        onChange={(e) => setListingPickup(e.target.value)}
+                        placeholder="e.g. Tumakuru Mandi Gate 2"
+                        className="w-full rounded-xl border border-stone-200 px-3 py-3 text-xs font-bold text-stone-800 focus:border-emerald-600 focus:outline-none min-h-[48px]"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Optional: Select from existing inventory */}
+                  {inventory.length > 0 && (
+                    <div>
+                      <label className="block text-xs font-bold text-stone-600 mb-1">
+                        Link to Existing Farm Inventory Lot (Optional):
+                      </label>
+                      <select
+                        value={selectedInventoryId}
+                        onChange={(e) => {
+                          const lotId = e.target.value;
+                          setSelectedInventoryId(lotId);
+                          const chosen = inventory.find((i) => i.id === lotId);
+                          if (chosen) {
+                            setSelectedProduce(chosen.produce);
+                            setListingQty(String(chosen.available_quantity_kg ?? chosen.quantity_kg));
+                            setListingGrade(chosen.quality_grade);
+                          }
+                        }}
+                        className="w-full rounded-xl border border-stone-200 px-3 py-2.5 text-xs text-stone-700 focus:border-emerald-600 focus:outline-none"
+                      >
+                        <option value="">-- Create new harvest lot automatically --</option>
+                        {inventory.map((inv) => (
+                          <option key={inv.id} value={inv.id}>
+                            {inv.produce} (Grade {inv.quality_grade}, Available: {inv.available_quantity_kg ?? inv.quantity_kg} kg)
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {/* Total Value Computation */}
+                  <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 flex justify-between items-center">
+                    <span className="text-xs font-black text-emerald-900">Total Estimated Sale Value:</span>
+                    <span className="text-lg font-black text-emerald-950">
+                      ₹{((Number(listingQty) || 0) * (Number(listingPrice) || 0)).toLocaleString("en-IN")}
+                    </span>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={publishingListing}
+                    className="w-full py-4 rounded-2xl bg-emerald-800 hover:bg-emerald-900 text-white font-black text-sm shadow-md transition disabled:opacity-50 min-h-[52px]"
+                  >
+                    {publishingListing ? "Publishing to Marketplace..." : "Publish to Live Marketplace →"}
+                  </button>
+                </form>
+              </div>
+
+              {/* CURRENT ACTIVE LISTINGS */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-black text-stone-900">My Active Produce Listings</h3>
+                {listings.length === 0 ? (
+                  <div className="p-6 rounded-2xl bg-white border border-stone-200 text-center text-xs text-stone-500">
+                    No active listings published right now. Use the form to list your first harvest.
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {listings.map((l) => (
+                      <div key={l.id} className="p-4 rounded-2xl bg-white border border-stone-200 space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-black text-stone-900">{l.crop_name}</span>
+                          <span
+                            className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+                              l.status === "ACTIVE"
+                                ? "bg-emerald-100 text-emerald-800"
+                                : l.status === "FULFILLED"
+                                ? "bg-blue-100 text-blue-800"
+                                : "bg-stone-100 text-stone-600"
+                            }`}
+                          >
+                            {l.status}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-xs text-stone-600">
+                          <span>Quantity:</span>
+                          <span className="font-bold text-stone-900">{l.quantity_kg} kg</span>
+                        </div>
+                        <div className="flex justify-between text-xs text-stone-600">
+                          <span>Asking Rate:</span>
+                          <span className="font-bold text-emerald-800">₹{l.asking_price_per_kg}/kg</span>
+                        </div>
+                        {l.status === "ACTIVE" && (
+                          <div className="pt-2 border-t border-stone-100 flex justify-end">
                             <button
                               type="button"
-                              onClick={() => handleAcceptOffer(off.id)}
-                              className="rounded-xl bg-emerald-700 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-800 transition"
+                              onClick={() => handleWithdrawListing(l.id)}
+                              disabled={actionInProgress === l.id}
+                              className="text-xs font-bold text-red-600 hover:text-red-700 min-h-[36px]"
                             >
-                              Accept (स्वीकार करें) ✓
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDeclineOffer(off.id)}
-                              className="rounded-xl border border-stone-300 px-3 py-2 text-xs font-bold text-stone-700 hover:bg-stone-100 transition"
-                            >
-                              Decline ✕
+                              {actionInProgress === l.id ? "Withdrawing..." : "Withdraw Listing"}
                             </button>
                           </div>
                         )}
                       </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* TAB 3: MY ORDERS (BUYER OFFERS & CONFIRMED ORDERS) */}
+          {activeTab === "my-orders" && (
+            <div className="space-y-8">
+              {/* INCOMING BUYER OFFERS */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-xl font-black text-stone-900">📦 Incoming Buyer Purchase Offers</h2>
+                    <p className="text-xs text-stone-500">
+                      Commercial buyers offering to purchase your harvest. Accept, counter, or decline.
+                    </p>
+                  </div>
+                  <span className="px-3 py-1 rounded-full text-xs font-black bg-blue-100 text-blue-800">
+                    {offers.length} Offers
+                  </span>
+                </div>
+
+                {offers.length === 0 ? (
+                  <div className="p-8 rounded-3xl bg-white border border-stone-200 text-center space-y-2">
+                    <p className="text-xs text-stone-500">No incoming offers on your produce right now.</p>
+                    <p className="text-[11px] text-stone-400">
+                      When buyers submit offers on your listings, they will appear here with instant accept/counter actions.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {offers.map((offer) => (
+                      <div key={offer.id} className="p-6 rounded-3xl bg-white border border-stone-200 space-y-4">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <span className="text-xs font-bold text-stone-400">Buyer Offer</span>
+                            <h3 className="text-base font-black text-stone-900">
+                              {offer.buyer_profiles?.full_name || "Commercial APMC Buyer"}
+                            </h3>
+                            <p className="text-xs text-stone-500">Destination: {offer.destination_city}</p>
+                          </div>
+                          <span
+                            className={`px-2.5 py-1 rounded-full text-xs font-black uppercase ${
+                              offer.status === "PENDING"
+                                ? "bg-amber-100 text-amber-800"
+                                : offer.status === "ACCEPTED"
+                                ? "bg-emerald-100 text-emerald-800"
+                                : offer.status === "COUNTERED"
+                                ? "bg-blue-100 text-blue-800"
+                                : "bg-stone-100 text-stone-600"
+                            }`}
+                          >
+                            {offer.status}
+                          </span>
+                        </div>
+
+                        <div className="p-3 bg-stone-50 rounded-2xl grid grid-cols-3 gap-2 text-center text-xs">
+                          <div>
+                            <span className="text-[10px] text-stone-400 block font-bold">Quantity</span>
+                            <span className="font-black text-stone-900">{offer.offered_quantity_kg} kg</span>
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-stone-400 block font-bold">Offered Rate</span>
+                            <span className="font-black text-emerald-800">₹{offer.offered_price_per_kg}/kg</span>
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-stone-400 block font-bold">Total Payout</span>
+                            <span className="font-black text-stone-900">
+                              ₹{(Number(offer.offered_quantity_kg) * Number(offer.offered_price_per_kg)).toLocaleString("en-IN")}
+                            </span>
+                          </div>
+                        </div>
+
+                        {offer.status === "PENDING" && (
+                          <div className="grid grid-cols-3 gap-2 pt-2">
+                            <button
+                              type="button"
+                              onClick={() => handleAcceptOffer(offer.id)}
+                              disabled={actionInProgress === offer.id}
+                              className="py-2.5 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white font-black text-xs shadow-sm transition min-h-[48px]"
+                            >
+                              {actionInProgress === offer.id ? "Accepting..." : "Accept Offer"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setCounterModalOffer(offer);
+                                setCounterPriceInput(String(offer.offered_price_per_kg));
+                              }}
+                              className="py-2.5 rounded-xl border border-stone-300 hover:bg-stone-50 text-stone-800 font-bold text-xs min-h-[48px]"
+                            >
+                              Counter Offer
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleRejectOffer(offer.id)}
+                              disabled={actionInProgress === offer.id}
+                              className="py-2.5 rounded-xl border border-red-200 text-red-600 hover:bg-red-50 font-bold text-xs min-h-[48px]"
+                            >
+                              Decline
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* CONFIRMED CONTRACTS & ORDERS */}
+              <div className="space-y-4 pt-6 border-t border-stone-200">
+                <h2 className="text-xl font-black text-stone-900">📑 Confirmed Orders & Fulfillments</h2>
+                {orders.length === 0 ? (
+                  <div className="p-8 rounded-3xl bg-white border border-stone-200 text-center text-xs text-stone-500">
+                    No confirmed orders yet. Accepted buyer offers will transition here automatically.
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {orders.map((item) => (
+                      <div
+                        key={item.id}
+                        className="p-5 rounded-2xl bg-white border border-stone-200 flex flex-wrap items-center justify-between gap-4"
+                      >
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-mono font-bold text-stone-400">
+                              #{item.orders?.id.slice(0, 8)}
+                            </span>
+                            <span className="text-sm font-black text-stone-900">
+                              {item.orders?.produce} (Grade {item.orders?.required_grade})
+                            </span>
+                          </div>
+                          <p className="text-xs text-stone-500 mt-0.5">
+                            Buyer: <strong>{item.orders?.buyer_name}</strong> · Dest: {item.orders?.destination}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-6">
+                          <div className="text-right">
+                            <span className="text-xs font-black text-stone-900 block">
+                              {item.orders?.fulfilled_quantity_kg || item.quantity_kg} kg
+                            </span>
+                            <span className="text-[11px] text-emerald-800 font-bold">
+                              ₹{(item.total_value ?? (item.quantity_kg * (item.unit_price_per_kg || 24))).toLocaleString("en-IN")}
+                            </span>
+                          </div>
+
+                          <span
+                            className={`px-3 py-1 rounded-full text-xs font-black ${
+                              item.orders?.status === "Delivered"
+                                ? "bg-emerald-100 text-emerald-800"
+                                : item.orders?.status === "Dispatched"
+                                ? "bg-purple-100 text-purple-800"
+                                : "bg-blue-100 text-blue-800"
+                            }`}
+                          >
+                            {item.orders?.status}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* TAB 4: TRACK DELIVERY (REAL SHIPMENTS) */}
+          {activeTab === "track-delivery" && (
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-xl font-black text-stone-900">🚚 Track My Delivery</h2>
+                <p className="text-xs text-stone-500">
+                  Real logistics records for produce dispatched from your farm gate to the buyer mandi.
+                </p>
+              </div>
+
+              {shipments.length === 0 ? (
+                <div className="p-8 rounded-3xl bg-white border border-stone-200 text-center space-y-2">
+                  <span className="text-4xl">🚛</span>
+                  <h3 className="text-base font-black text-stone-900">No Active Shipments in Transit</h3>
+                  <p className="text-xs text-stone-500 max-w-md mx-auto">
+                    When you accept a buyer offer and haulage is assigned, live vehicle dispatch manifests will appear here.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {shipments.map((shipment) => (
+                    <div key={shipment.id} className="p-6 rounded-3xl bg-white border border-stone-200 space-y-4">
+                      <div className="flex flex-wrap justify-between items-center gap-2">
+                        <div>
+                          <span className="text-xs font-mono font-bold text-stone-400">
+                            Tracking #{shipment.id.slice(0, 8)}
+                          </span>
+                          <h3 className="text-base font-black text-stone-900">
+                            {shipment.origin || "Farm Gate"} → {shipment.destination}
+                          </h3>
+                        </div>
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-black ${
+                            shipment.status === "Delivered"
+                              ? "bg-emerald-100 text-emerald-800"
+                              : "bg-purple-100 text-purple-800"
+                          }`}
+                        >
+                          {shipment.status}
+                        </span>
+                      </div>
+
+                      {/* Progress Bar */}
+                      <div>
+                        <div className="flex justify-between text-xs font-bold text-stone-500 mb-1">
+                          <span>Dispatch Progress</span>
+                          <span>{shipment.progress_percentage}%</span>
+                        </div>
+                        <div className="w-full bg-stone-100 rounded-full h-3 overflow-hidden">
+                          <div
+                            className="bg-emerald-600 h-3 rounded-full transition-all duration-500"
+                            style={{ width: `${Math.max(5, shipment.progress_percentage)}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs bg-stone-50 p-4 rounded-2xl">
+                        <div>
+                          <span className="text-stone-400 block text-[10px] font-bold">Haulage Load:</span>
+                          <span className="font-bold text-stone-900">{shipment.total_quantity_kg} kg</span>
+                        </div>
+                        <div>
+                          <span className="text-stone-400 block text-[10px] font-bold">Current Location:</span>
+                          <span className="font-bold text-stone-900">
+                            {shipment.current_location || "En Route to Mandi"}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-stone-400 block text-[10px] font-bold">Dispatched At:</span>
+                          <span className="font-bold text-stone-900">
+                            {new Date(shipment.created_at).toLocaleDateString("en-IN")}
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
+              )}
+            </div>
+          )}
 
-            {/* Incoming Orders */}
-            <div className="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
-              <div className="flex items-center justify-between pb-4 border-b border-stone-100">
+          {/* TAB 5: CHECK CROP QUALITY (REAL GEMINI AI MULTIMODAL ASSESSMENT) */}
+          {activeTab === "check-quality" && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* PHOTO UPLOAD & CAPTURE */}
+              <div className="p-6 sm:p-8 rounded-3xl bg-white border border-stone-200 space-y-6">
                 <div>
-                  <h2 className="text-xl font-black text-stone-900">📋 My Orders (मेरे ऑर्डर)</h2>
-                  <p className="text-xs text-stone-600 mt-0.5">
-                    Orders from buyers for your produce lots.
+                  <h2 className="text-xl font-black text-stone-900">🔬 AI Crop Quality Grading</h2>
+                  <p className="text-xs text-stone-500">
+                    Upload a photo of your harvest for instant visual grading and defect analysis.
                   </p>
                 </div>
-                {ordersLoading && (
-                  <span className="text-xs font-bold text-stone-400">Loading...</span>
-                )}
-              </div>
 
-              {incomingOrders.length === 0 ? (
-                <div className="py-12 text-center">
-                  <span className="text-4xl">📦</span>
-                  <div className="mt-2 text-sm font-bold text-stone-700">No Orders Placed Yet</div>
-                  <p className="mt-1 text-xs text-stone-500 max-w-sm mx-auto">
-                    When you list your crops under &ldquo;Sell My Crops&rdquo;, buyer purchase orders will appear here.
-                  </p>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-black uppercase tracking-wider text-stone-700 mb-1">
+                      Declared Crop Type:
+                    </label>
+                    <select
+                      value={qualityProduce}
+                      onChange={(e) => setQualityProduce(e.target.value)}
+                      className="w-full rounded-xl border border-stone-200 px-3 py-3 text-xs font-bold text-stone-800 min-h-[48px]"
+                    >
+                      {COMMON_CROPS.map((c) => (
+                        <option key={c.name} value={c.name}>
+                          {c.icon} {c.name} ({c.hindi})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-black uppercase tracking-wider text-stone-700 mb-2">
+                      Upload Crop Photo:
+                    </label>
+                    <div className="border-2 border-dashed border-stone-200 rounded-3xl p-6 text-center hover:border-emerald-600 transition">
+                      {qualityPreview ? (
+                        <div className="space-y-3">
+                          <Image
+                            src={qualityPreview}
+                            alt="Crop Preview"
+                            width={320}
+                            height={240}
+                            unoptimized
+                            className="max-h-60 mx-auto rounded-2xl object-cover shadow-sm"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handlePhotoSelect(null)}
+                            className="text-xs font-bold text-red-600 hover:underline"
+                          >
+                            Remove photo
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          <span className="text-4xl block">📸</span>
+                          <p className="text-xs font-bold text-stone-700">
+                            Take a clear photo of your harvest in good lighting
+                          </p>
+                          <label
+                            htmlFor={photoInputId}
+                            className="inline-block px-5 py-3 rounded-2xl bg-emerald-800 hover:bg-emerald-900 text-white font-black text-xs cursor-pointer shadow-md min-h-[48px]"
+                          >
+                            Choose Photo / Open Camera
+                          </label>
+                          <input
+                            id={photoInputId}
+                            type="file"
+                            accept="image/*"
+                            capture="environment"
+                            onChange={(e) => {
+                              if (e.target.files && e.target.files[0]) {
+                                handlePhotoSelect(e.target.files[0]);
+                              }
+                            }}
+                            className="hidden"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
                   <button
                     type="button"
-                    onClick={() => setActiveTab("sell-crops")}
-                    className="mt-4 rounded-xl bg-emerald-700 px-5 py-2.5 text-xs font-black text-white hover:bg-emerald-800 transition"
+                    onClick={handleAnalyzeQuality}
+                    disabled={!qualityImage || qualityLoading}
+                    className="w-full py-4 rounded-2xl bg-emerald-800 hover:bg-emerald-900 text-white font-black text-sm shadow-md transition disabled:opacity-50 min-h-[52px]"
                   >
-                    Sell Crops Now →
+                    {qualityLoading ? "Running AI Visual Inspection..." : "Analyze Crop Quality with AI 🔍"}
                   </button>
                 </div>
-              ) : (
-                <div className="mt-6 space-y-4">
-                  {incomingOrders.map((item) => {
-                    const ord = item.orders;
-                    if (!ord) return null;
-                    const isUpdating = updatingOrderId === ord.id;
-
-                    return (
-                      <div key={item.id} className="rounded-2xl border border-stone-200 p-4 bg-stone-50/40">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-base font-black text-stone-900">
-                                {ord.produce} • {item.quantity_kg} kg
-                              </span>
-                              <span className="rounded-full bg-stone-200 px-2.5 py-0.5 text-[10px] font-black uppercase text-stone-800">
-                                {ord.status}
-                              </span>
-                            </div>
-                            <div className="text-xs text-stone-600 mt-1">
-                              Buyer: <span className="font-bold">{ord.buyer_name}</span> • Destination: {ord.destination}
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-2">
-                            {ord.status === "Accepted" && (
-                              <button
-                                type="button"
-                                disabled={isUpdating}
-                                onClick={() => handleUpdateOrderStatus(ord.id, "Dispatched")}
-                                className="rounded-xl bg-stone-900 px-4 py-2 text-xs font-black text-white hover:bg-black transition disabled:opacity-50"
-                              >
-                                {isUpdating ? "Updating..." : "Mark Dispatched (गाड़ी रवाना हुई) 🚚"}
-                              </button>
-                            )}
-
-                            {ord.status === "Dispatched" && (
-                              <button
-                                type="button"
-                                disabled={isUpdating}
-                                onClick={() => handleUpdateOrderStatus(ord.id, "Delivered")}
-                                className="rounded-xl bg-emerald-700 px-4 py-2 text-xs font-black text-white hover:bg-emerald-800 transition disabled:opacity-50"
-                              >
-                                {isUpdating ? "Updating..." : "Confirm Delivered (सामान पहुंचा) ✓"}
-                              </button>
-                            )}
-
-                            {ord.status === "Delivered" && (
-                              <span className="text-xs font-black text-emerald-800 bg-emerald-100 px-3 py-1 rounded-full">
-                                ✓ Completed & Settled
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </section>
-        )}
-
-        {/* SECTION: 4. TRACK DELIVERY */}
-        {activeTab === "track-delivery" && (
-          <section className="space-y-4 animate-in fade-in">
-            <button
-              type="button"
-              onClick={() => setActiveTab("overview")}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-stone-200 px-3.5 py-2 text-xs font-bold text-stone-800 hover:bg-stone-300 transition"
-            >
-              ⬅ Back to Main Menu (वापस जाएं)
-            </button>
-
-            <div className="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
-              <h2 className="text-xl font-black text-stone-900">🚚 Track Delivery (ट्रक देखें)</h2>
-              <p className="text-xs text-stone-600 mt-1">
-                Live freight tracking for your dispatched produce shipments.
-              </p>
-
-              <div className="mt-8 rounded-2xl border border-stone-200 bg-stone-50 p-6">
-                <div className="text-xs font-black uppercase tracking-wider text-emerald-800">
-                  Standard Farm-Gate Route
-                </div>
-                <div className="mt-1 text-sm font-black text-stone-900">
-                  {user?.district || "Tumakuru"} Farm Gate $\to$ Bengaluru APMC Mandi
-                </div>
-
-                {/* 3-Stage Visual Progress Bar */}
-                <div className="mt-8 relative">
-                  <div className="h-2 rounded-full bg-stone-200" />
-                  <div className="absolute left-0 top-0 h-2 w-2/3 rounded-full bg-emerald-600" />
-
-                  <div className="mt-4 grid grid-cols-3 text-center text-xs">
-                    <div>
-                      <div className="font-black text-emerald-900">1. Farm Gate 🏡</div>
-                      <div className="text-[11px] text-stone-500">Produce Loaded</div>
-                    </div>
-                    <div>
-                      <div className="font-black text-emerald-900">2. In Transit 🚚</div>
-                      <div className="text-[11px] text-stone-500">On Highway</div>
-                    </div>
-                    <div>
-                      <div className="font-bold text-stone-400">3. Delivery 🏬</div>
-                      <div className="text-[11px] text-stone-400">Weighment & Payout</div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-8 pt-4 border-t border-stone-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-                  <div>
-                    <span className="font-bold text-stone-800">Carrier:</span> Kisan Express Canter (5 Ton)
-                  </div>
-                  <Link
-                    href="/logistics"
-                    className="font-bold text-emerald-800 hover:underline"
-                  >
-                    Open Full Logistics Hub →
-                  </Link>
-                </div>
               </div>
-            </div>
-          </section>
-        )}
 
-        {/* SECTION: 5. CHECK CROP QUALITY */}
-        {activeTab === "check-quality" && (
-          <section className="space-y-4 animate-in fade-in">
-            <button
-              type="button"
-              onClick={() => setActiveTab("overview")}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-stone-200 px-3.5 py-2 text-xs font-bold text-stone-800 hover:bg-stone-300 transition"
-            >
-              ⬅ Back to Main Menu (वापस जाएं)
-            </button>
-
-            <div className="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
-              <h2 className="text-xl font-black text-stone-900">🔍 Check Crop Quality (क्वालिटी जांचें)</h2>
-              <p className="text-xs text-stone-600 mt-1">
-                Upload or take a photo of your harvest. Our AI model grades it instantly into Grade A, B, or C.
-              </p>
-
-              {qualityError && (
-                <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-800 font-bold">
-                  ⚠️ {qualityError}
-                </div>
-              )}
-
-              <div className="mt-6 space-y-4">
-                {/* Crop Selection */}
-                <div>
-                  <label className="block text-xs font-black uppercase tracking-wider text-stone-700 mb-2">
-                    Declared Crop (फसल)
-                  </label>
-                  <select
-                    value={produce}
-                    onChange={(e) => setProduce(e.target.value)}
-                    className="w-full rounded-2xl border-2 border-stone-200 p-3 text-sm font-bold text-stone-900 focus:border-emerald-600 focus:outline-none"
-                  >
-                    {COMMON_CROPS.map((c) => (
-                      <option key={c.name} value={c.name}>
-                        {c.name} ({c.hindi})
-                      </option>
-                    ))}
-                  </select>
+              {/* AI QUALITY RESULTS */}
+              <div className="p-6 sm:p-8 rounded-3xl bg-white border border-stone-200 space-y-6">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-black text-stone-900">Grading Assessment Report</h3>
+                  <span className="text-[11px] font-bold text-stone-400">Gemini Multimodal</span>
                 </div>
 
-                {/* Photo Capture */}
-                <div>
-                  <label
-                    htmlFor="farmer-camera-input"
-                    className="flex cursor-pointer flex-col items-center justify-center rounded-3xl border-2 border-dashed border-stone-300 bg-stone-50 p-8 text-center hover:border-emerald-500 hover:bg-emerald-50/50 transition"
-                  >
-                    <span className="text-4xl mb-2">📸</span>
-                    <span className="text-sm font-black text-stone-900">
-                      {image ? "Photo Loaded - Tap to Change" : "Tap Here to Take or Upload Photo"}
-                    </span>
-                    <span className="text-xs text-stone-500 mt-1">
-                      Works directly with your smartphone camera
-                    </span>
-                    <input
-                      id="farmer-camera-input"
-                      type="file"
-                      accept="image/*"
-                      capture="environment"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) setImage(file);
-                      }}
-                      className="hidden"
-                    />
-                  </label>
-                </div>
-
-                {preview && (
-                  <div className="text-center">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={preview}
-                      alt="Captured crop"
-                      className="mx-auto h-48 w-48 rounded-2xl object-cover border border-stone-200 shadow-sm"
-                    />
+                {!qualityResult ? (
+                  <div className="p-8 rounded-2xl bg-stone-50 border border-stone-100 text-center text-xs text-stone-500 space-y-2">
+                    <span className="text-3xl block">🔬</span>
+                    <p>No assessment performed yet. Upload a photo and tap &apos;Analyze Crop Quality with AI&apos;.</p>
                   </div>
-                )}
-
-                <button
-                  type="button"
-                  disabled={qualityLoading || !image}
-                  onClick={handleAnalyzeQuality}
-                  className="w-full rounded-2xl bg-emerald-700 p-4 text-base font-black text-white shadow-md hover:bg-emerald-800 transition disabled:opacity-50"
-                >
-                  {qualityLoading ? "Scanning Photo with AI..." : "Check Quality Now (क्वालिटी जांचें) 🔍"}
-                </button>
-
-                {/* AI Result Display */}
-                {quality && (
-                  <div className="mt-6 rounded-3xl border-2 border-emerald-400 bg-emerald-50/70 p-6 animate-in zoom-in-95">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="text-xs font-black uppercase tracking-wider text-emerald-800">
-                          AI Inspection Result
-                        </div>
-                        <div className="mt-1 flex items-center gap-3">
-                          <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-700 text-3xl font-black text-white shadow-sm">
-                            {quality.grade}
-                          </span>
-                          <div>
-                            <div className="text-lg font-black text-emerald-950">
-                              Grade {quality.grade} Quality
-                            </div>
-                            <div className="text-xs font-bold text-emerald-800">
-                              Quality Score: {quality.score}/100 • Confidence: {quality.confidence}%
-                            </div>
-                          </div>
-                        </div>
+                ) : (
+                  <div className="space-y-4">
+                    {/* Grade Badge */}
+                    <div className="p-6 rounded-2xl bg-emerald-50 border border-emerald-200 text-center space-y-2">
+                      <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 block">
+                        Assigned Visual Quality Grade
+                      </span>
+                      <div className="text-5xl font-black text-emerald-950">
+                        Grade {qualityResult.grade}
+                      </div>
+                      <div className="text-xs font-bold text-emerald-800">
+                        Visual Score: <strong>{qualityResult.score} / 100</strong> · Confidence:{" "}
+                        <strong>{qualityResult.confidence}%</strong>
                       </div>
                     </div>
 
-                    {quality.observations && quality.observations.length > 0 && (
-                      <div className="mt-4 pt-3 border-t border-emerald-200">
-                        <div className="text-xs font-black uppercase text-emerald-900 mb-1">
-                          Visible Observations:
-                        </div>
-                        <ul className="list-disc list-inside text-xs text-emerald-950 space-y-0.5">
-                          {quality.observations.map((obs, idx) => (
-                            <li key={idx}>{obs}</li>
+                    {/* Observations */}
+                    <div className="space-y-2">
+                      <span className="text-xs font-black text-stone-700 block">AI Visual Observations:</span>
+                      <ul className="space-y-1 text-xs text-stone-600">
+                        {qualityResult.observations.map((obs, idx) => (
+                          <li key={idx} className="flex items-start gap-2">
+                            <span className="text-emerald-600 font-bold">✓</span>
+                            <span>{obs}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    {/* Defect Analysis */}
+                    {qualityResult.visibleDefects && qualityResult.visibleDefects.length > 0 && (
+                      <div className="space-y-1 p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs">
+                        <span className="font-black text-amber-900 block">Defects / Variances Noticed:</span>
+                        <ul className="text-amber-800 space-y-0.5">
+                          {qualityResult.visibleDefects.map((def, idx) => (
+                            <li key={idx}>· {def}</li>
                           ))}
                         </ul>
                       </div>
                     )}
+
+                    {/* Regulatory Disclaimer */}
+                    <div className="p-3 bg-stone-50 rounded-xl border border-stone-200 text-[11px] text-stone-500">
+                      ℹ️ <strong>AI Visual Assessment Notice:</strong> Visual grading is indicative. For formal certified laboratory assay certificates, visit an accredited district APMC laboratory.
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleSaveQualityToInventory}
+                      disabled={addingToInventory}
+                      className="w-full py-3.5 rounded-xl bg-stone-900 hover:bg-black text-white font-black text-xs shadow-md transition disabled:opacity-50 min-h-[48px]"
+                    >
+                      {addingToInventory ? "Saving to Inventory..." : "+ Add Graded Lot to My Farm Inventory"}
+                    </button>
                   </div>
                 )}
               </div>
             </div>
-          </section>
-        )}
+          )}
 
-        {/* SECTION: 6. MY EARNINGS */}
-        {activeTab === "my-earnings" && (
-          <section className="space-y-4 animate-in fade-in">
-            <button
-              type="button"
-              onClick={() => setActiveTab("overview")}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-stone-200 px-3.5 py-2 text-xs font-bold text-stone-800 hover:bg-stone-300 transition"
-            >
-              ⬅ Back to Main Menu (वापस जाएं)
-            </button>
+          {/* TAB 6: MY EARNINGS (REAL FINANCIAL SETTLEMENTS & ESCROW) */}
+          {activeTab === "my-earnings" && (
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-xl font-black text-stone-900">💵 My Verified Earnings & Settlements</h2>
+                <p className="text-xs text-stone-500">
+                  Real transaction payouts and escrow settlements supported by the X-MILE ledger.
+                </p>
+              </div>
 
-            <div className="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
-              <h2 className="text-xl font-black text-stone-900">💰 My Earnings (मेरी कमाई)</h2>
-              <p className="text-xs text-stone-600 mt-1">
-                Summary of your sales, bank payouts, and safe escrow guarantees.
-              </p>
-
-              <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="rounded-2xl border border-emerald-300 bg-emerald-50/60 p-5">
-                  <div className="text-xs font-black uppercase tracking-wider text-emerald-800">
-                    Paid to Bank Account
+              {/* SUMMARY STATS */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="p-6 rounded-3xl bg-white border border-stone-200">
+                  <span className="text-xs font-bold text-stone-400 block uppercase">Disbursed to Bank</span>
+                  <div className="text-2xl sm:text-3xl font-black text-emerald-800 mt-2">
+                    ₹{totalDisbursedEarnings.toLocaleString("en-IN")}
                   </div>
-                  <div className="mt-2 text-3xl font-black text-emerald-950">
-                    ₹{totalEarningsEstimated.toLocaleString()}
-                  </div>
-                  <div className="mt-1 text-xs text-stone-500">
-                    Completed orders verified at weighbridge
-                  </div>
+                  <span className="text-[11px] text-stone-500 mt-1 block">
+                    From {deliveredOrders.length} completed delivery fulfillments
+                  </span>
                 </div>
 
-                <div className="rounded-2xl border border-amber-300 bg-amber-50/60 p-5">
-                  <div className="text-xs font-black uppercase tracking-wider text-amber-800">
-                    Held in Safe Escrow
+                <div className="p-6 rounded-3xl bg-white border border-stone-200">
+                  <span className="text-xs font-bold text-stone-400 block uppercase">Locked in Escrow</span>
+                  <div className="text-2xl sm:text-3xl font-black text-amber-700 mt-2">
+                    ₹{totalPendingInEscrow.toLocaleString("en-IN")}
                   </div>
-                  <div className="mt-2 text-3xl font-black text-amber-950">
-                    ₹{pendingEscrow.toLocaleString()}
+                  <span className="text-[11px] text-stone-500 mt-1 block">
+                    Held in trust for orders currently in transit
+                  </span>
+                </div>
+
+                <div className="p-6 rounded-3xl bg-white border border-stone-200">
+                  <span className="text-xs font-bold text-stone-400 block uppercase">Total Fulfilled Volume</span>
+                  <div className="text-2xl sm:text-3xl font-black text-stone-900 mt-2">
+                    {totalFulfilledVolumeKg.toLocaleString("en-IN")} kg
                   </div>
-                  <div className="mt-1 text-xs text-stone-500">
-                    Guaranteed buyer money released upon delivery
-                  </div>
+                  <span className="text-[11px] text-stone-500 mt-1 block">
+                    Verified weighbridge deliveries
+                  </span>
                 </div>
               </div>
 
-              <div className="mt-6 pt-4 border-t border-stone-100 flex items-center justify-between text-xs">
-                <span className="text-stone-500">Bank payouts managed via X-MILE Escrow.</span>
-                <Link
-                  href="/transaction"
-                  className="font-bold text-emerald-800 hover:underline"
-                >
-                  View Full Statement →
-                </Link>
+              {/* REAL TRANSACTION LEDGER */}
+              <div className="p-6 sm:p-8 rounded-3xl bg-white border border-stone-200 space-y-4">
+                <h3 className="text-base font-black text-stone-900">Settlement Ledger</h3>
+
+                {orders.length === 0 ? (
+                  <div className="p-8 rounded-2xl bg-stone-50 text-center text-xs text-stone-500">
+                    No transaction records found yet. Completed sales will generate automated settlement entries.
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead>
+                        <tr className="border-b border-stone-200 text-stone-400 uppercase text-[10px] font-bold">
+                          <th className="pb-3">Date</th>
+                          <th className="pb-3">Order ID</th>
+                          <th className="pb-3">Buyer</th>
+                          <th className="pb-3">Produce</th>
+                          <th className="pb-3">Quantity</th>
+                          <th className="pb-3">Rate</th>
+                          <th className="pb-3">Total Amount</th>
+                          <th className="pb-3">Settlement Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-stone-100 font-medium">
+                        {orders.map((item) => {
+                          const isDelivered = item.orders?.status === "Delivered";
+                          const totalAmt = item.total_value ?? (item.quantity_kg * (item.unit_price_per_kg || 24));
+                          return (
+                            <tr key={item.id} className="hover:bg-stone-50 transition">
+                              <td className="py-3 text-stone-500">
+                                {item.orders?.created_at
+                                  ? new Date(item.orders.created_at).toLocaleDateString("en-IN")
+                                  : "2026-11-02"}
+                              </td>
+                              <td className="py-3 font-mono text-stone-900">
+                                #{item.orders?.id.slice(0, 8)}
+                              </td>
+                              <td className="py-3 font-bold text-stone-800">
+                                {item.orders?.buyer_name || "Commercial Buyer"}
+                              </td>
+                              <td className="py-3">{item.orders?.produce}</td>
+                              <td className="py-3 font-bold text-stone-900">{item.quantity_kg} kg</td>
+                              <td className="py-3 text-emerald-800 font-bold">₹{item.unit_price_per_kg || 24}/kg</td>
+                              <td className="py-3 font-black text-stone-900">₹{totalAmt.toLocaleString("en-IN")}</td>
+                              <td className="py-3">
+                                <span
+                                  className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${
+                                    isDelivered
+                                      ? "bg-emerald-100 text-emerald-800"
+                                      : "bg-amber-100 text-amber-800"
+                                  }`}
+                                >
+                                  {isDelivered ? "Disbursed" : "In Escrow"}
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             </div>
-          </section>
+          )}
+        </main>
+
+        {/* MODAL: ADD FARM PROFILE */}
+        {showAddFarmModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <div className="w-full max-w-md rounded-3xl bg-white p-6 sm:p-8 space-y-5 shadow-2xl border border-stone-200">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-black text-stone-900">🏡 Register Farm Profile</h3>
+                <button
+                  type="button"
+                  onClick={() => setShowAddFarmModal(false)}
+                  className="text-stone-400 hover:text-stone-700 text-sm font-bold"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <form onSubmit={handleCreateFarm} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 mb-1">Farm Name:</label>
+                  <input
+                    type="text"
+                    required
+                    value={newFarmName}
+                    onChange={(e) => setNewFarmName(e.target.value)}
+                    placeholder="e.g. Sri Siddaganga Organic Farm"
+                    className="w-full rounded-xl border border-stone-200 px-3 py-2 text-xs text-stone-900 focus:border-emerald-600 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 mb-1">Total Land Area (Acres):</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0.1"
+                    required
+                    value={newFarmAcres}
+                    onChange={(e) => setNewFarmAcres(e.target.value)}
+                    placeholder="e.g. 5.5"
+                    className="w-full rounded-xl border border-stone-200 px-3 py-2 text-xs text-stone-900 focus:border-emerald-600 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 mb-1">Survey Number / RTC:</label>
+                  <input
+                    type="text"
+                    value={newFarmSurvey}
+                    onChange={(e) => setNewFarmSurvey(e.target.value)}
+                    placeholder="e.g. Sy. No. 142/2"
+                    className="w-full rounded-xl border border-stone-200 px-3 py-2 text-xs text-stone-900 focus:border-emerald-600 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 mb-1">Village / Hobli:</label>
+                  <input
+                    type="text"
+                    value={newFarmVillage}
+                    onChange={(e) => setNewFarmVillage(e.target.value)}
+                    placeholder="e.g. Kunigal Rural"
+                    className="w-full rounded-xl border border-stone-200 px-3 py-2 text-xs text-stone-900 focus:border-emerald-600 focus:outline-none"
+                  />
+                </div>
+
+                <div className="pt-2 flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddFarmModal(false)}
+                    className="px-4 py-2 rounded-xl border border-stone-200 text-stone-700 text-xs font-bold"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={savingFarm}
+                    className="px-6 py-2 rounded-xl bg-emerald-800 text-white text-xs font-black shadow-md transition disabled:opacity-50"
+                  >
+                    {savingFarm ? "Registering..." : "Save Farm Profile →"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
         )}
-      </main>
-    </div>
+
+        {/* MODAL: COUNTER OFFER */}
+        {counterModalOffer && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <div className="w-full max-w-sm rounded-3xl bg-white p-6 space-y-4 shadow-2xl border border-stone-200">
+              <div className="flex justify-between items-center">
+                <h3 className="text-base font-black text-stone-900">Counter Buyer Offer</h3>
+                <button
+                  type="button"
+                  onClick={() => setCounterModalOffer(null)}
+                  className="text-stone-400 hover:text-stone-700 text-sm font-bold"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="text-xs text-stone-500 space-y-1 bg-stone-50 p-3 rounded-xl">
+                <div>
+                  Buyer: <strong>{counterModalOffer.buyer_profiles?.full_name || "Commercial Buyer"}</strong>
+                </div>
+                <div>Offered Rate: ₹{counterModalOffer.offered_price_per_kg}/kg</div>
+                <div>Quantity: {counterModalOffer.offered_quantity_kg} kg</div>
+              </div>
+
+              <form onSubmit={handleSubmitCounteroffer} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 mb-1">
+                    Your Counter Asking Price (₹/kg):
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="1000"
+                    required
+                    value={counterPriceInput}
+                    onChange={(e) => setCounterPriceInput(e.target.value)}
+                    className="w-full rounded-xl border border-stone-200 px-3 py-2 text-sm font-bold text-stone-900 focus:border-emerald-600 focus:outline-none"
+                  />
+                </div>
+
+                <div className="pt-2 flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setCounterModalOffer(null)}
+                    className="px-4 py-2 rounded-xl border border-stone-200 text-stone-700 text-xs font-bold"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submittingCounter}
+                    className="px-5 py-2 rounded-xl bg-emerald-800 text-white text-xs font-black shadow-md transition disabled:opacity-50"
+                  >
+                    {submittingCounter ? "Sending..." : "Transmit Counteroffer →"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+      </div>
     </RoleGuard>
   );
 }

@@ -13,7 +13,6 @@ import { getServiceSupabase } from "@/lib/supabase-server";
  *    NEVER trusted from client-supplied query parameters or headers.
  * 4. Authorization Enforcement:
  *    - FARMER callers may ONLY access orders for their own linked farmer records.
- *      If a farmerName filter is supplied that does not match their verified identity, returns 403 Forbidden.
  *    - ADMIN callers retain legitimate access to inspect all farmer orders or filter by a specific farmerName.
  */
 export async function GET(request: Request | NextRequest) {
@@ -46,8 +45,6 @@ export async function GET(request: Request | NextRequest) {
     const filterFarmerName = searchParams.get("farmerName");
 
     // 3. Ownership & Authorization Check
-    // If a non-admin supplies a farmerName, verify it matches caller's verified name.
-    // Callers are NEVER allowed to probe or read another farmer's orders.
     if (!session.isAdmin && filterFarmerName) {
       const normalizedFilter = filterFarmerName.trim().toLowerCase();
       const normalizedCaller = (session.name || "").trim().toLowerCase();
@@ -71,14 +68,10 @@ export async function GET(request: Request | NextRequest) {
       .select("id, name, location, profile_id");
 
     if (session.isAdmin) {
-      // Administrator: Filter by specific name if requested, otherwise view all
       if (filterFarmerName) {
         farmerQuery = farmerQuery.eq("name", filterFarmerName.trim());
       }
     } else {
-      // Farmer: Derive identity strictly from verified session
-      // Match by profile_id linked to the authenticated user ID
-      // or by verified name for legacy farmer rows
       farmerQuery = farmerQuery.or(
         `profile_id.eq.${session.userId},name.eq.${session.name}`
       );
@@ -127,7 +120,15 @@ export async function GET(request: Request | NextRequest) {
 
     const inventoryIds = (inventory ?? []).map((item) => item.id);
 
-    if (inventoryIds.length === 0) {
+    // Also find listings belonging to this farmer
+    const { data: farmerListings } = await dbClient
+      .from("produce_listings")
+      .select("id, crop_name, asking_price_per_kg")
+      .eq("farmer_id", session.userId);
+
+    const farmerListingIds = (farmerListings || []).map((l) => l.id);
+
+    if (inventoryIds.length === 0 && farmerListingIds.length === 0) {
       return Response.json({
         success: true,
         orders: [],
@@ -135,13 +136,66 @@ export async function GET(request: Request | NextRequest) {
     }
 
     // 6. Find order items connected to this farmer's inventory
-    const { data: orderItems, error: orderItemsError } = await dbClient
-      .from("order_items")
-      .select(`
-        id,
-        quantity_kg,
-        inventory_id,
-        orders (
+    let orderItems: Array<{
+      id: string;
+      quantity_kg: number;
+      inventory_id: string;
+      orders: {
+        id: string;
+        buyer_name: string;
+        produce: string;
+        requested_quantity_kg: number;
+        required_grade: string;
+        destination: string;
+        fulfilled_quantity_kg: number;
+        fulfillment_percentage: number;
+        status: string;
+        created_at: string;
+        offer_id?: string | null;
+        listing_id?: string | null;
+      } | null;
+    }> = [];
+
+    if (inventoryIds.length > 0) {
+      const { data: items, error: itemsErr } = await dbClient
+        .from("order_items")
+        .select(`
+          id,
+          quantity_kg,
+          inventory_id,
+          orders (
+            id,
+            buyer_name,
+            produce,
+            requested_quantity_kg,
+            required_grade,
+            destination,
+            fulfilled_quantity_kg,
+            fulfillment_percentage,
+            status,
+            created_at,
+            offer_id,
+            listing_id
+          )
+        `)
+        .in("inventory_id", inventoryIds)
+        .order("id", { ascending: false });
+
+      if (!itemsErr && items) {
+        orderItems = (items as unknown as Array<{ id: string; quantity_kg: number; inventory_id: string; orders: unknown }>).map((it) => ({
+          id: it.id,
+          quantity_kg: it.quantity_kg,
+          inventory_id: it.inventory_id,
+          orders: (Array.isArray(it.orders) ? it.orders[0] : it.orders) as typeof orderItems[0]["orders"],
+        }));
+      }
+    }
+
+    // Also fetch orders linked via listing_id that might not be in order_items yet
+    if (farmerListingIds.length > 0) {
+      const { data: listingOrders } = await dbClient
+        .from("orders")
+        .select(`
           id,
           buyer_name,
           produce,
@@ -151,38 +205,63 @@ export async function GET(request: Request | NextRequest) {
           fulfilled_quantity_kg,
           fulfillment_percentage,
           status,
-          created_at
-        )
-      `)
-      .in("inventory_id", inventoryIds)
-      .order("id", { ascending: false });
+          created_at,
+          offer_id,
+          listing_id
+        `)
+        .in("listing_id", farmerListingIds)
+        .order("created_at", { ascending: false });
 
-    if (orderItemsError) {
-      console.error("Failed to load farmer order items:", orderItemsError);
-      return Response.json(
-        { error: "Failed to load order items.", code: "DATABASE_ERROR" },
-        { status: 500 }
-      );
+      if (listingOrders && listingOrders.length > 0) {
+        const existingOrderIds = new Set(orderItems.map((oi) => oi.orders?.id).filter(Boolean));
+        for (const lo of listingOrders) {
+          if (!existingOrderIds.has(lo.id)) {
+            orderItems.push({
+              id: `lo-${lo.id}`,
+              quantity_kg: lo.requested_quantity_kg,
+              inventory_id: inventoryIds[0] || "",
+              orders: lo,
+            });
+          }
+        }
+      }
+    }
+
+    // 7. Resolve unit prices from buyer_offers or listings
+    const offerIds = orderItems.map((item) => item.orders?.offer_id).filter(Boolean) as string[];
+    const listingIdMap = new Map((farmerListings || []).map((l) => [l.id, l]));
+
+    let offerMap = new Map<string, { offered_price_per_kg: number; payment_terms: string }>();
+    if (offerIds.length > 0) {
+      const { data: offers } = await dbClient
+        .from("buyer_offers")
+        .select("id, offered_price_per_kg, payment_terms")
+        .in("id", offerIds);
+
+      if (offers) {
+        offerMap = new Map(offers.map((o) => [o.id, o]));
+      }
     }
 
     const inventoryMap = new Map((inventory ?? []).map((item) => [item.id, item]));
     const farmerMap = new Map(farmers.map((farmer) => [farmer.id, farmer]));
 
-    interface OrderItemJoined {
-      id: string;
-      quantity_kg: number;
-      inventory_id: string;
-      orders: unknown;
-    }
-
-    const orders = ((orderItems as unknown as OrderItemJoined[]) ?? []).map((item) => {
+    const orders = orderItems.map((item) => {
       const inventoryItem = inventoryMap.get(item.inventory_id);
-      const farmer = inventoryItem ? farmerMap.get(inventoryItem.farmer_id) : null;
+      const farmer = inventoryItem ? farmerMap.get(inventoryItem.farmer_id) : farmers[0];
+      const offer = item.orders?.offer_id ? offerMap.get(item.orders.offer_id) : null;
+      const listing = item.orders?.listing_id ? listingIdMap.get(item.orders.listing_id) : null;
+
+      const unitPrice = offer?.offered_price_per_kg || listing?.asking_price_per_kg || 25;
+      const paymentTerms = offer?.payment_terms || "ESCROW";
 
       return {
         id: item.id,
         quantity_kg: item.quantity_kg,
         inventory_id: item.inventory_id,
+        unit_price_per_kg: unitPrice,
+        payment_terms: paymentTerms,
+        total_value: (Number(item.quantity_kg) || 0) * unitPrice,
         orders: item.orders,
         inventory: inventoryItem ?? null,
         farmer: farmer

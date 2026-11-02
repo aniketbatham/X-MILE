@@ -18,7 +18,10 @@ export interface VerifiedSession {
  * Creates an authenticated Supabase client scoping RLS to the authenticated user.
  */
 export function getAuthenticatedClient(token: string): SupabaseClient {
-  const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "https://gnypyybrresuynparioj.supabase.co";
+  const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!url) {
+    throw new Error("SUPABASE_URL or NEXT_PUBLIC_SUPABASE_URL is not configured on the server.");
+  }
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "placeholder";
   return createClient(url, key, {
     auth: {

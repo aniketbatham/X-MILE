@@ -11,9 +11,14 @@ import { createClient } from "@supabase/supabase-js";
 export function getServiceSupabase() {
   const url =
     process.env.SUPABASE_URL ||
-    process.env.NEXT_PUBLIC_SUPABASE_URL ||
-    "https://gnypyybrresuynparioj.supabase.co";
+    process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!url) {
+    throw new Error(
+      "SUPABASE_URL or NEXT_PUBLIC_SUPABASE_URL is not configured on the server."
+    );
+  }
 
   if (!serviceRoleKey) {
     throw new Error(

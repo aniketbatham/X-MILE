@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/context/AuthContext";
 import SeedGrowthCanvas from "@/components/SeedGrowthCanvas";
+import CurtainReveal from "@/components/CurtainReveal";
 
 const ROLE_PORTALS: Record<string, string> = {
   FARMER: "/farmer",
@@ -86,6 +87,7 @@ const AUTH_LABELS: Record<
     scrollStory: string;
     bePartOfJourney: string;
     finalSupporting: string;
+    pullPrompt?: string;
   }
 > = {
   en: {
@@ -96,6 +98,7 @@ const AUTH_LABELS: Record<
     scrollStory: "Scroll to experience the journey ↓",
     bePartOfJourney: "Be part of the journey.",
     finalSupporting: "Connect agriculture, people and opportunity through X-MILE.",
+    pullPrompt: "Drag curtain or scroll to enter",
   },
   hi: {
     signIn: "साइन इन करें",
@@ -105,6 +108,7 @@ const AUTH_LABELS: Record<
     scrollStory: "यात्रा देखने के लिए स्क्रोल करें ↓",
     bePartOfJourney: "इस यात्रा का हिस्सा बनें।",
     finalSupporting: "X-MILE के माध्यम से कृषि, लोगों और अवसरों को जोड़ें।",
+    pullPrompt: "प्रवेश के लिए पर्दा खींचें या स्क्रॉल करें",
   },
   bn: {
     signIn: "সাইন ইন করুন",
@@ -304,6 +308,7 @@ export default function HomePage() {
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [scrollProgress, setScrollProgress] = useState(0);
+  const [isCurtainOpened, setIsCurtainOpened] = useState(false);
   const [audioActive, setAudioActive] = useState(false);
   const audioContextRef = useRef<AudioContext | null>(null);
   const masterGainRef = useRef<GainNode | null>(null);
@@ -458,6 +463,8 @@ export default function HomePage() {
   };
 
   const ch1Opacity = getChapterOpacity(CHAPTERS[0].range);
+  const isCurtainActive = !isCurtainOpened && scrollProgress < 0.06;
+  const ch1VisibleOpacity = isCurtainActive ? 0 : ch1Opacity;
   const ch2Opacity = getChapterOpacity(CHAPTERS[1].range);
   const ch3Opacity = getChapterOpacity(CHAPTERS[2].range);
   const ch4Opacity = getChapterOpacity(CHAPTERS[3].range);
@@ -489,6 +496,20 @@ export default function HomePage() {
       <div className="sticky top-0 h-screen w-full z-0 overflow-hidden">
         <SeedGrowthCanvas progress={scrollProgress} />
       </div>
+
+      {/* ──────────────────────────────────────────────────────────
+          ENTRANCE HERO VEIL: NEOCLASSICAL CURTAIN REVEAL ANIMATION
+          (Interactive drag / scroll-driven curtain with chromatic ripple)
+      ────────────────────────────────────────────────────────── */}
+      <CurtainReveal
+        scrollProgress={scrollProgress}
+        onOpenChange={(opened) => setIsCurtainOpened(opened)}
+        labels={{
+          pullPrompt: labels.pullPrompt || "Drag curtain or scroll to enter",
+          tagline: labels.tagline,
+          chapterAnnotation: CHAPTERS[0].annotation,
+        }}
+      />
 
       {/* ──────────────────────────────────────────────────────────
           LAYER B: FIXED TOP NAVIGATION BAR
@@ -650,8 +671,8 @@ export default function HomePage() {
         <div
           className="absolute inset-0 flex flex-col justify-between items-center text-center p-6 sm:p-12 transition-opacity duration-300"
           style={{
-            opacity: ch1Opacity,
-            pointerEvents: ch1Opacity > 0.6 ? "auto" : "none",
+            opacity: ch1VisibleOpacity,
+            pointerEvents: ch1VisibleOpacity > 0.6 ? "auto" : "none",
           }}
         >
           {/* Top Titles: Positioned in upper third to keep central 3D rotating seed completely unobstructed */}

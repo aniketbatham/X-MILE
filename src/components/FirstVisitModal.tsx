@@ -1,12 +1,14 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { LocaleCode } from "@/i18n/types";
 
 const VISITED_KEY = "xmile_has_visited";
 
 export default function FirstVisitModal() {
+  const pathname = usePathname();
   const { locale, setLocale, languages, t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [selected, setSelected] = useState<LocaleCode>(locale);
@@ -21,7 +23,7 @@ export default function FirstVisitModal() {
 
     try {
       const hasVisited = localStorage.getItem(VISITED_KEY);
-      if (!hasVisited) {
+      if (!hasVisited && pathname !== "/") {
         const timer = setTimeout(() => setIsOpen(true), 0);
         return () => {
           clearTimeout(timer);

@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useEffect, useRef, useState, useMemo } from "react";
+import React, { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/context/AuthContext";
+import SeedGrowthCanvas from "@/components/SeedGrowthCanvas";
 
 const ROLE_PORTALS: Record<string, string> = {
   FARMER: "/farmer",
@@ -20,211 +21,237 @@ const ROLE_PORTALS: Record<string, string> = {
 };
 
 /**
- * Native script translations for authentication actions across all 22 official Indian languages + English
+ * Authentic native script authentication labels across all 22 official Indian languages + English
  */
 const AUTH_LABELS: Record<
   string,
-  { signIn: string; signUp: string; tagline: string; selectLang: string; startJourney: string }
+  {
+    signIn: string;
+    signUp: string;
+    tagline: string;
+    selectLang: string;
+    scrollStory: string;
+    supportingHero: string;
+    finalSupporting: string;
+  }
 > = {
   en: {
     signIn: "Sign In",
     signUp: "Sign Up",
     tagline: "Every MILE Matters, Every FARMER Matters.",
     selectLang: "Change Language",
-    startJourney: "Explore the Agricultural Journey",
+    scrollStory: "Scroll to experience the journey ↓",
+    supportingHero: "Connecting farms, markets and people through smarter agricultural supply chains.",
+    finalSupporting: "Be part of a smarter, more connected agricultural journey.",
   },
   hi: {
     signIn: "साइन इन करें",
     signUp: "साइन अप करें",
     tagline: "हर मील महत्वपूर्ण है, हर किसान महत्वपूर्ण है।",
     selectLang: "भाषा बदलें",
-    startJourney: "कृषि यात्रा देखें",
+    scrollStory: "कृषि यात्रा देखने के लिए नीचे स्क्रॉल करें ↓",
+    supportingHero: "स्मार्ट आपूर्ति श्रृंखलाओं के माध्यम से खेतों, बाजारों और लोगों को जोड़ना।",
+    finalSupporting: "एक स्मार्ट, अधिक जुड़ी हुई कृषि यात्रा का हिस्सा बनें।",
   },
   bn: {
     signIn: "সাইন ইন করুন",
     signUp: "সাইন আপ করুন",
     tagline: "প্রতিটি মাইল গুরুত্বপূর্ণ, প্রতিটি কৃষক গুরুত্বপূর্ণ।",
     selectLang: "ভাষা পরিবর্তন",
-    startJourney: "কৃষি যাত্রা অন্বেষণ করুন",
+    scrollStory: "কৃষি যাত্রা অন্বেষণ করতে স্ক্রোল করুন ↓",
+    supportingHero: "স্মার্ট কৃষি সরবরাহ শৃঙ্খলার মাধ্যমে খামার, বাজার এবং মানুষকে সংযুক্ত করা।",
+    finalSupporting: "একটি স্মার্ট ও সংযুক্ত কৃষি যাত্রার অংশ হোন।",
   },
   te: {
     signIn: "సైన్ ఇన్ చేయండి",
     signUp: "సైన్ అప్ చేయండి",
     tagline: "ప్రతి మైలు ముఖ్యం, ప్రతి రైతు ముఖ్యం.",
     selectLang: "భాషను మార్చండి",
-    startJourney: "వ్యవసాయ ప్రయాణాన్ని అన్వేషించండి",
+    scrollStory: "వ్యవసాయ ప్రయాణాన్ని అనుభవించడానికి క్రిందికి స్క్రోల్ చేయండి ↓",
+    supportingHero: "పొలాలు, మార్కెట్లు మరియు ప్రజలను కలుపుతూ స్మార్ట్ వ్యవసాయ సరఫరా గొలుసులు.",
+    finalSupporting: "మరింత అనుసంధానించబడిన వ్యవసాయ ప్రయాణంలో భాగస్వామ్యం అవ్వండి.",
   },
   mr: {
     signIn: "साइन इन करा",
     signUp: "साइन अप करा",
     tagline: "प्रत्येक मैल महत्त्वाचा, प्रत्येक शेतकरी महत्त्वाचा.",
     selectLang: "भाषा बदला",
-    startJourney: "कृषी प्रवास पहा",
+    scrollStory: "कृषी प्रवास पाहण्यासाठी स्क्रोल करा ↓",
+    supportingHero: "शेत, बाजार आणि लोकांना जोडणारी अधिक सक्षम कृषी पुरवठा साखळी.",
+    finalSupporting: "अधिक जोडलेल्या कृषी प्रवासाचा भाग व्हा.",
   },
   ta: {
     signIn: "உள்நுழைக",
     signUp: "பதிவு செய்க",
     tagline: "ஒவ்வொரு மைலும் முக்கியம், ஒவ்வொரு விவசாயியும் முக்கியம்.",
     selectLang: "மொழியை மாற்றவும்",
-    startJourney: "விவசாய பயணத்தை ஆராயுங்கள்",
+    scrollStory: "பயணத்தை அனுபவிக்க கீழே உருட்டவும் ↓",
+    supportingHero: "விவசாய பண்ணைகள், சந்தைகள் மற்றும் மக்களை இணைக்கும் ஸ்மார்ட் விநியோக சங்கிலி.",
+    finalSupporting: "ஒருங்கிணைந்த விவசாய பயணத்தின் அங்கமாக இருங்கள்.",
   },
   gu: {
     signIn: "સાઇન ઇન કરો",
     signUp: "સાઇન અપ કરો",
     tagline: "દરેક માઇલ મહત્વપૂર્ણ છે, દરેક ખેડૂત મહત્વપૂર્ણ છે.",
     selectLang: "ભાષા બદલો",
-    startJourney: "કૃષિ યાત્રા જુઓ",
+    scrollStory: "યાત્રાનો અનુભવ કરવા નીચે સ્ક્રોલ કરો ↓",
+    supportingHero: "સ્માર્ટ સપ્લાય ચેઇન દ્વારા ખેતરો, બજારો અને લોકોને જોડવું.",
+    finalSupporting: "વધુ જોડાયેલ કૃષિ યાત્રાનો ભાગ બનો.",
   },
   kn: {
     signIn: "ಸೈನ್ ಇನ್ ಮಾಡಿ",
     signUp: "ಸೈನ್ ಅಪ್ ಮಾಡಿ",
     tagline: "ಪ್ರತಿ ಮೈಲಿ ಮುಖ್ಯ, ಪ್ರತಿ ರೈತ ಮುಖ್ಯ.",
     selectLang: "ಭಾಷೆ ಬದಲಾಯಿಸಿ",
-    startJourney: "ಕೃಷಿ ಪಯಣವನ್ನು ಅನ್ವೇಷಿಸಿ",
+    scrollStory: "ಕೃಷಿ ಪಯಣವನ್ನು ಅನ್ವೇಷಿಸಲು ಸ್ಕ್ರಾಲ್ ಮಾಡಿ ↓",
+    supportingHero: "ಸ್ಮಾರ್ಟ್ ಕೃಷಿ ಪೂರೈಕೆ ಸರಪಳಿಯ ಮೂಲಕ ಹೊಲಗಳು, ಮಾರುಕಟ್ಟೆಗಳು ಮತ್ತು ಜನರನ್ನು ಸಂಪರ್ಕಿಸುವುದು.",
+    finalSupporting: "ಸಂಪರ್ಕಿತ ಕೃಷಿ ಪಯಣದ ಭಾಗವಾಗಿರಿ.",
   },
   ml: {
     signIn: "സൈൻ ഇൻ ചെയ്യുക",
     signUp: "സൈൻ അപ്പ് ചെയ്യുക",
     tagline: "ഓരോ മൈലും പ്രധാനം, ഓരോ കർഷകനും പ്രധാനം.",
     selectLang: "ഭാഷ മാറ്റുക",
-    startJourney: "കാർഷിക യാത്ര പര്യവേക്ഷണം ചെയ്യുക",
+    scrollStory: "കാർഷിക യാത്ര അനുഭവിക്കാൻ താഴേക്ക് സ്ക്രോൾ ചെയ്യുക ↓",
+    supportingHero: "ഫാമുകൾ, വിപണികൾ, മനുഷ്യർ എന്നിവയെ ബന്ധിപ്പിക്കുന്ന കാർഷിക വിതരണ ശൃംഖല.",
+    finalSupporting: "കൂടുതൽ ബന്ധിതമായ കാർഷിക യാത്രയുടെ ഭാഗമാകൂ.",
   },
   or: {
     signIn: "ସାଇନ୍ ଇନ୍ କରନ୍ତୁ",
     signUp: "ସାଇନ୍ ଅପ୍ କରନ୍ତୁ",
     tagline: "ପ୍ରତ୍ୟେକ ମାଇଲ୍ ଗୁରୁତ୍ୱପୂର୍ଣ୍ଣ, ପ୍ରତ୍ୟେକ କୃଷକ ଗୁରୁତ୍ୱପୂର୍ଣ୍ଣ।",
     selectLang: "ଭାଷା ବଦଳାନ୍ତୁ",
-    startJourney: "କୃଷି ଯାତ୍ରା ଦେଖନ୍ତୁ",
+    scrollStory: "କୃଷି ଯାତ୍ରା ଦେଖିବାକୁ ତଳକୁ ସ୍କ୍ରୋଲ କରନ୍ତୁ ↓",
+    supportingHero: "ସ୍ମାର୍ଟ ଯୋଗାଣ ଶୃଙ୍ଖଳା ମାଧ୍ୟମରେ କ୍ଷେତ, ବଜାର ଓ ମଣିଷଙ୍କୁ ଯୋଡ଼ିବା।",
+    finalSupporting: "ଏକ ଯୋଡ଼ି ହୋଇଥିବା କୃଷି ଯାତ୍ରାର ଅଂଶ ହୁଅନ୍ତୁ।",
   },
   pa: {
     signIn: "ਸਾਈਨ ਇਨ ਕਰੋ",
     signUp: "ਸਾਈਨ ਅੱਪ ਕਰੋ",
     tagline: "ਹਰ ਮੀਲ ਮਹੱਤਵਪੂਰਨ ਹੈ, ਹਰ ਕਿਸਾਨ ਮਹੱਤਵਪੂਰਨ ਹੈ।",
     selectLang: "ਭਾਸ਼ਾ ਬਦਲੋ",
-    startJourney: "ਖੇਤੀ ਯਾਤਰਾ ਦੇਖੋ",
+    scrollStory: "ਖੇਤੀ ਯਾਤਰਾ ਵੇਖਣ ਲਈ ਹੇਠਾਂ ਸਕ੍ਰੋਲ ਕਰੋ ↓",
+    supportingHero: "ਸਮਾਰਟ ਸਪਲਾਈ ਚੇਨ ਰਾਹੀਂ ਖੇਤਾਂ, ਮੰਡੀਆਂ ਅਤੇ ਲੋਕਾਂ ਨੂੰ ਜੋੜਨਾ।",
+    finalSupporting: "ਇੱਕ ਜੁੜੀ ਹੋਈ ਖੇਤੀ ਯਾਤਰਾ ਦਾ ਹਿੱਸਾ ਬਣੋ।",
   },
   as: {
     signIn: "ছাইন ইন কৰক",
     signUp: "ছাইন আপ কৰক",
     tagline: "প্ৰতিটো মাইল গুৰুত্বপূৰ্ণ, প্ৰতিজন কৃষক গুৰুত্বপূৰ্ণ।",
     selectLang: "ভাষা সলনি কৰক",
-    startJourney: "কৃষি যাত্ৰা চাওক",
+    scrollStory: "যাত্ৰা উপভোগ কৰিবলৈ তললৈ স্ক্ৰল কৰক ↓",
+    supportingHero: "স্মাৰ্ট যোগান শৃংখলৰ জৰিয়তে পথাৰ, বজাৰ আৰু মানুহক সংযোগ কৰা।",
+    finalSupporting: "এক সংযোগিত কৃষি যাত্ৰাৰ অংশ হওক।",
   },
   ur: {
     signIn: "سائن ان کریں",
     signUp: "سائن اپ کریں",
     tagline: "ہر میل اہم ہے، ہر کسان اہم ہے۔",
     selectLang: "زبان تبدیل کریں",
-    startJourney: "زرعی سفر دیکھیں",
+    scrollStory: "سفر دیکھنے کے لیے نیچے اسکرول کریں ↓",
+    supportingHero: "سمارٹ زرعی سپلائی چینز کے ذریعے کھیتوں، منڈیوں اور لوگوں کو جوڑنا۔",
+    finalSupporting: "ایک جڑے ہوئے زرعی سفر کا حصہ بنیں۔",
   },
   sa: {
     signIn: "प्रविशतु",
     signUp: "पंजीकरणं करोतु",
     tagline: "प्रत्येकं क्रोशं महत्त्वपूर्णम्, प्रत्येकः कृषकः महत्त्वपूर्णः।",
     selectLang: "भाषां परिवर्तयतु",
-    startJourney: "कृषि-यात्रां पश्यतु",
+    scrollStory: "यात्रां द्रष्टुं अधः स्क्रॉलं कुर्वन्तु ↓",
+    supportingHero: "सस्यक्षेत्राणि विपणिं च जनान् संयोजयन्ती कृषि-श्रृङ्खला।",
+    finalSupporting: "समन्विते कृषि-प्रवासे सम्मिलिताः भवन्तु।",
   },
   ks: {
     signIn: "سائن اِن کٔرِو",
     signUp: "سائن اَپ کٔرِو",
     tagline: "پرٛتھ مَیٖل چھُ اہم، پرٛتھ کِسَان چھُ اہم۔",
     selectLang: "زَبان بدلاوِو",
-    startJourney: "زَرعی سفر وُچھِو",
+    scrollStory: "سفر وُچھنہٕ باپتھ بۄن اسکرول کٔرِو ↓",
+    supportingHero: "سمارٹ سپلائی چین ذٔریعہٕ کھیت، منڈی تہٕ لوٗکھ جوڑُن۔",
+    finalSupporting: "اکِہ سمارٹ زَرعی سفرُک حِصہٕ بنِو۔",
   },
   kok: {
     signIn: "साइन इन करात",
     signUp: "साइन अप करात",
     tagline: "दर एक मैल म्हत्वाचो, दर एक शेतकार म्हत्वाचो.",
     selectLang: "भास बदलात",
-    startJourney: "कृषी भोंवडी पळेयात",
+    scrollStory: "कृषी भोंवडी पळेवंक सकयल स्क्रोल करात ↓",
+    supportingHero: "शेत, बाजार आनी लोकांक जोडपी सक्षम पुरवण सांखळी.",
+    finalSupporting: "जोडिल्ल्या कृषी प्रवासाचो वांटो जायात.",
   },
   mai: {
     signIn: "साइन इन करू",
     signUp: "साइन अप करू",
     tagline: "प्रत्येक मील महत्वपूर्ण अछि, प्रत्येक किसान महत्वपूर्ण अछि।",
     selectLang: "भाषा बदलू",
-    startJourney: "कृषि यात्रा देखू",
+    scrollStory: "कृषि यात्रा देखबाक लेल नीचा स्क्रोल करू ↓",
+    supportingHero: "स्मार्ट आपूर्ति श्रृंखलाक माध्यम सँ खेत, बाजार आ लोक केँ जोड़ब।",
+    finalSupporting: "एकटा जुड़ल कृषि यात्राक हिस्सा बनू।",
   },
   sat: {
     signIn: "ᱥᱟᱭᱤᱱ ᱤᱱ ᱢᱮ",
     signUp: "ᱥᱟᱭᱤᱱ ᱟᱯ ᱢᱮ",
     tagline: "ᱡᱚᱛᱚ ᱢᱟᱭᱤᱞ ᱜᱩᱨᱩᱛᱯᱩᱨᱱᱚ ᱠᱟᱱᱟ, ᱡᱚᱛᱚ ᱪᱟᱹᱥᱤ ᱜᱩᱨᱩᱛᱯᱩᱨᱱᱚ ᱠᱟᱱᱟ।",
     selectLang: "ᱯᱟᱹᱨᱥᱤ ᱵᱚᱫᱚᱞ ᱢᱮ",
-    startJourney: "ᱪᱟᱥ ᱡᱟᱛᱨᱟ ᱧᱮᱞ ᱢᱮ",
+    scrollStory: "ᱪᱟᱥ ᱡᱟᱛᱨᱟ ᱧᱮᱞ ᱞᱟᱹᱜᱤᱫ ᱞᱟᱛᱟᱨ ᱥᱠᱨᱚᱞ ᱢᱮ ↓",
+    supportingHero: "ᱥᱢᱟᱨᱴ ᱥᱟᱯᱞᱟᱭ ᱪᱮᱱ ᱛᱮ ᱪᱟᱥ ᱵᱟᱹᱫᱽ, ᱦᱟᱴ ᱟᱨ ᱦᱚᱲ ᱠᱚ ᱡᱚᱲᱟᱣ।",
+    finalSupporting: "ᱢᱤᱫ ᱥᱟᱶ ᱡᱚᱲᱟᱣ ᱪᱟᱥ ᱡᱟᱛᱨᱟ ᱨᱮ ᱥᱮᱞᱮᱫᱚᱜ ᱢᱮ।",
   },
   sd: {
     signIn: "سائن ان ٿيو",
     signUp: "سائن اپ ٿيو",
     tagline: "هر ميل اهم آهي، هر هاري اهم آهي.",
     selectLang: "ٻولي مٽايو",
-    startJourney: "زرعي سفر ڏسو",
+    scrollStory: "زرعي سفر ڏسڻ لاءِ ھيٺ اسڪرول ڪريو ↓",
+    supportingHero: "سمارٽ سپلائي چين ذريعي ٻنين، منڊين ۽ ماڻهن کي ڳنڍڻ.",
+    finalSupporting: "هڪ ڳنڍيل زرعي سفر جو حصو بڻجو.",
   },
   doi: {
     signIn: "साइन इन करो",
     signUp: "साइन अप करो",
     tagline: "हर मील जरूरी ऐ, हर किसान जरूरी ऐ।",
     selectLang: "बोली बदलो",
-    startJourney: "खेती यात्रा दिक्खो",
+    scrollStory: "खेती यात्रा दिक्खने लेई हेठ स्क्रोल करो ↓",
+    supportingHero: "स्मार्ट आपूर्ति श्रृंखलाएं राएं खेतें, मंडियें ते लोकें गी जोड़ना।",
+    finalSupporting: "इक जुड़ी दी खेती यात्रा दा हिस्सा बनो।",
   },
   brx: {
     signIn: "साइन इन खालाम",
     signUp: "साइन आप खालाम",
     tagline: "गासै माइल गोनांथार, गासै आबादारी गोनांथार।",
     selectLang: "राव सोलाय",
-    startJourney: "आबाद दावबायनाय नाय",
+    scrollStory: "आबाद दावबायनाय नायनो थाखाय गाहायाव स्क्रल खालाम ↓",
+    supportingHero: "मोजां खाबुजों आबाद फोथार, हाथाय आरो मानसिफोरखौ फोनांजाबनाय।",
+    finalSupporting: "फोनांजाबनाय आबाद दावबायनायनि बाहागो जा।",
   },
   ne: {
     signIn: "साइन इन गर्नुहोस्",
     signUp: "साइन अप गर्नुहोस्",
     tagline: "प्रत्येक माइल महत्त्वपूर्ण छ, प्रत्येक किसान महत्त्वपूर्ण छ।",
     selectLang: "भाषा बदल्नुहोस्",
-    startJourney: "कृषि यात्रा अन्वेषण गर्नुहोस्",
+    scrollStory: "कृषि यात्रा अन्वेषण गर्न तल स्क्रोल गर्नुहोस् ↓",
+    supportingHero: "स्मार्ट आपूर्ति श्रृंखलाहरू मार्फत खेतहरू, बजारहरू र मानिसहरूलाई जोड्दै।",
+    finalSupporting: "एक जोडिएको कृषि यात्राको हिस्सा बन्नुहोस्।",
   },
   mni: {
     signIn: "ꯁꯥꯏꯟ ꯏꯟ ꯇꯧꯕꯤꯌꯨ",
     signUp: "ꯁꯥꯏꯟ ꯑꯞ ꯇꯧꯕꯤꯌꯨ",
     tagline: "ꯃꯥꯏꯜ ꯈꯨꯗꯤꯡꯃꯛ ꯃꯔꯨꯑꯣꯏ, ꯂꯧꯃꯤ ꯈꯨꯗꯤꯡꯃꯛ ꯃꯔꯨꯑꯣꯏ।",
     selectLang: "ꯂꯣꯟ ꯍꯣꯡꯗꯣꯛꯄꯤꯌꯨ",
-    startJourney: "ꯂꯧ-উশিং খোঙচৎ য়েংবীয়ু",
+    scrollStory: "ꯈꯣꯡꯆꯠ ꯑꯁꯤ ꯎꯅꯕ ꯃꯈꯥꯗ ꯁ꯭ꯛꯔꯣꯜ ꯇꯧꯕꯤꯌꯨ ↓",
+    supportingHero: "ꯁ꯭ꯃꯥꯔꯠ ꯁꯞꯂꯥꯏ ꯆꯦꯟꯁꯤꯡꯒꯤ ꯈꯨꯠꯊꯥꯡꯗ ꯂꯧꯕꯨꯛ, ꯀꯩꯊꯦꯜ ꯑꯃꯁꯨꯡ ꯃꯤꯌꯥꯝꯕꯨ ꯁꯝꯅꯍꯟꯕꯥ।",
+    finalSupporting: "ꯑꯍꯦꯟꯕ ꯁꯝꯅꯔꯕ ꯂꯧ-উশিং ꯈꯣꯡꯆꯠ ꯑꯃꯒꯤ ꯁꯔꯨꯛ ꯑꯣꯏꯕꯤꯌꯨ।",
   },
 };
-
-/**
- * Lightweight performant scroll reveal hook with IntersectionObserver
- */
-function useInView(options?: IntersectionObserverInit) {
-  const [inView, setInView] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return !("IntersectionObserver" in window);
-  });
-  const ref = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el || typeof window === "undefined" || !("IntersectionObserver" in window)) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setInView(true);
-          observer.unobserve(el);
-        }
-      },
-      { threshold: 0.12, rootMargin: "0px 0px -40px 0px", ...options }
-    );
-
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [options]);
-
-  return [ref, inView] as const;
-}
 
 export default function HomePage() {
   const { currentLanguage } = useLanguage();
   const router = useRouter();
   const { user, isAuthenticated, isLoading } = useAuth();
-  const [activeRoleTab, setActiveRoleTab] = useState<"farmer" | "buyer" | "transporter" | "admin">("farmer");
+
+  // Scroll Progress within the Seed-to-Growth Experience (Section 1 & 2)
+  const trackRef = useRef<HTMLDivElement | null>(null);
+  const [seedProgress, setSeedProgress] = useState(0);
 
   // Role-based automatic redirection for returning authenticated users
   useEffect(() => {
@@ -237,11 +264,11 @@ export default function HomePage() {
     }
   }, [isLoading, isAuthenticated, user, router]);
 
-  const openLanguageModal = () => {
+  const openLanguageModal = useCallback(() => {
     if (typeof window !== "undefined") {
       window.dispatchEvent(new CustomEvent("open-language-modal"));
     }
-  };
+  }, []);
 
   const labels = useMemo(() => {
     return AUTH_LABELS[currentLanguage.code] || AUTH_LABELS.en;
@@ -249,27 +276,58 @@ export default function HomePage() {
 
   const isNonEnglish = currentLanguage.code !== "en";
 
-  // Section inView observers
-  const [heroRef, heroInView] = useInView();
-  const [challengeRef, challengeInView] = useInView();
-  const [introRef, introInView] = useInView();
-  const [featuresRef, featuresInView] = useInView();
-  const [journeyRef, journeyInView] = useInView();
-  const [rolesRef, rolesInView] = useInView();
-  const [ctaRef, ctaInView] = useInView();
+  // Throttled Scroll Progress Listener for Sections 1 & 2
+  useEffect(() => {
+    let ticking = false;
+
+    const handleScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          if (trackRef.current) {
+            const rect = trackRef.current.getBoundingClientRect();
+            const totalScrollable = rect.height - window.innerHeight;
+            if (totalScrollable > 0) {
+              const currentOffset = -rect.top;
+              const p = Math.min(1, Math.max(0, currentOffset / totalScrollable));
+              setSeedProgress(p);
+            }
+          }
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
+
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Narrative fade calculations for Section 1 and Section 2
+  // Stage 1 (Hero Title): Visible p in [0, 0.32], fades out as seed descends
+  const heroOpacity = Math.max(0, Math.min(1, 1 - seedProgress / 0.28));
+  
+  // Stage 2 (The Foundation & Challenges): Fades in as roots develop p in [0.32, 0.72]
+  const foundationOpacity =
+    seedProgress < 0.28
+      ? 0
+      : seedProgress > 0.75
+      ? Math.max(0, 1 - (seedProgress - 0.75) / 0.15)
+      : Math.min(1, (seedProgress - 0.28) / 0.18);
 
   return (
-    <div className="relative min-h-screen w-full overflow-x-hidden bg-[#07130a] text-stone-100 selection:bg-emerald-500 selection:text-white font-sans scroll-smooth">
+    <div className="relative min-h-screen w-full overflow-x-hidden bg-[#050e07] text-stone-100 font-sans selection:bg-emerald-500 selection:text-white">
 
       {/* ──────────────────────────────────────────────────────────
           STICKY TOP NAVIGATION BAR
       ────────────────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-50 w-full backdrop-blur-xl bg-[#08150c]/85 border-b border-emerald-500/15 transition-all">
+      <header className="sticky top-0 z-50 w-full backdrop-blur-xl bg-[#061208]/85 border-b border-emerald-500/15 transition-all">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 sm:h-18 flex items-center justify-between gap-4">
           
-          {/* Logo & Emblem */}
+          {/* Brand Mark & Emblem */}
           <Link href="/" className="inline-flex items-center gap-2.5 group">
-            <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl bg-gradient-to-br from-[#173a21] to-[#0d2214] border border-emerald-400/35 flex items-center justify-center text-emerald-400 shadow-sm group-hover:border-emerald-300 transition">
+            <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl bg-gradient-to-br from-[#183a22] to-[#0c1f13] border border-emerald-400/35 flex items-center justify-center text-emerald-400 shadow-sm group-hover:border-emerald-300 transition">
               <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M7 20h10" />
                 <path d="M10 20c0-4.5 1.5-8 5-11" />
@@ -280,13 +338,13 @@ export default function HomePage() {
             <div>
               <span className="font-black tracking-tight text-lg sm:text-xl text-white block">X-MILE</span>
               <span className="text-[9px] font-mono tracking-widest text-emerald-400 uppercase hidden sm:block -mt-1">
-                Agritech Ecosystem
+                Connected Agriculture
               </span>
             </div>
           </Link>
 
-          {/* Center: Live Network Status Badge */}
-          <div className="hidden md:inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#0d2215]/80 border border-emerald-500/20 text-[11px] font-medium text-emerald-200/90 shadow-sm">
+          {/* Center: Live Agritech Network Status */}
+          <div className="hidden md:inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#0d2215]/80 border border-emerald-500/20 text-[11px] font-medium text-emerald-200/90 shadow-sm">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
@@ -294,8 +352,8 @@ export default function HomePage() {
             <span>National Agricultural Exchange Active</span>
           </div>
 
-          {/* Right: Language Selector & Quick Auth */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          {/* Right: Language Selector & Floating Sign In Trigger */}
+          <div className="flex items-center gap-2.5 sm:gap-3">
             <button
               type="button"
               onClick={openLanguageModal}
@@ -307,18 +365,12 @@ export default function HomePage() {
               <span className="text-emerald-400 text-[10px] ml-0.5">▾</span>
             </button>
 
+            {/* Unobtrusive Floating Sign In for quick access anywhere on the page */}
             <Link
               href="/login"
               className="px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-emerald-600/90 hover:bg-emerald-500 text-white font-extrabold text-xs sm:text-sm border border-emerald-400/30 transition shadow-sm active:scale-[0.98]"
             >
               {labels.signIn}
-            </Link>
-
-            <Link
-              href="/register"
-              className="hidden sm:inline-flex px-3.5 py-1.5 sm:py-2 rounded-xl bg-[#142d1d] hover:bg-[#1b3b26] text-stone-100 hover:text-white font-bold text-xs sm:text-sm border border-emerald-500/20 transition active:scale-[0.98]"
-            >
-              {labels.signUp}
             </Link>
           </div>
         </div>
@@ -326,288 +378,220 @@ export default function HomePage() {
 
 
       {/* ──────────────────────────────────────────────────────────
-          SECTION 1 — CINEMATIC HERO
+          SECTIONS 1 & 2: CINEMATIC SEED-TO-ROOT SCROLL STORY
+          (Dark Cinematic Scenes with Continuous Scroll Canvas)
       ────────────────────────────────────────────────────────── */}
-      <section
-        ref={heroRef}
-        className="relative min-h-[92vh] flex flex-col justify-between items-center text-center px-4 sm:px-6 pt-12 sm:pt-20 pb-12 overflow-hidden"
-      >
-        {/* Cinematic Backdrop Image */}
-        <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-          <Image
-            src="/images/hero-farm.jpg"
-            alt="Pristine green Indian agricultural terrace farmland at dawn"
-            fill
-            priority
-            sizes="100vw"
-            className="object-cover object-center filter brightness-[0.38] contrast-[1.14] scale-[1.02]"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-[#07130a]/80 via-[#091a0e]/75 to-[#07130a]" />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_75%_50%_at_50%_25%,rgba(16,185,129,0.18),transparent_70%)]" />
+      <div ref={trackRef} className="relative min-h-[250vh] w-full">
+        
+        {/* Sticky Canvas Viewport (60fps botanical biological sequence) */}
+        <div className="sticky top-0 h-screen w-full z-0 overflow-hidden">
+          <SeedGrowthCanvas progress={seedProgress} />
         </div>
 
-        {/* Ambient Top Micro-Badge */}
-        <div
-          className={`relative z-10 transition-all duration-700 ${
-            heroInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-          }`}
-        >
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#0d2616]/90 border border-emerald-400/30 backdrop-blur-md text-[11px] font-bold text-emerald-300 tracking-wider uppercase shadow-md">
-            <span>🌱</span>
-            <span>National Agricultural Supply & Value Network</span>
-          </div>
-        </div>
-
-        {/* Hero Typography & Core Message */}
-        <div
-          className={`relative z-10 max-w-4xl mx-auto space-y-6 my-auto pt-6 sm:pt-10 transition-all duration-1000 delay-150 ${
-            heroInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-          }`}
-        >
-          <h1 className="text-4xl sm:text-6xl md:text-7xl font-black tracking-tight text-white font-sans text-balance leading-[1.08] drop-shadow-md">
-            Every <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-emerald-300 to-teal-200">MILE</span> Matters.
-            <br />
-            Every <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-amber-300 to-emerald-200">FARMER</span> Matters.
-          </h1>
-
-          <p className="text-base sm:text-xl text-emerald-100/85 font-medium max-w-2xl mx-auto text-balance leading-relaxed">
-            An agricultural exchange platform connecting farm-gate harvests, commercial buyers, and rural logistics into one transparent, verified ecosystem.
-          </p>
-
-          {/* Quick CTA Actions inside Hero */}
-          <div className="flex flex-wrap items-center justify-center gap-3.5 pt-4">
-            <Link
-              href="/login"
-              className="px-7 py-4 rounded-2xl bg-gradient-to-r from-emerald-600 via-emerald-650 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white font-extrabold text-base shadow-xl shadow-emerald-950/60 border border-emerald-400/35 active:scale-[0.98] transition-all"
-            >
-              {labels.signIn} {isNonEnglish && <span className="text-emerald-200 text-xs font-normal ml-1">· Sign In</span>} →
-            </Link>
-
-            <Link
-              href="/register"
-              className="px-7 py-4 rounded-2xl bg-[#0f2818]/90 hover:bg-[#153420] text-stone-100 hover:text-white font-bold text-base border border-emerald-500/25 shadow-md active:scale-[0.98] transition-all"
-            >
-              {labels.signUp} {isNonEnglish && <span className="text-emerald-300/80 text-xs font-normal ml-1">· Sign Up</span>}
-            </Link>
-          </div>
-        </div>
-
-        {/* Elegant Scroll Indicator */}
-        <div
-          className={`relative z-10 pt-8 transition-all duration-700 delay-300 ${
-            heroInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-          }`}
-        >
-          <a
-            href="#agricultural-challenge"
-            className="inline-flex flex-col items-center gap-2 text-xs font-semibold text-emerald-300/80 hover:text-emerald-200 transition group"
-          >
-            <span>{labels.startJourney}</span>
-            <div className="h-8 w-5 rounded-full border border-emerald-400/40 flex items-start justify-center p-1 group-hover:border-emerald-300">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-bounce" />
-            </div>
-          </a>
-        </div>
-      </section>
-
-
-      {/* ──────────────────────────────────────────────────────────
-          SECTION 2 — THE AGRICULTURAL CHALLENGE
-      ────────────────────────────────────────────────────────── */}
-      <section
-        id="agricultural-challenge"
-        ref={challengeRef}
-        className="relative py-20 sm:py-28 px-4 sm:px-6 bg-[#08170c] border-t border-emerald-500/10"
-      >
-        <div className="max-w-6xl mx-auto space-y-14">
+        {/* Narrative Overlays mapped to Scroll Progress */}
+        <div className="relative z-10 w-full pointer-events-none -mt-[100vh]">
           
+          {/* SECTION 1: CINEMATIC OPENING (p in [0.0, 0.35]) */}
           <div
-            className={`text-center space-y-3 max-w-2xl mx-auto transition-all duration-700 ${
-              challengeInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
-            }`}
+            className="min-h-screen flex flex-col justify-between items-center text-center px-4 sm:px-6 pt-12 sm:pt-20 pb-12 transition-opacity duration-300"
+            style={{ opacity: heroOpacity }}
           >
-            <span className="text-xs font-mono font-bold tracking-widest text-emerald-400 uppercase">
-              The Agricultural Challenge
-            </span>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight">
-              The Realities of Agricultural Commerce
-            </h2>
-            <p className="text-sm sm:text-base text-emerald-100/75">
-              Agricultural supply chains across India face fundamental systemic barriers that create uncertainty for growers, commercial buyers, and logistics providers alike.
-            </p>
+            {/* Top Micro-Badge */}
+            <div className="pointer-events-auto">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#0d2616]/90 border border-emerald-400/30 backdrop-blur-md text-[11px] font-bold text-emerald-300 tracking-wider uppercase shadow-md">
+                <span>🌱</span>
+                <span>Every MILE Matters · Every FARMER Matters</span>
+              </div>
+            </div>
+
+            {/* Main Brand Title & Tagline */}
+            <div className="max-w-4xl mx-auto space-y-4 my-auto pt-4 sm:pt-10">
+              <h1 className="text-5xl sm:text-7xl md:text-8xl font-black tracking-tight text-white font-sans drop-shadow-md">
+                X-MILE
+              </h1>
+              <p className="text-xl sm:text-2xl md:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-amber-200 to-emerald-300 tracking-tight text-balance">
+                {labels.tagline}
+              </p>
+              <p className="text-sm sm:text-base text-emerald-100/85 font-medium max-w-xl mx-auto text-balance pt-1 leading-relaxed">
+                {labels.supportingHero}
+              </p>
+            </div>
+
+            {/* Scroll Indicator */}
+            <div className="pointer-events-auto pt-4">
+              <div className="inline-flex flex-col items-center gap-2 text-xs font-semibold text-emerald-300/80">
+                <span>{labels.scrollStory}</span>
+                <div className="h-8 w-5 rounded-full border border-emerald-400/40 flex items-start justify-center p-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-bounce" />
+                </div>
+              </div>
+            </div>
           </div>
 
-          {/* 4 Core Real-World Challenge Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            
-            {/* Challenge 1 */}
-            <div
-              className={`p-7 sm:p-8 rounded-3xl bg-[#0c2214]/85 border border-emerald-500/20 backdrop-blur-md shadow-lg transition-all duration-700 delay-100 ${
-                challengeInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-              }`}
-            >
-              <div className="h-12 w-12 rounded-2xl bg-amber-500/15 border border-amber-400/30 flex items-center justify-center text-2xl mb-5">
-                🌾
+          {/* SECTION 2: THE FOUNDATION & THE CHALLENGE (p in [0.35, 0.75]) */}
+          <div
+            className="min-h-screen flex flex-col justify-center items-center px-4 sm:px-6 py-16 transition-opacity duration-300"
+            style={{ opacity: foundationOpacity }}
+          >
+            <div className="max-w-4xl mx-auto space-y-8 pointer-events-auto">
+              
+              <div className="text-center space-y-3">
+                <span className="text-xs font-mono font-bold tracking-widest text-amber-400 uppercase">
+                  Section 02 · The Foundation
+                </span>
+                <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight">
+                  Every Journey Begins in the Soil
+                </h2>
+                <p className="text-sm sm:text-base text-emerald-100/80 max-w-2xl mx-auto text-balance leading-relaxed">
+                  Behind every harvest is a grower working the earth. X-MILE is built to resolve the fundamental systemic friction points that hold agricultural commerce back.
+                </p>
               </div>
-              <h3 className="text-xl font-bold text-white mb-2">
-                Farmers Need Direct Market Access
-              </h3>
-              <p className="text-sm text-emerald-100/70 leading-relaxed">
-                Smallholder growers often lack transparent commercial access beyond local mandis, causing price discounts, multi-layered commission agent fees, and uncertain sale timelines.
-              </p>
-            </div>
 
-            {/* Challenge 2 */}
-            <div
-              className={`p-7 sm:p-8 rounded-3xl bg-[#0c2214]/85 border border-emerald-500/20 backdrop-blur-md shadow-lg transition-all duration-700 delay-200 ${
-                challengeInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-              }`}
-            >
-              <div className="h-12 w-12 rounded-2xl bg-emerald-500/15 border border-emerald-400/30 flex items-center justify-center text-2xl mb-5">
-                🏢
+              {/* 4 True Systemic Challenges Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 pt-2">
+                
+                <div className="p-6 rounded-2xl bg-[#09180e]/90 border border-emerald-500/25 backdrop-blur-md shadow-xl">
+                  <div className="flex items-center gap-3 mb-2">
+                    <span className="text-xl">🌾</span>
+                    <h3 className="text-base font-bold text-white">Fragmented Supply Chains</h3>
+                  </div>
+                  <p className="text-xs sm:text-sm text-emerald-100/70 leading-relaxed">
+                    Smallholder growers face multi-tier intermediary layers, disconnected local mandis, and lack of direct commercial market discovery.
+                  </p>
+                </div>
+
+                <div className="p-6 rounded-2xl bg-[#09180e]/90 border border-emerald-500/25 backdrop-blur-md shadow-xl">
+                  <div className="flex items-center gap-3 mb-2">
+                    <span className="text-xl">🏢</span>
+                    <h3 className="text-base font-bold text-white">Buyer Sourcing Uncertainty</h3>
+                  </div>
+                  <p className="text-xs sm:text-sm text-emerald-100/70 leading-relaxed">
+                    Commercial buyers struggle with erratic harvest supply volumes, unpredictable delivery timelines, and fragmented farm contacts.
+                  </p>
+                </div>
+
+                <div className="p-6 rounded-2xl bg-[#09180e]/90 border border-emerald-500/25 backdrop-blur-md shadow-xl">
+                  <div className="flex items-center gap-3 mb-2">
+                    <span className="text-xl">🔬</span>
+                    <h3 className="text-base font-bold text-white">Quality Transparency Gaps</h3>
+                  </div>
+                  <p className="text-xs sm:text-sm text-emerald-100/70 leading-relaxed">
+                    Produce quality is rarely verified prior to loading, causing frequent weighbridge disputes and transit rejections at final mandis.
+                  </p>
+                </div>
+
+                <div className="p-6 rounded-2xl bg-[#09180e]/90 border border-emerald-500/25 backdrop-blur-md shadow-xl">
+                  <div className="flex items-center gap-3 mb-2">
+                    <span className="text-xl">🚚</span>
+                    <h3 className="text-base font-bold text-white">Uncoordinated Rural Logistics</h3>
+                  </div>
+                  <p className="text-xs sm:text-sm text-emerald-100/70 leading-relaxed">
+                    Rural freight transporters operate without scheduled dispatch queues or synchronized pickup points, leading to idle vehicle runs.
+                  </p>
+                </div>
+
               </div>
-              <h3 className="text-xl font-bold text-white mb-2">
-                Buyers Need Reliable Crop Supply
-              </h3>
-              <p className="text-sm text-emerald-100/70 leading-relaxed">
-                Commercial and institutional buyers require dependable harvest volume streams. When supply is fragmented across thousands of individual holdings, procurement becomes unpredictable.
-              </p>
             </div>
-
-            {/* Challenge 3 */}
-            <div
-              className={`p-7 sm:p-8 rounded-3xl bg-[#0c2214]/85 border border-emerald-500/20 backdrop-blur-md shadow-lg transition-all duration-700 delay-300 ${
-                challengeInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-              }`}
-            >
-              <div className="h-12 w-12 rounded-2xl bg-blue-500/15 border border-blue-400/30 flex items-center justify-center text-2xl mb-5">
-                🔬
-              </div>
-              <h3 className="text-xl font-bold text-white mb-2">
-                Produce Quality Needs Early Visibility
-              </h3>
-              <p className="text-sm text-emerald-100/70 leading-relaxed">
-                Quality assessments frequently occur only upon arrival at distant distribution centers, triggering rejections, weighbridge grading disputes, and irreversible produce spoilage.
-              </p>
-            </div>
-
-            {/* Challenge 4 */}
-            <div
-              className={`p-7 sm:p-8 rounded-3xl bg-[#0c2214]/85 border border-emerald-500/20 backdrop-blur-md shadow-lg transition-all duration-700 delay-400 ${
-                challengeInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-              }`}
-            >
-              <div className="h-12 w-12 rounded-2xl bg-teal-500/15 border border-teal-400/30 flex items-center justify-center text-2xl mb-5">
-                🚚
-              </div>
-              <h3 className="text-xl font-bold text-white mb-2">
-                Agricultural Transport Needs Coordination
-              </h3>
-              <p className="text-sm text-emerald-100/70 leading-relaxed">
-                Rural freight vehicles operate with little scheduled coordination between farm gates, collection points, and buyer warehouses, leading to idle capacity and delayed fulfillment.
-              </p>
-            </div>
-
           </div>
+
         </div>
-      </section>
+      </div>
 
 
       {/* ──────────────────────────────────────────────────────────
-          SECTION 3 — INTRODUCING X-MILE
+          SECTION 3 — INTRODUCING X-MILE: EMERGENCE INTO LIGHT
+          (Bright Natural Atmosphere: Warm Cream & Fresh Greens)
       ────────────────────────────────────────────────────────── */}
-      <section
-        ref={introRef}
-        className="relative py-20 sm:py-28 px-4 sm:px-6 bg-[#061208] border-t border-emerald-500/10 overflow-hidden"
-      >
+      <section className="relative py-24 sm:py-32 px-4 sm:px-6 bg-[#faf8f2] text-stone-900 border-t border-emerald-900/10 transition-colors duration-700">
         <div className="max-w-6xl mx-auto space-y-16">
           
-          <div
-            className={`text-center space-y-3 max-w-2xl mx-auto transition-all duration-700 ${
-              introInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
-            }`}
-          >
-            <span className="text-xs font-mono font-bold tracking-widest text-emerald-400 uppercase">
-              The Solution
+          <div className="text-center space-y-4 max-w-3xl mx-auto">
+            <span className="px-3.5 py-1 rounded-full text-xs font-mono font-bold uppercase tracking-wider bg-emerald-100 text-emerald-900 border border-emerald-300/60 inline-block">
+              Section 03 · Introducing X-MILE
             </span>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight">
-              One Unified Agricultural Ecosystem
+            <h2 className="text-3xl sm:text-5xl font-black text-stone-900 tracking-tight">
+              One Connected Platform for Agriculture
             </h2>
-            <p className="text-sm sm:text-base text-emerald-100/75">
-              X-MILE creates a structured digital bridge where farm-level production, buyer demand specifications, and rural transit connect into one transparent lifecycle.
+            <p className="text-base sm:text-lg text-stone-600 leading-relaxed">
+              From the sprout in the soil to regional distribution hubs, X-MILE unifies the three essential participant groups into a synchronized, transparent digital ecosystem.
             </p>
           </div>
 
-          {/* Three Interconnected Pillars Diagram */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative">
+          {/* Three Main Participant Groups (Large Editorial Visual Scenes) */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             
-            {/* Pillar 1: Farmers */}
-            <div
-              className={`p-8 rounded-3xl bg-[#0a1e12] border border-emerald-500/25 relative flex flex-col justify-between transition-all duration-700 delay-100 ${
-                introInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-              }`}
-            >
-              <div>
-                <div className="text-xs font-mono text-emerald-400 font-bold uppercase tracking-wider mb-2">Pillar 01</div>
-                <h3 className="text-2xl font-black text-white mb-2">The Growers</h3>
-                <p className="text-xs text-emerald-300 font-semibold mb-4">Farm Profile & Harvest Inventory</p>
-                <p className="text-sm text-emerald-100/70 leading-relaxed">
-                  Farmers document their registered plots, log harvest inventory lots, publish market listings with asking prices, and receive direct procurement offers.
+            {/* Participant 1: Farmers */}
+            <div className="rounded-3xl bg-white border border-stone-200/80 p-8 shadow-sm hover:shadow-md transition flex flex-col justify-between space-y-6">
+              <div className="space-y-4">
+                <div className="h-14 w-14 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-3xl">
+                  🌾
+                </div>
+                <div>
+                  <span className="text-xs font-mono font-bold uppercase tracking-widest text-emerald-700 block">
+                    Group 01
+                  </span>
+                  <h3 className="text-2xl font-black text-stone-900 mt-1">
+                    The Farmers
+                  </h3>
+                </div>
+                <p className="text-sm text-stone-600 leading-relaxed">
+                  Manage registered farm plots and acreage, log harvest lots, run AI visual quality triage, publish produce listings with asking rates per kg, and track verified settlement earnings.
                 </p>
               </div>
-              <div className="mt-6 pt-4 border-t border-emerald-500/15 flex items-center justify-between text-xs text-emerald-300 font-medium">
-                <span>Direct Listing Access</span>
-                <span>🌾</span>
+              <div className="pt-4 border-t border-stone-100 flex items-center justify-between text-xs font-semibold text-emerald-800">
+                <span>Dedicated Portal: /farmer</span>
+                <span>→</span>
               </div>
             </div>
 
-            {/* Pillar 2: Buyers */}
-            <div
-              className={`p-8 rounded-3xl bg-[#0a1e12] border border-emerald-500/25 relative flex flex-col justify-between transition-all duration-700 delay-200 ${
-                introInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-              }`}
-            >
-              <div>
-                <div className="text-xs font-mono text-emerald-400 font-bold uppercase tracking-wider mb-2">Pillar 02</div>
-                <h3 className="text-2xl font-black text-white mb-2">The Commercial Buyers</h3>
-                <p className="text-xs text-emerald-300 font-semibold mb-4">Procurement & Order Negotiation</p>
-                <p className="text-sm text-emerald-100/70 leading-relaxed">
-                  Bulk purchasers discover verified harvest lots across districts, submit rate offers per kg with payment terms, and negotiate confirmed supply contracts.
+            {/* Participant 2: Buyers */}
+            <div className="rounded-3xl bg-white border border-stone-200/80 p-8 shadow-sm hover:shadow-md transition flex flex-col justify-between space-y-6">
+              <div className="space-y-4">
+                <div className="h-14 w-14 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-3xl">
+                  🏢
+                </div>
+                <div>
+                  <span className="text-xs font-mono font-bold uppercase tracking-widest text-amber-700 block">
+                    Group 02
+                  </span>
+                  <h3 className="text-2xl font-black text-stone-900 mt-1">
+                    The Commercial Buyers
+                  </h3>
+                </div>
+                <p className="text-sm text-stone-600 leading-relaxed">
+                  Discover verified produce availability across agricultural districts, submit binding rate offers per kg with escrow terms, manage accepted orders, and track incoming deliveries.
                 </p>
               </div>
-              <div className="mt-6 pt-4 border-t border-emerald-500/15 flex items-center justify-between text-xs text-emerald-300 font-medium">
-                <span>Verified Procurement</span>
-                <span>🏢</span>
+              <div className="pt-4 border-t border-stone-100 flex items-center justify-between text-xs font-semibold text-amber-800">
+                <span>Dedicated Portal: /buyer</span>
+                <span>→</span>
               </div>
             </div>
 
-            {/* Pillar 3: Transporters */}
-            <div
-              className={`p-8 rounded-3xl bg-[#0a1e12] border border-emerald-500/25 relative flex flex-col justify-between transition-all duration-700 delay-300 ${
-                introInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-              }`}
-            >
-              <div>
-                <div className="text-xs font-mono text-emerald-400 font-bold uppercase tracking-wider mb-2">Pillar 03</div>
-                <h3 className="text-2xl font-black text-white mb-2">The Rural Transporters</h3>
-                <p className="text-xs text-emerald-300 font-semibold mb-4">Dispatch & Transit Verification</p>
-                <p className="text-sm text-emerald-100/70 leading-relaxed">
-                  Transport providers accept scheduled dispatch runs, coordinate pickup locations, update milestone progress, and confirm final weighbridge delivery.
+            {/* Participant 3: Transporters */}
+            <div className="rounded-3xl bg-white border border-stone-200/80 p-8 shadow-sm hover:shadow-md transition flex flex-col justify-between space-y-6">
+              <div className="space-y-4">
+                <div className="h-14 w-14 rounded-2xl bg-teal-50 border border-teal-200 flex items-center justify-center text-3xl">
+                  🚚
+                </div>
+                <div>
+                  <span className="text-xs font-mono font-bold uppercase tracking-widest text-teal-700 block">
+                    Group 03
+                  </span>
+                  <h3 className="text-2xl font-black text-stone-900 mt-1">
+                    The Transport Providers
+                  </h3>
+                </div>
+                <p className="text-sm text-stone-600 leading-relaxed">
+                  Discover assigned transport jobs, coordinate farm pickup locations, update milestone dispatch statuses, and verify destination delivery weighbridge receipts.
                 </p>
               </div>
-              <div className="mt-6 pt-4 border-t border-emerald-500/15 flex items-center justify-between text-xs text-emerald-300 font-medium">
-                <span>Milestone Logistics</span>
-                <span>🚚</span>
+              <div className="pt-4 border-t border-stone-100 flex items-center justify-between text-xs font-semibold text-teal-800">
+                <span>Dedicated Portal: /logistics</span>
+                <span>→</span>
               </div>
             </div>
 
-          </div>
-
-          {/* Connection Summary Banner */}
-          <div className="p-6 rounded-2xl bg-[#0d2616]/80 border border-emerald-500/20 text-center max-w-3xl mx-auto">
-            <p className="text-xs sm:text-sm text-emerald-200/90 font-medium">
-              🔗 <strong>Unified Connectivity:</strong> Every produce listing ties atomically to farmer inventory, buyer offers, transporter assignment, and delivery weighbridge verification.
-            </p>
           </div>
 
         </div>
@@ -615,248 +599,193 @@ export default function HomePage() {
 
 
       {/* ──────────────────────────────────────────────────────────
-          SECTION 4 — EXPLORE X-MILE FEATURES (6 REAL PLATFORM CAPABILITIES)
+          SECTION 4 — WHAT X-MILE BRINGS TOGETHER
+          (6 Actual Operational Capabilities with Authentic Photography)
       ────────────────────────────────────────────────────────── */}
-      <section
-        ref={featuresRef}
-        className="relative py-20 sm:py-28 px-4 sm:px-6 bg-[#08170c] border-t border-emerald-500/10"
-      >
+      <section className="relative py-24 sm:py-32 px-4 sm:px-6 bg-[#f4f0e6] text-stone-900 border-t border-stone-300/40">
         <div className="max-w-6xl mx-auto space-y-16">
           
-          <div
-            className={`text-center space-y-3 max-w-2xl mx-auto transition-all duration-700 ${
-              featuresInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
-            }`}
-          >
-            <span className="text-xs font-mono font-bold tracking-widest text-emerald-400 uppercase">
-              Operational Platform Features
+          <div className="text-center space-y-4 max-w-3xl mx-auto">
+            <span className="px-3.5 py-1 rounded-full text-xs font-mono font-bold uppercase tracking-wider bg-stone-200/80 text-stone-800 border border-stone-300 inline-block">
+              Section 04 · Platform Capabilities
             </span>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight">
-              Built on Verified Agricultural Workflows
+            <h2 className="text-3xl sm:text-5xl font-black text-stone-900 tracking-tight">
+              What X-MILE Brings Together
             </h2>
-            <p className="text-sm sm:text-base text-emerald-100/75">
-              Explore the six core functional capabilities operational inside X-MILE today.
+            <p className="text-base sm:text-lg text-stone-600 leading-relaxed">
+              Six core operational capabilities engineered to make agricultural commerce transparent, reliable, and fair.
             </p>
           </div>
 
-          {/* Feature 1: Agricultural Marketplace */}
-          <div
-            className={`grid grid-cols-1 lg:grid-cols-2 gap-8 items-center p-8 sm:p-10 rounded-3xl bg-[#0a1e12] border border-emerald-500/20 shadow-xl transition-all duration-700 ${
-              featuresInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-            }`}
-          >
+          {/* Capability 1: Agricultural Marketplace */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center bg-white rounded-3xl p-8 sm:p-10 border border-stone-200 shadow-sm">
             <div className="space-y-4">
-              <span className="px-3 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-emerald-950 text-emerald-300 border border-emerald-500/30">
+              <span className="text-xs font-mono font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-md">
                 01 · Produce Marketplace
               </span>
-              <h3 className="text-2xl sm:text-3xl font-black text-white">
-                Live Agricultural Listings & Discovery
+              <h3 className="text-2xl sm:text-3xl font-black text-stone-900">
+                Direct Agricultural Procurement
               </h3>
-              <p className="text-sm text-emerald-100/75 leading-relaxed">
-                Farmers publish verified crop lots specifying variety, harvest date, quality grade, pickup district, and asking rate per kilogram. Commercial buyers discover real produce available across regions and initiate procurement.
+              <p className="text-sm text-stone-600 leading-relaxed">
+                Connect farmers and commercial buyers through transparent produce listings. Listings specify crop variety, grade, available quantity in kilograms, harvest date, pickup location, and asking price per kg.
               </p>
-              <ul className="text-xs text-emerald-200/90 space-y-2 pt-2">
-                <li>✓ Filter by crop category, variety, grade, and district</li>
-                <li>✓ Transparent asking price per kg with volume availability</li>
-                <li>✓ Connected directly to actual farmer harvest inventory</li>
+              <ul className="text-xs text-stone-700 space-y-2 pt-2">
+                <li>✓ District and variety-based discovery</li>
+                <li>✓ Verified lot status directly linked to farmer inventory</li>
+                <li>✓ Structured negotiation without speculative bidding</li>
               </ul>
             </div>
-            <div className="relative h-64 sm:h-80 rounded-2xl overflow-hidden border border-emerald-500/20 shadow-md">
+            <div className="relative h-64 sm:h-80 rounded-2xl overflow-hidden border border-stone-200 shadow-inner">
               <Image
                 src="/images/harvest-crops.jpg"
-                alt="Harvested fresh agricultural produce in wooden crates"
+                alt="Fresh agricultural produce harvested in crates"
                 fill
                 sizes="(max-width: 1024px) 100vw, 50vw"
                 className="object-cover object-center"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0a1e12] via-transparent to-transparent" />
-              <div className="absolute bottom-3 left-4 right-4 p-3 rounded-xl bg-[#0a1e12]/90 backdrop-blur-md border border-emerald-500/30 text-[11px] text-emerald-200 flex justify-between items-center">
-                <span>Verified Crop Lot #LOT-TOM-01</span>
-                <span className="font-mono font-bold text-white">1,200 kg · Grade A</span>
-              </div>
             </div>
           </div>
 
-          {/* Feature 2: AI Crop Quality Assessment */}
-          <div
-            className={`grid grid-cols-1 lg:grid-cols-2 gap-8 items-center p-8 sm:p-10 rounded-3xl bg-[#0a1e12] border border-emerald-500/20 shadow-xl transition-all duration-700 ${
-              featuresInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-            }`}
-          >
-            <div className="order-2 lg:order-1 relative h-64 sm:h-80 rounded-2xl overflow-hidden border border-emerald-500/20 shadow-md">
+          {/* Capability 2: AI Crop Quality Assessment */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center bg-white rounded-3xl p-8 sm:p-10 border border-stone-200 shadow-sm">
+            <div className="order-2 lg:order-1 relative h-64 sm:h-80 rounded-2xl overflow-hidden border border-stone-200 shadow-inner">
               <Image
                 src="/images/quality-check.jpg"
-                alt="Agricultural produce quality assessment"
+                alt="Produce quality examination"
                 fill
                 sizes="(max-width: 1024px) 100vw, 50vw"
                 className="object-cover object-center"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0a1e12] via-transparent to-transparent" />
-              <div className="absolute bottom-3 left-4 right-4 p-3 rounded-xl bg-[#0a1e12]/90 backdrop-blur-md border border-emerald-500/30 text-[11px] text-emerald-200 flex justify-between items-center">
-                <span>AI Vision Triage: Color, Uniformity, Defects</span>
-                <span className="font-mono font-bold text-emerald-300">Grade A Assessed</span>
-              </div>
             </div>
             <div className="order-1 lg:order-2 space-y-4">
-              <span className="px-3 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-emerald-950 text-emerald-300 border border-emerald-500/30">
+              <span className="text-xs font-mono font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-md">
                 02 · AI Vision Triage
               </span>
-              <h3 className="text-2xl sm:text-3xl font-black text-white">
-                Multimodal Visual Crop Assessment
+              <h3 className="text-2xl sm:text-3xl font-black text-stone-900">
+                AI-Assisted Crop Quality Assessment
               </h3>
-              <p className="text-sm text-emerald-100/75 leading-relaxed">
-                Farmers take or upload clear photos of harvested crops to receive instant computer-vision triage estimating Grade A, B, or C based on external color, skin maturity, shape uniformity, and visible surface defects.
+              <p className="text-sm text-stone-600 leading-relaxed">
+                Farmers take or upload clear crop photos to generate instant visual quality analysis estimating Grade A, B, or C based on surface color, shape uniformity, and visible defects.
               </p>
-              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-400/25 text-[11px] text-amber-200 leading-normal">
-                ⚠️ <strong>Important Notice:</strong> Visual AI grading evaluates external characteristics only. It does not replace laboratory chemical residue analysis or certified assay testing.
+              <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 leading-relaxed">
+                ℹ️ <strong>Quality Notice:</strong> Visual AI grading evaluates external characteristics only. It is an indicative triage tool and does not replace certified laboratory chemical assay or food safety testing.
               </div>
             </div>
           </div>
 
-          {/* Feature 3: Farm & Inventory Management */}
-          <div
-            className={`grid grid-cols-1 lg:grid-cols-2 gap-8 items-center p-8 sm:p-10 rounded-3xl bg-[#0a1e12] border border-emerald-500/20 shadow-xl transition-all duration-700 ${
-              featuresInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-            }`}
-          >
+          {/* Capability 3: Farm & Inventory Management */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center bg-white rounded-3xl p-8 sm:p-10 border border-stone-200 shadow-sm">
             <div className="space-y-4">
-              <span className="px-3 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-emerald-950 text-emerald-300 border border-emerald-500/30">
-                03 · Farm Profile & Inventory
+              <span className="text-xs font-mono font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-md">
+                03 · Farm Management
               </span>
-              <h3 className="text-2xl sm:text-3xl font-black text-white">
-                Registered Acreage & Harvest Stock
+              <h3 className="text-2xl sm:text-3xl font-black text-stone-900">
+                Registered Acreage & Inventory Control
               </h3>
-              <p className="text-sm text-emerald-100/75 leading-relaxed">
-                Farmers maintain their digital farm record: total acreage, village survey numbers, registered cultivation plots, soil types, and harvest inventory with automated reserved-stock tracking when orders are accepted.
+              <p className="text-sm text-stone-600 leading-relaxed">
+                Growers manage registered land acreage, plot survey codes, soil types, and harvest cycles. Inventory lots track live stock automatically: distinguishing available produce from quantities reserved under pending purchase orders.
               </p>
-              <ul className="text-xs text-emerald-200/90 space-y-2 pt-2">
-                <li>✓ Multi-plot management with crop stage and expected harvest date</li>
-                <li>✓ Live stock tracking: Available vs. Reserved quantity in kilograms</li>
-                <li>✓ Strict RLS database isolation preventing cross-farm data leakage</li>
-              </ul>
             </div>
-            <div className="relative h-64 sm:h-80 rounded-2xl overflow-hidden border border-emerald-500/20 shadow-md">
+            <div className="relative h-64 sm:h-80 rounded-2xl overflow-hidden border border-stone-200 shadow-inner">
               <Image
                 src="/images/agri-tech.jpg"
-                alt="Agricultural cultivation plot and fertile soil"
+                alt="Cultivation acreage and soil preparation"
                 fill
                 sizes="(max-width: 1024px) 100vw, 50vw"
                 className="object-cover object-center"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0a1e12] via-transparent to-transparent" />
-              <div className="absolute bottom-3 left-4 right-4 p-3 rounded-xl bg-[#0a1e12]/90 backdrop-blur-md border border-emerald-500/30 text-[11px] text-emerald-200 flex justify-between items-center">
-                <span>Plot: North-01 · 6.5 Acres</span>
-                <span className="font-mono font-bold text-white">Stock: 1,200kg (800kg Reserved)</span>
-              </div>
             </div>
           </div>
 
-          {/* Feature 4: Orders & Negotiation */}
-          <div
-            className={`grid grid-cols-1 lg:grid-cols-2 gap-8 items-center p-8 sm:p-10 rounded-3xl bg-[#0a1e12] border border-emerald-500/20 shadow-xl transition-all duration-700 ${
-              featuresInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-            }`}
-          >
-            <div className="order-2 lg:order-1 p-6 rounded-2xl bg-[#08180d] border border-emerald-500/25 space-y-3 font-mono text-xs">
-              <div className="flex justify-between items-center pb-2 border-b border-emerald-500/20">
-                <span className="text-emerald-400 font-bold">Purchase Offer #PO-9412</span>
-                <span className="px-2 py-0.5 rounded bg-emerald-900/60 text-emerald-300 text-[10px]">ESCROW TERMS</span>
+          {/* Capability 4: Buyer Offers & Orders */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center bg-white rounded-3xl p-8 sm:p-10 border border-stone-200 shadow-sm">
+            <div className="order-2 lg:order-1 p-6 rounded-2xl bg-stone-50 border border-stone-200 space-y-3 font-mono text-xs">
+              <div className="flex justify-between items-center pb-2 border-b border-stone-200">
+                <span className="text-emerald-800 font-bold">Purchase Contract #PO-9412</span>
+                <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 text-[10px] font-bold">ESCROW TERMS</span>
               </div>
-              <div className="text-stone-300 space-y-1 text-[11px]">
-                <p>Crop: Organic Robusta Banana</p>
-                <p>Offered Rate: ₹30 / kg · Quantity: 800 kg</p>
-                <p>Total Contract: ₹24,000</p>
-                <p>Destination: APMC Yeshwanthpur, Bengaluru</p>
+              <div className="space-y-1 text-stone-700 text-[11px]">
+                <p>Produce: Organic Robusta Banana</p>
+                <p>Contract Rate: ₹30 / kg · Volume: 800 kg</p>
+                <p>Total Value: ₹24,000</p>
+                <p>Destination: APMC Yeshwanthpur</p>
               </div>
-              <div className="pt-2 flex justify-between items-center text-[10px] text-emerald-400">
-                <span>✓ Atomic Inventory Reserved</span>
-                <span className="text-white font-bold">Status: ACCEPTED</span>
+              <div className="pt-2 flex justify-between items-center text-[10px] text-emerald-700 font-bold">
+                <span>✓ Atomic Stock Reserved</span>
+                <span className="text-stone-900">ACCEPTED BY FARMER</span>
               </div>
             </div>
             <div className="order-1 lg:order-2 space-y-4">
-              <span className="px-3 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-emerald-950 text-emerald-300 border border-emerald-500/30">
+              <span className="text-xs font-mono font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-md">
                 04 · Orders & Offers
               </span>
-              <h3 className="text-2xl sm:text-3xl font-black text-white">
-                Structured Offers & Negotiation
+              <h3 className="text-2xl sm:text-3xl font-black text-stone-900">
+                Negotiated Offers & Confirmed Orders
               </h3>
-              <p className="text-sm text-emerald-100/75 leading-relaxed">
-                Commercial buyers place binding purchase offers on farmer listings. Farmers can review terms, accept, or place counteroffers. Acceptance atomically executes the transaction and updates inventory allocations without race conditions.
+              <p className="text-sm text-stone-600 leading-relaxed">
+                Commercial buyers place rate offers on farmer listings. Farmers can accept, negotiate, or decline. When accepted, the system atomically reserves inventory, generates binding orders, and assigns logistics without race conditions.
               </p>
             </div>
           </div>
 
-          {/* Feature 5: Transportation & Delivery */}
-          <div
-            className={`grid grid-cols-1 lg:grid-cols-2 gap-8 items-center p-8 sm:p-10 rounded-3xl bg-[#0a1e12] border border-emerald-500/20 shadow-xl transition-all duration-700 ${
-              featuresInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-            }`}
-          >
+          {/* Capability 5: Transport & Delivery Coordination */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center bg-white rounded-3xl p-8 sm:p-10 border border-stone-200 shadow-sm">
             <div className="space-y-4">
-              <span className="px-3 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-emerald-950 text-emerald-300 border border-emerald-500/30">
-                05 · Rural Logistics
+              <span className="text-xs font-mono font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-md">
+                05 · Transport Coordination
               </span>
-              <h3 className="text-2xl sm:text-3xl font-black text-white">
-                Transporter Assignment & Delivery Tracking
+              <h3 className="text-2xl sm:text-3xl font-black text-stone-900">
+                Transport Assignment & Transit Visibility
               </h3>
-              <p className="text-sm text-emerald-100/75 leading-relaxed">
-                Accepted orders are linked to transport providers. The platform tracks transit progress through explicit stages: Accepted → Dispatched → Delivered, concluding with weighbridge quantity confirmation at destination.
+              <p className="text-sm text-stone-600 leading-relaxed">
+                Orders are linked to transport providers who manage pickup origins and destination deliveries. Shipments advance through verified milestones: Accepted → Dispatched → Delivered, concluding with weighbridge quantity confirmation.
               </p>
             </div>
-            <div className="relative h-64 sm:h-80 rounded-2xl overflow-hidden border border-emerald-500/20 shadow-md">
+            <div className="relative h-64 sm:h-80 rounded-2xl overflow-hidden border border-stone-200 shadow-inner">
               <Image
                 src="/images/rural-transport.jpg"
-                alt="Agricultural produce transport vehicle on rural transit route"
+                alt="Agricultural logistics transport on rural route"
                 fill
                 sizes="(max-width: 1024px) 100vw, 50vw"
                 className="object-cover object-center"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0a1e12] via-transparent to-transparent" />
-              <div className="absolute bottom-3 left-4 right-4 p-3 rounded-xl bg-[#0a1e12]/90 backdrop-blur-md border border-emerald-500/30 text-[11px] text-emerald-200 flex justify-between items-center">
-                <span>Shipment #SHP-886B · Route: Tumakuru → Mandi</span>
-                <span className="font-mono font-bold text-white">Status: IN TRANSIT</span>
-              </div>
             </div>
           </div>
 
-          {/* Feature 6: Earnings & Settlement Ledger */}
-          <div
-            className={`grid grid-cols-1 lg:grid-cols-2 gap-8 items-center p-8 sm:p-10 rounded-3xl bg-[#0a1e12] border border-emerald-500/20 shadow-xl transition-all duration-700 ${
-              featuresInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-            }`}
-          >
-            <div className="order-2 lg:order-1 p-6 rounded-2xl bg-[#08180d] border border-emerald-500/25 space-y-3 font-mono text-xs">
-              <div className="flex justify-between items-center pb-2 border-b border-emerald-500/20">
-                <span className="text-emerald-400 font-bold">Financial Settlement Ledger</span>
-                <span className="text-[10px] text-stone-400">Strict Verification</span>
+          {/* Capability 6: Earnings & Settlement Ledger */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center bg-white rounded-3xl p-8 sm:p-10 border border-stone-200 shadow-sm">
+            <div className="order-2 lg:order-1 p-6 rounded-2xl bg-stone-50 border border-stone-200 space-y-3 font-mono text-xs">
+              <div className="flex justify-between items-center pb-2 border-b border-stone-200">
+                <span className="text-stone-900 font-bold">Settlement Transparency</span>
+                <span className="text-[10px] text-stone-500">Ledger Verified</span>
               </div>
-              <div className="space-y-2 text-[11px]">
+              <div className="space-y-2 text-[11px] text-stone-700">
                 <div className="flex justify-between">
-                  <span className="text-stone-400">Fulfilled Produce Value:</span>
-                  <span className="text-white font-bold">₹35,000 (900 kg)</span>
+                  <span>Fulfilled Produce Value:</span>
+                  <span className="font-bold text-stone-900">₹35,000 (900 kg)</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-stone-400">Disbursed to Bank:</span>
-                  <span className="text-emerald-400 font-bold">₹20,000 (Verified)</span>
+                  <span>Disbursed to Bank:</span>
+                  <span className="font-bold text-emerald-700">₹20,000 (Confirmed)</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-stone-400">Held in Escrow:</span>
-                  <span className="text-blue-300 font-bold">₹25,000 (Protected)</span>
+                  <span>Held in Escrow:</span>
+                  <span className="font-bold text-blue-700">₹25,000 (Protected)</span>
                 </div>
-                <div className="pt-2 text-[10px] text-amber-300">
-                  ⚡ 1 order: Delivered · Awaiting settlement confirmation
+                <div className="pt-2 text-[10px] text-amber-800">
+                  ⚡ 1 Order: Delivered · Awaiting settlement confirmation
                 </div>
               </div>
             </div>
             <div className="order-1 lg:order-2 space-y-4">
-              <span className="px-3 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-emerald-950 text-emerald-300 border border-emerald-500/30">
+              <span className="text-xs font-mono font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-md">
                 06 · Financial Accuracy
               </span>
-              <h3 className="text-2xl sm:text-3xl font-black text-white">
-                Honest Financial Ledger & Payout Transparency
+              <h3 className="text-2xl sm:text-3xl font-black text-stone-900">
+                Earnings & Settlement Visibility
               </h3>
-              <p className="text-sm text-emerald-100/75 leading-relaxed">
-                Physical delivery is never falsely labeled as &ldquo;Disbursed to Bank&rdquo; unless a verified settlement receipt confirms payout. Orders awaiting banking settlement are transparently indicated without inventing financial states.
+              <p className="text-sm text-stone-600 leading-relaxed">
+                Order values and completed deliveries are tracked with strict financial honesty. Physical delivery completion is never claimed as &ldquo;Disbursed to Bank&rdquo; unless a verified settlement record confirms payout.
               </p>
             </div>
           </div>
@@ -866,105 +795,98 @@ export default function HomePage() {
 
 
       {/* ──────────────────────────────────────────────────────────
-          SECTION 5 — THE AGRICULTURAL JOURNEY (5 STAGES)
+          SECTION 5 — THE CONNECTED JOURNEY (SUPPLY-CHAIN FLOW)
       ────────────────────────────────────────────────────────── */}
-      <section
-        ref={journeyRef}
-        className="relative py-20 sm:py-28 px-4 sm:px-6 bg-[#061208] border-t border-emerald-500/10 overflow-hidden"
-      >
+      <section className="relative py-24 sm:py-32 px-4 sm:px-6 bg-[#faf8f2] text-stone-900 border-t border-stone-300/40">
         <div className="max-w-6xl mx-auto space-y-16">
           
-          <div
-            className={`text-center space-y-3 max-w-2xl mx-auto transition-all duration-700 ${
-              journeyInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
-            }`}
-          >
-            <span className="text-xs font-mono font-bold tracking-widest text-emerald-400 uppercase">
-              End-to-End Workflow
+          <div className="text-center space-y-4 max-w-3xl mx-auto">
+            <span className="px-3.5 py-1 rounded-full text-xs font-mono font-bold uppercase tracking-wider bg-emerald-100 text-emerald-900 border border-emerald-300/60 inline-block">
+              Section 05 · The Connected Journey
             </span>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight">
-              The Agricultural Journey
+            <h2 className="text-3xl sm:text-5xl font-black text-stone-900 tracking-tight">
+              One Synchronized Supply Chain
             </h2>
-            <p className="text-sm sm:text-base text-emerald-100/75">
-              Follow how produce flows seamlessly from farm cultivation to final mandi delivery.
+            <p className="text-base sm:text-lg text-stone-600 leading-relaxed">
+              Experience the end-to-end journey of agricultural produce flowing through X-MILE.
             </p>
           </div>
 
-          {/* Interactive Step-by-Step Flow */}
+          {/* Connected Route Journey Path */}
           <div className="relative">
-            {/* Connecting Route Line (Desktop) */}
-            <div className="hidden lg:block absolute top-1/2 left-0 right-0 h-0.5 bg-gradient-to-r from-emerald-500/20 via-emerald-400/50 to-emerald-500/20 -translate-y-1/2 z-0" />
+            {/* Desktop Connecting Line */}
+            <div className="hidden lg:block absolute top-1/2 left-0 right-0 h-1 bg-gradient-to-r from-emerald-600 via-amber-500 to-emerald-600 -translate-y-1/2 z-0" />
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-6 relative z-10">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 relative z-10">
               
-              {/* Step 1 */}
-              <div className="p-6 rounded-3xl bg-[#0a1e12] border border-emerald-500/25 flex flex-col justify-between space-y-4 hover:border-emerald-400/50 transition">
+              {/* Step 1: Farmer */}
+              <div className="bg-white rounded-3xl p-6 border border-stone-200/90 shadow-sm flex flex-col justify-between space-y-4 hover:shadow-md transition">
                 <div className="space-y-2">
-                  <div className="h-10 w-10 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-sm font-mono">
+                  <div className="h-10 w-10 rounded-2xl bg-emerald-100 text-emerald-900 flex items-center justify-center font-bold text-sm font-mono">
                     01
                   </div>
-                  <h4 className="text-base font-black text-white">Farmer Harvest</h4>
-                  <p className="text-xs text-emerald-100/70">
-                    Grower records harvested stock in digital inventory and runs AI visual quality triage.
+                  <h4 className="text-base font-black text-stone-900">Farmer Harvest</h4>
+                  <p className="text-xs text-stone-600 leading-relaxed">
+                    Crop is harvested, logged in digital inventory, and triaged with AI visual assessment.
                   </p>
                 </div>
-                <span className="text-[10px] font-mono text-emerald-400">STAGE: FARM GATE</span>
+                <span className="text-[10px] font-mono font-bold text-emerald-800">STAGE: FARM GATE</span>
               </div>
 
-              {/* Step 2 */}
-              <div className="p-6 rounded-3xl bg-[#0a1e12] border border-emerald-500/25 flex flex-col justify-between space-y-4 hover:border-emerald-400/50 transition">
+              {/* Step 2: Marketplace */}
+              <div className="bg-white rounded-3xl p-6 border border-stone-200/90 shadow-sm flex flex-col justify-between space-y-4 hover:shadow-md transition">
                 <div className="space-y-2">
-                  <div className="h-10 w-10 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-sm font-mono">
+                  <div className="h-10 w-10 rounded-2xl bg-emerald-100 text-emerald-900 flex items-center justify-center font-bold text-sm font-mono">
                     02
                   </div>
-                  <h4 className="text-base font-black text-white">Marketplace</h4>
-                  <p className="text-xs text-emerald-100/70">
-                    Produce listing is published with variety, quality grade, quantity, and asking price.
+                  <h4 className="text-base font-black text-stone-900">Marketplace</h4>
+                  <p className="text-xs text-stone-600 leading-relaxed">
+                    Produce lot is published with verified grade, available quantity, and asking price per kg.
                   </p>
                 </div>
-                <span className="text-[10px] font-mono text-emerald-400">STAGE: LISTED</span>
+                <span className="text-[10px] font-mono font-bold text-emerald-800">STAGE: LISTED</span>
               </div>
 
-              {/* Step 3 */}
-              <div className="p-6 rounded-3xl bg-[#0a1e12] border border-emerald-500/25 flex flex-col justify-between space-y-4 hover:border-emerald-400/50 transition">
+              {/* Step 3: Buyer */}
+              <div className="bg-white rounded-3xl p-6 border border-stone-200/90 shadow-sm flex flex-col justify-between space-y-4 hover:shadow-md transition">
                 <div className="space-y-2">
-                  <div className="h-10 w-10 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-sm font-mono">
+                  <div className="h-10 w-10 rounded-2xl bg-emerald-100 text-emerald-900 flex items-center justify-center font-bold text-sm font-mono">
                     03
                   </div>
-                  <h4 className="text-base font-black text-white">Buyer Offer</h4>
-                  <p className="text-xs text-emerald-100/70">
+                  <h4 className="text-base font-black text-stone-900">Buyer Offer</h4>
+                  <p className="text-xs text-stone-600 leading-relaxed">
                     Commercial buyer submits purchase offer. Acceptance generates order and reserves stock.
                   </p>
                 </div>
-                <span className="text-[10px] font-mono text-emerald-400">STAGE: ACCEPTED</span>
+                <span className="text-[10px] font-mono font-bold text-emerald-800">STAGE: ACCEPTED</span>
               </div>
 
-              {/* Step 4 */}
-              <div className="p-6 rounded-3xl bg-[#0a1e12] border border-emerald-500/25 flex flex-col justify-between space-y-4 hover:border-emerald-400/50 transition">
+              {/* Step 4: Transporter */}
+              <div className="bg-white rounded-3xl p-6 border border-stone-200/90 shadow-sm flex flex-col justify-between space-y-4 hover:shadow-md transition">
                 <div className="space-y-2">
-                  <div className="h-10 w-10 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-sm font-mono">
+                  <div className="h-10 w-10 rounded-2xl bg-emerald-100 text-emerald-900 flex items-center justify-center font-bold text-sm font-mono">
                     04
                   </div>
-                  <h4 className="text-base font-black text-white">Transporter</h4>
-                  <p className="text-xs text-emerald-100/70">
-                    Rural transporter coordinates scheduled dispatch from farm pickup to destination.
+                  <h4 className="text-base font-black text-stone-900">Transportation</h4>
+                  <p className="text-xs text-stone-600 leading-relaxed">
+                    Rural transporter coordinates farm pickup, dispatch route, and destination transit.
                   </p>
                 </div>
-                <span className="text-[10px] font-mono text-emerald-400">STAGE: DISPATCHED</span>
+                <span className="text-[10px] font-mono font-bold text-emerald-800">STAGE: IN TRANSIT</span>
               </div>
 
-              {/* Step 5 */}
-              <div className="p-6 rounded-3xl bg-[#0a1e12] border border-emerald-500/25 flex flex-col justify-between space-y-4 hover:border-emerald-400/50 transition">
+              {/* Step 5: Delivery */}
+              <div className="bg-white rounded-3xl p-6 border border-stone-200/90 shadow-sm flex flex-col justify-between space-y-4 hover:shadow-md transition">
                 <div className="space-y-2">
-                  <div className="h-10 w-10 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-sm font-mono">
+                  <div className="h-10 w-10 rounded-2xl bg-emerald-100 text-emerald-900 flex items-center justify-center font-bold text-sm font-mono">
                     05
                   </div>
-                  <h4 className="text-base font-black text-white">Mandi Delivery</h4>
-                  <p className="text-xs text-emerald-100/70">
-                    Weighbridge verification confirms delivered volume, completing fulfillment for settlement.
+                  <h4 className="text-base font-black text-stone-900">Mandi Delivery</h4>
+                  <p className="text-xs text-stone-600 leading-relaxed">
+                    Weighbridge verification confirms net delivered weight, completing order fulfillment.
                   </p>
                 </div>
-                <span className="text-[10px] font-mono text-emerald-400">STAGE: DELIVERED</span>
+                <span className="text-[10px] font-mono font-bold text-emerald-800">STAGE: DELIVERED</span>
               </div>
 
             </div>
@@ -975,227 +897,27 @@ export default function HomePage() {
 
 
       {/* ──────────────────────────────────────────────────────────
-          SECTION 6 — BUILT FOR DIFFERENT AGRICULTURAL PARTICIPANTS
+          SECTION 6 — FINAL INVITATION & AUTHENTICATION DESTINATION
+          (Dark Cinematic Closing Scene with Golden Twilight)
       ────────────────────────────────────────────────────────── */}
-      <section
-        ref={rolesRef}
-        className="relative py-20 sm:py-28 px-4 sm:px-6 bg-[#08170c] border-t border-emerald-500/10"
-      >
-        <div className="max-w-6xl mx-auto space-y-14">
-          
-          <div
-            className={`text-center space-y-3 max-w-2xl mx-auto transition-all duration-700 ${
-              rolesInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
-            }`}
-          >
-            <span className="text-xs font-mono font-bold tracking-widest text-emerald-400 uppercase">
-              Role-Based Portals
-            </span>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight">
-              Purpose-Built for Every Participant
-            </h2>
-            <p className="text-sm sm:text-base text-emerald-100/75">
-              X-MILE operates four strictly separated portals, each tailored to distinct operational responsibilities.
-            </p>
-          </div>
-
-          {/* Interactive Role Switcher Tabs */}
-          <div className="flex flex-wrap justify-center gap-2 max-w-xl mx-auto">
-            <button
-              type="button"
-              onClick={() => setActiveRoleTab("farmer")}
-              className={`px-5 py-2.5 rounded-full text-xs font-bold transition ${
-                activeRoleTab === "farmer"
-                  ? "bg-emerald-600 text-white shadow-md shadow-emerald-950/40"
-                  : "bg-[#0c2214] text-emerald-200/80 hover:bg-[#142d1d]"
-              }`}
-            >
-              🌾 Farmers
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveRoleTab("buyer")}
-              className={`px-5 py-2.5 rounded-full text-xs font-bold transition ${
-                activeRoleTab === "buyer"
-                  ? "bg-emerald-600 text-white shadow-md shadow-emerald-950/40"
-                  : "bg-[#0c2214] text-emerald-200/80 hover:bg-[#142d1d]"
-              }`}
-            >
-              🏢 Buyers
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveRoleTab("transporter")}
-              className={`px-5 py-2.5 rounded-full text-xs font-bold transition ${
-                activeRoleTab === "transporter"
-                  ? "bg-emerald-600 text-white shadow-md shadow-emerald-950/40"
-                  : "bg-[#0c2214] text-emerald-200/80 hover:bg-[#142d1d]"
-              }`}
-            >
-              🚚 Transporters
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveRoleTab("admin")}
-              className={`px-5 py-2.5 rounded-full text-xs font-bold transition ${
-                activeRoleTab === "admin"
-                  ? "bg-emerald-600 text-white shadow-md shadow-emerald-950/40"
-                  : "bg-[#0c2214] text-emerald-200/80 hover:bg-[#142d1d]"
-              }`}
-            >
-              🛡️ Administrators
-            </button>
-          </div>
-
-          {/* Active Role Card Presentation */}
-          <div className="p-8 sm:p-12 rounded-3xl bg-[#0a1e12] border border-emerald-500/25 shadow-xl max-w-4xl mx-auto transition-all">
-            {activeRoleTab === "farmer" && (
-              <div className="space-y-6 animate-in fade-in duration-300">
-                <div className="flex items-center gap-3">
-                  <span className="text-3xl p-3 bg-emerald-500/15 rounded-2xl">🌾</span>
-                  <div>
-                    <h3 className="text-2xl font-black text-white">Farmer Operations Portal</h3>
-                    <p className="text-xs text-emerald-300 font-semibold">Route: /farmer</p>
-                  </div>
-                </div>
-                <p className="text-sm text-emerald-100/75 leading-relaxed">
-                  Designed exclusively for agricultural growers. Register cultivation acreage, run AI crop quality triage, publish harvest lots with asking prices per kg, review buyer purchase offers, and inspect confirmed settlement earnings.
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 text-xs">
-                  <div className="p-4 rounded-2xl bg-[#07170d] border border-emerald-500/20">
-                    <span className="font-bold text-white block mb-1">My Farm</span>
-                    <span className="text-stone-400 text-[11px]">Manage land plots, soil types, and crop cycles.</span>
-                  </div>
-                  <div className="p-4 rounded-2xl bg-[#07170d] border border-emerald-500/20">
-                    <span className="font-bold text-white block mb-1">Sell Crops</span>
-                    <span className="text-stone-400 text-[11px]">List lots with asking rates and grade specs.</span>
-                  </div>
-                  <div className="p-4 rounded-2xl bg-[#07170d] border border-emerald-500/20">
-                    <span className="font-bold text-white block mb-1">My Earnings</span>
-                    <span className="text-stone-400 text-[11px]">Verified settlements and escrow records.</span>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {activeRoleTab === "buyer" && (
-              <div className="space-y-6 animate-in fade-in duration-300">
-                <div className="flex items-center gap-3">
-                  <span className="text-3xl p-3 bg-emerald-500/15 rounded-2xl">🏢</span>
-                  <div>
-                    <h3 className="text-2xl font-black text-white">Commercial Buyer Portal</h3>
-                    <p className="text-xs text-emerald-300 font-semibold">Route: /buyer</p>
-                  </div>
-                </div>
-                <p className="text-sm text-emerald-100/75 leading-relaxed">
-                  Tailored for wholesale purchasers, processors, and institutional retailers. Discover regional produce availability across districts, submit rate offers per kg, track active order dispatch, and inspect weighbridge receipts upon arrival.
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 text-xs">
-                  <div className="p-4 rounded-2xl bg-[#07170d] border border-emerald-500/20">
-                    <span className="font-bold text-white block mb-1">Procurement Discovery</span>
-                    <span className="text-stone-400 text-[11px]">Filter verified lots by grade and district.</span>
-                  </div>
-                  <div className="p-4 rounded-2xl bg-[#07170d] border border-emerald-500/20">
-                    <span className="font-bold text-white block mb-1">Purchase Offers</span>
-                    <span className="text-stone-400 text-[11px]">Negotiate price and escrow payment terms.</span>
-                  </div>
-                  <div className="p-4 rounded-2xl bg-[#07170d] border border-emerald-500/20">
-                    <span className="font-bold text-white block mb-1">Shipment Visibility</span>
-                    <span className="text-stone-400 text-[11px]">Track scheduled transit from farm pickup.</span>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {activeRoleTab === "transporter" && (
-              <div className="space-y-6 animate-in fade-in duration-300">
-                <div className="flex items-center gap-3">
-                  <span className="text-3xl p-3 bg-emerald-500/15 rounded-2xl">🚚</span>
-                  <div>
-                    <h3 className="text-2xl font-black text-white">Transporter Operations Portal</h3>
-                    <p className="text-xs text-emerald-300 font-semibold">Route: /logistics</p>
-                  </div>
-                </div>
-                <p className="text-sm text-emerald-100/75 leading-relaxed">
-                  Engineered for rural logistics providers and freight fleets. Receive scheduled agricultural pickup requests, update milestone dispatch statuses, coordinate vehicle allocations, and record delivery confirmation.
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 text-xs">
-                  <div className="p-4 rounded-2xl bg-[#07170d] border border-emerald-500/20">
-                    <span className="font-bold text-white block mb-1">Dispatch Queue</span>
-                    <span className="text-stone-400 text-[11px]">View assigned pickup locations and volume.</span>
-                  </div>
-                  <div className="p-4 rounded-2xl bg-[#07170d] border border-emerald-500/20">
-                    <span className="font-bold text-white block mb-1">Transit Milestones</span>
-                    <span className="text-stone-400 text-[11px]">Update Accepted → Dispatched → Delivered.</span>
-                  </div>
-                  <div className="p-4 rounded-2xl bg-[#07170d] border border-emerald-500/20">
-                    <span className="font-bold text-white block mb-1">Weighbridge Receipts</span>
-                    <span className="text-stone-400 text-[11px]">Document verified net weight upon arrival.</span>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {activeRoleTab === "admin" && (
-              <div className="space-y-6 animate-in fade-in duration-300">
-                <div className="flex items-center gap-3">
-                  <span className="text-3xl p-3 bg-emerald-500/15 rounded-2xl">🛡️</span>
-                  <div>
-                    <h3 className="text-2xl font-black text-white">Platform Administration Portal</h3>
-                    <p className="text-xs text-emerald-300 font-semibold">Route: /admin</p>
-                  </div>
-                </div>
-                <p className="text-sm text-emerald-100/75 leading-relaxed">
-                  Restricted to platform administrators. Monitor platform-wide order execution, verify agricultural profile credentials, oversee data integrity, and resolve exceptional transaction disputes.
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 text-xs">
-                  <div className="p-4 rounded-2xl bg-[#07170d] border border-emerald-500/20">
-                    <span className="font-bold text-white block mb-1">Profile Oversight</span>
-                    <span className="text-stone-400 text-[11px]">Verify farmer and buyer credentials.</span>
-                  </div>
-                  <div className="p-4 rounded-2xl bg-[#07170d] border border-emerald-500/20">
-                    <span className="font-bold text-white block mb-1">System Audit</span>
-                    <span className="text-stone-400 text-[11px]">Maintain database integrity and RLS security.</span>
-                  </div>
-                  <div className="p-4 rounded-2xl bg-[#07170d] border border-emerald-500/20">
-                    <span className="font-bold text-white block mb-1">Transaction Health</span>
-                    <span className="text-stone-400 text-[11px]">Oversee escrow and dispute settlements.</span>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-        </div>
-      </section>
-
-
-      {/* ──────────────────────────────────────────────────────────
-          SECTION 7 — FINAL CALL TO ACTION (AUTHENTICATION DESTINATION)
-      ────────────────────────────────────────────────────────── */}
-      <section
-        ref={ctaRef}
-        className="relative py-24 sm:py-32 px-4 sm:px-6 bg-[#061009] border-t border-emerald-500/15 overflow-hidden flex flex-col items-center justify-center text-center"
-      >
-        {/* Background Atmosphere */}
+      <section className="relative py-28 sm:py-36 px-4 sm:px-6 bg-[#040c06] text-white border-t border-emerald-500/20 overflow-hidden flex flex-col items-center justify-center text-center">
+        
+        {/* Cinematic Backdrop Image */}
         <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
           <Image
             src="/images/hero-farm.jpg"
             alt="Verdant agricultural fields at dawn"
             fill
             sizes="100vw"
-            className="object-cover object-center filter brightness-[0.25] contrast-[1.1] scale-[1.02]"
+            className="object-cover object-center filter brightness-[0.22] contrast-[1.15] scale-[1.02]"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-[#061009]/90 via-[#07140b]/85 to-[#050e08]/98" />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_30%,rgba(16,185,129,0.18),transparent_70%)]" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#040c06]/92 via-[#08170d]/88 to-[#040c06]" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_35%,rgba(16,185,129,0.18),transparent_70%)]" />
         </div>
 
-        {/* Central Architectural Authentication Card */}
-        <div
-          className={`relative z-10 w-full max-w-lg mx-auto p-8 sm:p-12 rounded-[36px] bg-[#0c2214]/90 backdrop-blur-2xl border border-emerald-500/30 shadow-[0_30px_80px_-15px_rgba(0,0,0,0.85)] ring-1 ring-white/10 space-y-8 transition-all duration-700 ${
-            ctaInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-          }`}
-        >
+        {/* Central Architectural Authentication Hub */}
+        <div className="relative z-10 w-full max-w-lg mx-auto p-8 sm:p-12 rounded-[36px] bg-[#0c2214]/90 backdrop-blur-2xl border border-emerald-500/30 shadow-[0_30px_80px_-15px_rgba(0,0,0,0.85)] ring-1 ring-white/10 space-y-8">
+          
           {/* Top Micro Accent Line */}
           <div className="absolute top-0 left-12 right-12 h-[2px] bg-gradient-to-r from-transparent via-emerald-400/70 to-transparent" />
 
@@ -1221,15 +943,17 @@ export default function HomePage() {
           {/* Headline & Tagline */}
           <div className="space-y-2">
             <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tight">
-              Ready to Join X-MILE?
+              {labels.tagline}
             </h2>
             <p className="text-xs sm:text-sm font-semibold text-emerald-300 tracking-wide text-balance">
-              {labels.tagline}
+              {labels.finalSupporting}
             </p>
           </div>
 
           {/* Primary Authentication Action Buttons */}
           <div className="space-y-3.5 pt-2">
+            
+            {/* Sign In Button */}
             <Link
               href="/login"
               className="group relative w-full h-15 rounded-2xl bg-gradient-to-r from-emerald-600 via-emerald-650 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white font-extrabold shadow-lg shadow-emerald-950/50 border border-emerald-400/30 active:scale-[0.985] transition-all flex items-center justify-between px-6"
@@ -1251,6 +975,7 @@ export default function HomePage() {
               </div>
             </Link>
 
+            {/* Sign Up Button */}
             <Link
               href="/register"
               className="group relative w-full h-15 rounded-2xl bg-[#142d1d]/85 hover:bg-[#1a3a25] text-stone-100 hover:text-white font-bold border border-emerald-500/25 shadow-md active:scale-[0.985] transition-all flex items-center justify-between px-6"
@@ -1271,9 +996,10 @@ export default function HomePage() {
                 </svg>
               </div>
             </Link>
+
           </div>
 
-          {/* Language Switcher Trigger */}
+          {/* Language Switcher Trigger Button */}
           <div className="pt-2 border-t border-emerald-500/15 w-full flex justify-center">
             <button
               type="button"
@@ -1286,6 +1012,7 @@ export default function HomePage() {
               <span className="text-emerald-400 font-bold text-[11px]">— {labels.selectLang}</span>
             </button>
           </div>
+
         </div>
 
         {/* Global Security Subtext */}
@@ -1298,7 +1025,7 @@ export default function HomePage() {
       {/* ──────────────────────────────────────────────────────────
           DISCREET NATURE & TRUST FOOTER
       ────────────────────────────────────────────────────────── */}
-      <footer className="relative z-10 w-full bg-[#050d07] border-t border-emerald-500/15 py-8 px-4 sm:px-6">
+      <footer className="relative z-10 w-full bg-[#030904] border-t border-emerald-500/15 py-8 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-emerald-300/65 font-medium">
           <div className="flex items-center gap-2">
             <span className="text-emerald-400">🌱</span>

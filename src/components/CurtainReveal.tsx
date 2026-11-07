@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState, useCallback } from "react";
+import Image from "next/image";
 
 interface CurtainRevealProps {
   onOpenChange?: (isOpen: boolean) => void;
@@ -23,25 +24,25 @@ export default function CurtainReveal({
     chapterAnnotation: "AGRICULTURAL LIFECYCLE // 001",
   },
 }: CurtainRevealProps) {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  // 0.0 = fully closed (covering right side), 1.0 = fully swept open
+  // 0.0 = closed curtain, 1.0 = fully swept open
   const [pullProgress, setPullProgress] = useState(0);
   const [isOpened, setIsOpened] = useState(false);
   const isDraggingRef = useRef(false);
   const dragStartXRef = useRef(0);
   const currentPullRef = useRef(0);
   const targetPullRef = useRef(0);
-  const grabPointXRef = useRef(0); // Viewport X of grab point
-  const grabPointYRef = useRef(0.5); // Normalized Y grab position (0.5 = center)
+  const grabPointXRef = useRef(0);
+  const grabPointYRef = useRef(0.48); // Near statue hand level
   const animFrameRef = useRef<number | null>(null);
   const prefersReducedMotionRef = useRef(false);
 
-  // Synchronize target pull with scroll progress
+  // Synchronize target pull with page scroll progress
   useEffect(() => {
     if (scrollProgress > 0.015 && !isOpened) {
-      const scrollPull = Math.min(1, scrollProgress / 0.08);
+      const scrollPull = Math.min(1, scrollProgress / 0.07);
       targetPullRef.current = Math.max(targetPullRef.current, scrollPull);
       if (scrollPull >= 0.85) {
         const timer = setTimeout(() => {
@@ -53,51 +54,63 @@ export default function CurtainReveal({
     }
   }, [scrollProgress, isOpened, onOpenChange]);
 
-  // Pointer interactions with tactile drag tracking
-  const handlePointerDown = useCallback((e: React.PointerEvent) => {
-    if (isOpened) return;
-    const rect = containerRef.current?.getBoundingClientRect();
-    if (!rect) return;
+  // Pointer interactions (mouse, trackpad, touch)
+  const handlePointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      if (isOpened) return;
+      const rect = containerRef.current?.getBoundingClientRect();
+      if (!rect) return;
 
-    const clickX = e.clientX - rect.left;
-    const curtainEdgeX = rect.width * 0.58;
+      const clickX = e.clientX - rect.left;
+      const curtainStartX = rect.width * 0.45;
 
-    // Generous grab area: anywhere from 200px left of the curtain edge up to the right edge
-    if (clickX >= curtainEdgeX - 220) {
-      isDraggingRef.current = true;
-      dragStartXRef.current = e.clientX;
+      // Allow dragging if clicked anywhere on the right half or near the curtain
+      if (clickX >= curtainStartX - 100) {
+        isDraggingRef.current = true;
+        dragStartXRef.current = e.clientX;
+        grabPointXRef.current = e.clientX;
+        grabPointYRef.current = Math.min(
+          0.85,
+          Math.max(0.15, (e.clientY - rect.top) / rect.height)
+        );
+        (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+      }
+    },
+    [isOpened]
+  );
+
+  const handlePointerMove = useCallback(
+    (e: React.PointerEvent) => {
+      if (!isDraggingRef.current || isOpened) return;
+      const rect = containerRef.current?.getBoundingClientRect();
+      if (!rect) return;
+
       grabPointXRef.current = e.clientX;
-      grabPointYRef.current = Math.min(0.85, Math.max(0.15, (e.clientY - rect.top) / rect.height));
-      (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
-    }
-  }, [isOpened]);
+      grabPointYRef.current = Math.min(
+        0.85,
+        Math.max(0.15, (e.clientY - rect.top) / rect.height)
+      );
 
-  const handlePointerMove = useCallback((e: React.PointerEvent) => {
-    if (!isDraggingRef.current || isOpened) return;
-    const rect = containerRef.current?.getBoundingClientRect();
-    if (!rect) return;
+      const pullDistance = Math.max(0, dragStartXRef.current - e.clientX);
+      const pullFraction = pullDistance / (rect.width * 0.35);
+      targetPullRef.current = Math.min(1, Math.max(0, pullFraction));
 
-    grabPointXRef.current = e.clientX;
-    grabPointYRef.current = Math.min(0.85, Math.max(0.15, (e.clientY - rect.top) / rect.height));
-
-    const pullDistanceLeft = Math.max(0, dragStartXRef.current - e.clientX);
-    const pullDistanceRight = Math.max(0, e.clientX - dragStartXRef.current);
-
-    // If pulled left by more than 30% of screen width, or dragged right past threshold, trigger full open
-    if (pullDistanceLeft > rect.width * 0.32 || pullDistanceRight > rect.width * 0.25) {
-      targetPullRef.current = 1;
-      isDraggingRef.current = false;
-      setIsOpened(true);
-      onOpenChange?.(true);
-    }
-  }, [isOpened, onOpenChange]);
+      // If dragged past threshold, complete the opening
+      if (pullFraction >= 0.5) {
+        targetPullRef.current = 1;
+        isDraggingRef.current = false;
+        setIsOpened(true);
+        onOpenChange?.(true);
+      }
+    },
+    [isOpened, onOpenChange]
+  );
 
   const handlePointerUp = useCallback(() => {
     if (!isDraggingRef.current) return;
     isDraggingRef.current = false;
 
-    const pulledDistance = Math.abs(dragStartXRef.current - grabPointXRef.current);
-    if (pulledDistance > 65) {
+    if (targetPullRef.current > 0.2) {
       targetPullRef.current = 1;
       setIsOpened(true);
       onOpenChange?.(true);
@@ -112,6 +125,7 @@ export default function CurtainReveal({
     onOpenChange?.(true);
   };
 
+  // Canvas animation for fluid chromatic dispersion, caustic glow, and spectral fringes
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -147,10 +161,10 @@ export default function CurtainReveal({
     const render = (now: number) => {
       const elapsed = now - startTime;
 
-      // Spring / lerp towards target pull
+      // Smooth lerp to target pull progress
       const diff = targetPullRef.current - currentPullRef.current;
       if (!prefersReducedMotionRef.current) {
-        currentPullRef.current += diff * (isDraggingRef.current ? 0.35 : 0.12);
+        currentPullRef.current += diff * (isDraggingRef.current ? 0.3 : 0.12);
       } else {
         currentPullRef.current = targetPullRef.current;
       }
@@ -159,296 +173,88 @@ export default function CurtainReveal({
 
       ctx.clearRect(0, 0, width, height);
 
-      // If fully open and faded out, stop drawing
-      if (currentPullRef.current >= 0.999 && isOpened) {
-        animFrameRef.current = requestAnimationFrame(render);
-        return;
-      }
-
       const p = currentPullRef.current;
-      const curtainAlpha = Math.max(0, 1 - Math.max(0, (p - 0.75) / 0.25));
 
-      ctx.save();
-      ctx.globalAlpha = curtainAlpha;
-
-      // ────────────────────────────────────────────────────────────
-      // 1. NEOCLASSICAL MARBLE PLINTH (Base)
-      // ────────────────────────────────────────────────────────────
-      const plinthY = height * 0.76;
-      const plinthW = width * 0.45;
-      const plinthX = width * 0.55 + p * width * 0.35; // Shifts right as pulled
-
-      // Marble cornice gradient
-      const marbleGrad = ctx.createLinearGradient(plinthX, plinthY, plinthX, height);
-      marbleGrad.addColorStop(0, "#f5f5f4"); // Stone cornice top
-      marbleGrad.addColorStop(0.15, "#e7e5e4");
-      marbleGrad.addColorStop(0.65, "#d6d3d1");
-      marbleGrad.addColorStop(1, "#a8a29e");
-
-      ctx.fillStyle = marbleGrad;
-      ctx.beginPath();
-      ctx.moveTo(plinthX, plinthY);
-      ctx.lineTo(width, plinthY);
-      ctx.lineTo(width, height);
-      ctx.lineTo(plinthX, height);
-      ctx.closePath();
-      ctx.fill();
-
-      // Plinth upper architectural molding rim
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(plinthX, plinthY, width - plinthX, 3);
-      ctx.fillStyle = "#78716c";
-      ctx.fillRect(plinthX, plinthY + 3, width - plinthX, 2);
-
-      // ────────────────────────────────────────────────────────────
-      // 2. THE CLASSICAL DRAPED STATUE FIGURE (Neoclassical Guardian)
-      // Standing on plinth, facing left, holding curtain edge
-      // ────────────────────────────────────────────────────────────
-      const figureX = plinthX + plinthW * 0.18 - p * 40;
-      const figureY = plinthY;
-      const figureScale = Math.min(height * 0.62, 540) / 480;
-
-      ctx.save();
-      ctx.translate(figureX, figureY);
-      ctx.scale(figureScale, figureScale);
-
-      // Figure drop shadow onto plinth
-      ctx.fillStyle = "rgba(0, 0, 0, 0.35)";
-      ctx.beginPath();
-      ctx.ellipse(25, -2, 55, 12, 0, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Classical flowing white toga (Chiton)
-      const togaGrad = ctx.createLinearGradient(-40, -420, 80, 0);
-      togaGrad.addColorStop(0, "#ffffff");
-      togaGrad.addColorStop(0.4, "#f5f5f4");
-      togaGrad.addColorStop(0.75, "#e7e5e4");
-      togaGrad.addColorStop(1, "#d6d3d1");
-
-      ctx.fillStyle = togaGrad;
-      ctx.beginPath();
-      // Flowing drapery silhouette
-      ctx.moveTo(10, -420); // Head/neck base
-      ctx.bezierCurveTo(45, -400, 65, -340, 55, -200); // Right flank
-      ctx.bezierCurveTo(70, -100, 85, -20, 60, 0); // Hem bottom
-      ctx.lineTo(-25, 0); // Hem base
-      ctx.bezierCurveTo(-50, -120, -45, -280, -35, -390); // Left flank
-      ctx.closePath();
-      ctx.fill();
-
-      // Deep sculptural drapery fold creases (Chiaroscuro)
-      ctx.strokeStyle = "rgba(120, 113, 108, 0.65)";
-      ctx.lineWidth = 2.2;
-      ctx.lineCap = "round";
-
-      // Vertical fluted robe folds
-      ctx.beginPath();
-      ctx.moveTo(10, -380);
-      ctx.quadraticCurveTo(20, -200, 35, 0);
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(-10, -370);
-      ctx.quadraticCurveTo(-15, -190, 5, 0);
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(-25, -350);
-      ctx.quadraticCurveTo(-35, -180, -20, 0);
-      ctx.stroke();
-
-      // Rich Crimson / Terracotta Agricultural Sash (Himation across waist & shoulder)
-      const sashGrad = ctx.createLinearGradient(-30, -310, 45, -180);
-      sashGrad.addColorStop(0, "#b91c1c"); // Radiant crimson
-      sashGrad.addColorStop(0.5, "#991b1b");
-      sashGrad.addColorStop(1, "#7f1d1d");
-
-      ctx.fillStyle = sashGrad;
-      ctx.beginPath();
-      ctx.moveTo(-32, -310);
-      ctx.bezierCurveTo(0, -290, 35, -260, 45, -200);
-      ctx.bezierCurveTo(50, -170, 35, -150, 15, -175);
-      ctx.bezierCurveTo(-15, -210, -40, -260, -32, -310);
-      ctx.closePath();
-      ctx.fill();
-
-      // Neoclassical Head & Laurel Crown Profile
-      ctx.fillStyle = "#f5d0b5"; // Warm marble skintone
-      ctx.beginPath();
-      ctx.arc(8, -445, 22, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Golden laurel wreath / head contour
-      ctx.fillStyle = "#eab308";
-      ctx.beginPath();
-      ctx.arc(6, -455, 14, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Classical hair curls
-      ctx.fillStyle = "#78350f";
-      ctx.beginPath();
-      ctx.arc(10, -448, 16, Math.PI * 0.4, Math.PI * 1.5);
-      ctx.fill();
-
-      // Left Arm extended holding the curtain
-      const armPullX = 65 - p * 80;
-      const armPullY = -270 + (grabPointYRef.current - 0.5) * 80;
-
-      ctx.strokeStyle = "#f5d0b5";
-      ctx.lineWidth = 14;
-      ctx.beginPath();
-      ctx.moveTo(35, -360); // Shoulder
-      ctx.quadraticCurveTo(50, -320, armPullX, armPullY); // Arm reaching to curtain
-      ctx.stroke();
-
-      // Hand clutching curtain edge
-      ctx.fillStyle = "#f5d0b5";
-      ctx.beginPath();
-      ctx.arc(armPullX, armPullY, 9, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.restore();
-
-      // ────────────────────────────────────────────────────────────
-      // 3. HEAVY TEXTURED FABRIC CURTAIN (Cloth Simulation)
-      // Folds, shadow channels, and dynamic pulling distortion
-      // ────────────────────────────────────────────────────────────
-      // Base curtain edge starts at ~58% width, pulled toward the right/left
-      const baseEdgeX = width * 0.58;
-      const pullOffset = p * (width * 0.85);
-      const edgeX = baseEdgeX + pullOffset;
-      const grabScreenY = height * grabPointYRef.current;
-
-      // Draw Drapery Fabric Body
-      ctx.save();
-
-      // Fabric dark charcoal / heather weave gradient
-      const fabricGrad = ctx.createLinearGradient(edgeX, 0, width, 0);
-      fabricGrad.addColorStop(0, "#475569"); // Leading edge
-      fabricGrad.addColorStop(0.15, "#334155"); // Tubular fold valley
-      fabricGrad.addColorStop(0.4, "#64748b"); // Tubular fold ridge
-      fabricGrad.addColorStop(0.7, "#1e293b"); // Deep inner fold
-      fabricGrad.addColorStop(1, "#0f172a");
-
-      ctx.fillStyle = fabricGrad;
-      ctx.beginPath();
-      ctx.moveTo(edgeX, 0);
-
-      // Organic tension folds along the curtain edge influenced by the grab point
-      let tensionPeakX = edgeX;
-      if (isDraggingRef.current) {
-        tensionPeakX = Math.min(edgeX, grabPointXRef.current);
-      } else {
-        tensionPeakX = edgeX - (1 - p) * (p > 0.05 ? 40 : 15);
-      }
-
-      ctx.bezierCurveTo(
-        edgeX + 25,
-        grabScreenY * 0.4,
-        tensionPeakX,
-        grabScreenY * 0.8,
-        tensionPeakX,
-        grabScreenY
-      );
-      ctx.bezierCurveTo(
-        tensionPeakX,
-        grabScreenY * 1.2,
-        edgeX + 15,
-        height * 0.8,
-        edgeX + 35,
-        height
-      );
-      ctx.lineTo(width, height);
-      ctx.lineTo(width, 0);
-      ctx.closePath();
-      ctx.fill();
-
-      // Three-dimensional vertical tubular cloth folds
-      const foldCount = 6;
-      for (let f = 1; f <= foldCount; f++) {
-        const foldProgress = f / foldCount;
-        const fx = edgeX + (width - edgeX) * foldProgress;
-
-        // Shadow trough
-        const troughGrad = ctx.createLinearGradient(fx - 18, 0, fx + 18, 0);
-        troughGrad.addColorStop(0, "rgba(15, 23, 42, 0.7)");
-        troughGrad.addColorStop(0.5, "rgba(15, 23, 42, 0)");
-        troughGrad.addColorStop(1, "rgba(255, 255, 255, 0.15)"); // Specular cloth rim
-
-        ctx.fillStyle = troughGrad;
-        ctx.beginPath();
-        ctx.moveTo(fx - 15, 0);
-        ctx.quadraticCurveTo(fx + Math.sin(f + elapsed * 0.001) * 8, height * 0.5, fx - 8, height);
-        ctx.lineTo(fx + 18, height);
-        ctx.quadraticCurveTo(fx + 25, height * 0.5, fx + 15, 0);
-        ctx.closePath();
-        ctx.fill();
-      }
-
-      // ────────────────────────────────────────────────────────────
-      // 4. CHROMATIC DISPERSION & LIQUID LIGHT RIPPLE (Grab Effect)
-      // Recreates the vivid spectral refraction seen in the reference!
-      // ────────────────────────────────────────────────────────────
-      const rippleActive = isDraggingRef.current || (p > 0.05 && p < 0.85);
-
+      // Chromatic dispersion and liquid prism ripple effect
+      const rippleActive = isDraggingRef.current || (p > 0.02 && p < 0.9);
       if (rippleActive) {
-        const rippleX = tensionPeakX;
-        const rippleY = grabScreenY;
-        const rippleSize = 80 + Math.sin(elapsed * 0.008) * 15;
+        // Statue hand grab coordinate in viewport space
+        const statueHandX = isDraggingRef.current
+          ? grabPointXRef.current
+          : width * (width < 640 ? 0.58 : 0.68) + p * width * 0.4;
+        const statueHandY = height * (width < 640 ? 0.62 : grabPointYRef.current);
 
-        // Spectral RGB dispersion fringes
-        // Cyan / Blue fringe
-        ctx.strokeStyle = "rgba(6, 182, 212, 0.85)";
-        ctx.lineWidth = 3.5;
+        const pulse = Math.sin(elapsed * 0.009);
+        const rippleRadius = 75 + pulse * 18 + p * 50;
+
+        ctx.save();
+
+        // 1. Radiant white-hot caustic core
+        const coreGradient = ctx.createRadialGradient(
+          statueHandX,
+          statueHandY,
+          2,
+          statueHandX,
+          statueHandY,
+          rippleRadius
+        );
+        coreGradient.addColorStop(0, "rgba(255, 255, 255, 0.95)");
+        coreGradient.addColorStop(0.25, "rgba(253, 224, 71, 0.85)"); // Radiant amber
+        coreGradient.addColorStop(0.55, "rgba(6, 182, 212, 0.55)");  // Electric cyan
+        coreGradient.addColorStop(0.85, "rgba(236, 72, 153, 0.35)"); // Vivid magenta
+        coreGradient.addColorStop(1, "rgba(0, 0, 0, 0)");
+
+        ctx.fillStyle = coreGradient;
         ctx.beginPath();
-        for (let i = -12; i <= 12; i++) {
-          const dy = i * 6;
-          const dx = Math.sin(i * 0.5 + elapsed * 0.015) * 16;
-          ctx.lineTo(rippleX + dx - 3, rippleY + dy);
-        }
-        ctx.stroke();
-
-        // Magenta / Violet fringe
-        ctx.strokeStyle = "rgba(236, 72, 153, 0.85)";
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        for (let i = -12; i <= 12; i++) {
-          const dy = i * 6;
-          const dx = Math.sin(i * 0.5 + elapsed * 0.015 + 1) * 16;
-          ctx.lineTo(rippleX + dx + 3, rippleY + dy);
-        }
-        ctx.stroke();
-
-        // White-hot radiant core
-        const coreGlow = ctx.createRadialGradient(rippleX, rippleY, 2, rippleX, rippleY, rippleSize);
-        coreGlow.addColorStop(0, "rgba(255, 255, 255, 0.95)");
-        coreGlow.addColorStop(0.3, "rgba(251, 191, 36, 0.7)");
-        coreGlow.addColorStop(0.65, "rgba(56, 189, 248, 0.35)");
-        coreGlow.addColorStop(1, "rgba(0, 0, 0, 0)");
-
-        ctx.fillStyle = coreGlow;
-        ctx.beginPath();
-        ctx.arc(rippleX, rippleY, rippleSize, 0, Math.PI * 2);
+        ctx.arc(statueHandX, statueHandY, rippleRadius, 0, Math.PI * 2);
         ctx.fill();
 
-        // Radiating light rays from pull point
-        ctx.lineWidth = 1.2;
+        // 2. Spectral RGB Dispersion Fringes (Horizontal Glitch Aberrations)
+        ctx.lineWidth = 3;
+        ctx.lineCap = "round";
+
+        // Cyan Fringe Wave
+        ctx.strokeStyle = "rgba(6, 182, 212, 0.85)";
+        ctx.beginPath();
+        for (let i = -14; i <= 14; i++) {
+          const dy = i * 7;
+          const dx = Math.sin(i * 0.45 + elapsed * 0.015) * 22;
+          ctx.lineTo(statueHandX + dx - 4, statueHandY + dy);
+        }
+        ctx.stroke();
+
+        // Magenta Fringe Wave
+        ctx.strokeStyle = "rgba(236, 72, 153, 0.85)";
+        ctx.beginPath();
+        for (let i = -14; i <= 14; i++) {
+          const dy = i * 7;
+          const dx = Math.sin(i * 0.45 + elapsed * 0.015 + 1.2) * 22;
+          ctx.lineTo(statueHandX + dx + 4, statueHandY + dy);
+        }
+        ctx.stroke();
+
+        // 3. Radiant Spectral Light Rays
+        ctx.lineWidth = 1.4;
         ctx.strokeStyle = "rgba(255, 255, 255, 0.65)";
         for (let r = 0; r < 8; r++) {
-          const rayAngle = (r * Math.PI) / 4 + elapsed * 0.004;
+          const angle = (r * Math.PI) / 4 + elapsed * 0.003;
           ctx.beginPath();
-          ctx.moveTo(rippleX, rippleY);
+          ctx.moveTo(statueHandX, statueHandY);
           ctx.lineTo(
-            rippleX + Math.cos(rayAngle) * (rippleSize * 1.4),
-            rippleY + Math.sin(rayAngle) * (rippleSize * 1.4)
+            statueHandX + Math.cos(angle) * (rippleRadius * 1.5),
+            statueHandY + Math.sin(angle) * (rippleRadius * 1.5)
           );
           ctx.stroke();
         }
+
+        ctx.restore();
       }
 
-      ctx.restore(); // Restore drapery
-
-      ctx.restore(); // Restore globalAlpha
+      // If fully swept open, cease render loop
+      if (currentPullRef.current >= 0.99 && isOpened) {
+        animFrameRef.current = requestAnimationFrame(render);
+        return;
+      }
 
       animFrameRef.current = requestAnimationFrame(render);
     };
@@ -461,8 +267,12 @@ export default function CurtainReveal({
     };
   }, [isOpened]);
 
-  // When completely opened (p >= 0.95), allow underlying elements full pointer events
+  // When opened, pass all pointer events through to the underlying page
   const containerPointerEvents = pullProgress >= 0.95 ? "none" : "auto";
+
+  // Curtain sweep translation and scale calculations
+  const sweepTranslateX = pullProgress * 110; // Shifts right off-screen
+  const sweepOpacity = Math.max(0, 1 - Math.max(0, (pullProgress - 0.7) / 0.3));
 
   return (
     <div
@@ -476,58 +286,121 @@ export default function CurtainReveal({
       } ${className}`}
       style={{ pointerEvents: containerPointerEvents }}
     >
-      {/* 2D Canvas for Curtain, Classical Figure, and Chromatic Light Ripple */}
-      <canvas
-        ref={canvasRef}
-        className="block w-full h-full"
-        style={{ touchAction: "none" }}
-        aria-hidden="true"
+      {/* ────────────────────────────────────────────────────────────
+          STAGE BACKGROUND: DEEP EDITORIAL BOTANICAL GREEN
+      ──────────────────────────────────────────────────────────── */}
+      <div
+        className="absolute inset-0 bg-gradient-to-r from-[#030a05] via-[#05150a] to-[#0a1e12] transition-opacity duration-500"
+        style={{ opacity: Math.max(0, 1 - pullProgress * 1.2) }}
       />
 
-      {/* Blueprint / Telemetry Grid Overlay on the Left Side */}
+      {/* Decorative Technical Grid Overlay */}
       <div
-        className="absolute inset-y-0 left-0 w-full sm:w-[58%] pointer-events-none p-6 sm:p-14 flex flex-col justify-between transition-opacity duration-300"
+        className="absolute inset-0 opacity-[0.08] pointer-events-none"
+        style={{
+          backgroundImage:
+            "linear-gradient(to right, #4ade80 1px, transparent 1px), linear-gradient(to bottom, #4ade80 1px, transparent 1px)",
+          backgroundSize: "48px 48px",
+          opacity: Math.max(0, 0.08 * (1 - pullProgress * 1.4)),
+        }}
+      />
+
+      {/* ────────────────────────────────────────────────────────────
+          LEFT SIDE: EDITORIAL TELEMETRY & BRANDING
+      ──────────────────────────────────────────────────────────── */}
+      <div
+        className="absolute inset-y-0 left-0 w-full sm:w-[54%] pointer-events-none p-5 sm:p-14 flex flex-col justify-between transition-opacity duration-300 z-20"
         style={{ opacity: Math.max(0, 1 - pullProgress * 1.5) }}
       >
         {/* Top Annotation Badge */}
         <div className="pt-20">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#07190e]/85 border border-emerald-400/35 backdrop-blur-md text-[11px] font-mono tracking-widest text-emerald-300 uppercase shadow-lg">
-            <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+          <div className="inline-flex items-center gap-2 px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full bg-[#081f11]/90 border border-emerald-400/40 backdrop-blur-md text-[10px] sm:text-[11px] font-mono tracking-widest text-emerald-300 uppercase shadow-lg">
+            <span className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-emerald-400 animate-pulse" />
             <span>{labels.chapterAnnotation}</span>
+            <span className="text-emerald-500/70 hidden sm:inline">{"//"} 12.9716° N</span>
           </div>
         </div>
 
-        {/* Central Titles */}
-        <div className="max-w-xs sm:max-w-xl space-y-3 sm:space-y-4 my-auto">
-          <h1 className="text-4xl sm:text-7xl md:text-8xl font-serif tracking-tight text-white drop-shadow-md">
-            THE SEED
-          </h1>
-          <p className="text-base sm:text-2xl font-light text-stone-200 tracking-wide font-sans">
+        {/* Central Editorial Typography */}
+        <div className="max-w-[42%] sm:max-w-xl space-y-2 sm:space-y-4 my-auto">
+          <div className="inline-block">
+            <span className="font-mono text-[9px] sm:text-sm tracking-widest text-emerald-400 font-bold uppercase block mb-0.5 sm:mb-1">
+              X-MILE PLATFORM
+            </span>
+            <h1 className="text-2xl sm:text-7xl md:text-8xl font-serif tracking-tight text-white drop-shadow-xl font-normal leading-[0.95]">
+              THE SEED
+            </h1>
+          </div>
+
+          <p className="text-xs sm:text-2xl md:text-3xl font-light text-stone-200 tracking-wide font-serif italic">
             &ldquo;Every MILE begins in the soil.&rdquo;
           </p>
-          <p className="text-xs sm:text-sm font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-amber-200 to-emerald-300 pt-1">
+
+          <p className="text-[10px] sm:text-sm font-semibold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-amber-200 to-emerald-300 pt-0.5 sm:pt-1 leading-tight">
             {labels.tagline}
+          </p>
+
+          <p className="text-xs text-stone-400 font-sans leading-relaxed max-w-sm hidden sm:block">
+            Connecting direct farmer harvest inventory, verified commercial buyer bids, and rural transport fleets through a unified sovereign agricultural exchange.
           </p>
         </div>
 
-        {/* Interactive Drag & Pull Prompt */}
+        {/* Interactive Drag & Pull Prompt Button */}
         <div className="pb-6 pointer-events-auto">
           <button
             type="button"
             onClick={handleDirectOpen}
-            className="group inline-flex items-center gap-3 px-5 py-2.5 rounded-2xl bg-[#0d2215]/90 hover:bg-[#132f1e] border border-emerald-400/40 text-emerald-300 hover:text-white font-mono text-xs tracking-wider uppercase shadow-xl backdrop-blur-md transition active:scale-[0.98]"
+            className="group inline-flex items-center gap-2 sm:gap-3 px-3.5 sm:px-5 py-2 sm:py-3 rounded-2xl bg-[#0b2414]/90 hover:bg-[#11351e] border border-emerald-400/40 text-emerald-300 hover:text-white font-mono text-[10px] sm:text-xs tracking-wider uppercase shadow-2xl backdrop-blur-md transition active:scale-[0.98]"
           >
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
             </span>
-            <span>{labels.pullPrompt}</span>
-            <span className="text-base group-hover:translate-x-1.5 transition-transform">
+            <span className="hidden sm:inline">{labels.pullPrompt}</span>
+            <span className="sm:hidden">DRAG OR SCROLL</span>
+            <span className="text-sm sm:text-base group-hover:translate-x-1.5 transition-transform">
               →
             </span>
           </button>
         </div>
       </div>
+
+      {/* ────────────────────────────────────────────────────────────
+          RIGHT SIDE: THE CLASSICAL GUARDIAN & HEAVY DRAPERY VEIL
+          (Real Master Classical Oil Artwork from Reference Video 1)
+      ──────────────────────────────────────────────────────────── */}
+      <div
+        className="absolute inset-y-0 right-0 w-[72%] sm:w-[62%] pointer-events-none flex items-end justify-end overflow-hidden transition-transform duration-100 ease-out z-10"
+        style={{
+          transform: `translateX(${sweepTranslateX}%)`,
+          opacity: sweepOpacity,
+        }}
+      >
+        {/* Soft Ambient Spotlight Behind Statue */}
+        <div className="absolute top-1/4 right-1/4 w-96 h-96 rounded-full bg-emerald-500/10 blur-[100px] pointer-events-none" />
+
+        {/* The Master Classical Artwork */}
+        <div className="relative w-full h-[65vh] sm:h-[94vh] max-w-3xl flex items-end justify-end pr-0 sm:pr-4">
+          <Image
+            src="/images/guardian_curtain_master.png"
+            alt="Classical guardian holding agricultural drapery veil"
+            width={570}
+            height={730}
+            priority
+            className="h-full w-auto object-contain object-bottom drop-shadow-[0_25px_50px_rgba(0,0,0,0.85)] filter contrast-[1.05]"
+          />
+        </div>
+      </div>
+
+      {/* ────────────────────────────────────────────────────────────
+          CANVAS CHROMATIC ABERRATION & PRISM LIGHT RIPPLE LAYER
+      ──────────────────────────────────────────────────────────── */}
+      <canvas
+        ref={canvasRef}
+        className="absolute inset-0 w-full h-full pointer-events-none z-30"
+        style={{ touchAction: "none" }}
+        aria-hidden="true"
+      />
     </div>
   );
 }
